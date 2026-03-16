@@ -1,0 +1,47 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "error": "Algo salió mal",
+    "retry": "Reintentar",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "back": "Atrás"
+  },
+  "auth": {
+    "signIn": "Iniciar sesión",
+    "signUp": "Registrarse",
+    "signOut": "Cerrar sesión",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "googleSignIn": "Continuar con Google"
+  },
+  "pets": {
+    "title": "Mis mascotas",
+    "add": "Agregar mascota",
+    "name": "Nombre",
+    "species": "Especie",
+    "breed": "Raza",
+    "color": "Color",
+    "age": "Edad (años)",
+    "notes": "Notas",
+    "reportLost": "Reportar como perdido",
+    "markFound": "Marcar como encontrado"
+  },
+  "reports": {
+    "title": "Alertas cercanas",
+    "lost": "Perdido",
+    "sighting": "Avistamiento",
+    "reportSighting": "Reportar avistamiento",
+    "lastSeen": "Visto por última vez"
+  },
+  "map": {
+    "centerOnMe": "Centrar en mí"
+  },
+  "profile": {
+    "title": "Perfil",
+    "settings": "Configuración",
+    "alertRadius": "Radio de alertas (km)",
+    "alertsEnabled": "Alertas habilitadas"
+  }
+}

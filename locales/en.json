@@ -1,0 +1,47 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "back": "Back"
+  },
+  "auth": {
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "signOut": "Sign out",
+    "email": "Email",
+    "password": "Password",
+    "googleSignIn": "Continue with Google"
+  },
+  "pets": {
+    "title": "My pets",
+    "add": "Add pet",
+    "name": "Name",
+    "species": "Species",
+    "breed": "Breed",
+    "color": "Color",
+    "age": "Age (years)",
+    "notes": "Notes",
+    "reportLost": "Report as lost",
+    "markFound": "Mark as found"
+  },
+  "reports": {
+    "title": "Nearby alerts",
+    "lost": "Lost",
+    "sighting": "Sighting",
+    "reportSighting": "Report sighting",
+    "lastSeen": "Last seen"
+  },
+  "map": {
+    "centerOnMe": "Center on me"
+  },
+  "profile": {
+    "title": "Profile",
+    "settings": "Settings",
+    "alertRadius": "Alert radius (km)",
+    "alertsEnabled": "Alerts enabled"
+  }
+}

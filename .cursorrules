@@ -1,0 +1,87 @@
+# Huellitas Mobile — Cursor Rules
+
+## Stack
+React Native + Expo SDK 55, Expo Router v5, TypeScript strict mode, Zustand v5, TanStack Query v5, Better Auth, Zod.
+
+## Naming Conventions
+- Components: PascalCase (PetCard, AlertMarker)
+- Hooks: camelCase with `use` prefix (usePets, useLocation)
+- Stores: camelCase with `Store` suffix (authStore, locationStore)
+- Services: camelCase with `Service` suffix (pets.service.ts)
+- Types: PascalCase with descriptive suffix (PetFormPayload, ApiResponse)
+- Files: kebab-case for non-components (api.types.ts, date.utils.ts)
+- Expo Router files: kebab-case (sign-in.tsx, [id].tsx)
+
+## File Organization
+- Max 400 lines per file. Extract to smaller files if exceeded.
+- Group by feature: components/pets/, components/reports/, components/map/
+- Co-locate test files: PetCard.tsx → PetCard.test.tsx OR __tests__/PetCard.test.tsx
+
+## Component Rules
+- Functional components only (no class components)
+- One component per file
+- Props interface must be defined above component
+- Export named component (not default where possible, but Expo Router screens require default)
+- Keep components under 150 lines; extract sub-components otherwise
+
+## State Management
+- Zustand for client-side global state (auth, location, settings)
+- TanStack Query for server state (API data, caching, polling)
+- Do NOT store server data in Zustand (duplication)
+- Always use `set(state => ({ ...state, field: value }))` for immutable updates
+
+## Immutability (CRITICAL)
+- Never mutate state directly
+- Always return new objects: `set(state => ({ ...state, newField: value }))`
+- Never push to arrays: use `[...array, newItem]`
+- Never modify objects in place: use `{ ...obj, field: newValue }`
+
+## TypeScript
+- Enable strict mode (tsconfig.json)
+- No implicit `any`
+- Define explicit return types for all functions
+- Use `unknown` instead of `any` for error types
+- Prefer interfaces for component props, types for API payloads
+
+## Expo Router
+- File-based routing: screens live in `app/` directory
+- Use route groups: (auth) for unauthenticated, (app) for authenticated
+- Dynamic routes: `[id].tsx`
+- Nested routes: `reports/[id]/sightings/new.tsx`
+- Use `useLocalSearchParams()` for route params
+- Use `router.push()`, `router.replace()`, `router.back()` for navigation
+
+## Data Fetching
+- Use TanStack Query for ALL API calls (no raw axios calls in components)
+- Custom hooks wrap `useQuery` and `useMutation`
+- Set `staleTime: 30000` for polling data (lost reports)
+- Always handle `isLoading`, `isError`, `data` states
+
+## Error Handling
+- NEVER swallow errors silently (no empty catch blocks)
+- Always log errors: `console.error('context:', error)` or Sentry
+- Show user-friendly messages (not raw error.message in UI)
+- Use Error Boundaries for component crashes
+- Handle network errors gracefully with retry options
+
+## Testing (MANDATORY)
+- Write tests BEFORE implementation (TDD)
+- Test file naming: ComponentName.test.tsx
+- Test coverage: 80% minimum
+- Always test: render, user interactions, error states, loading states
+- Mock external services (expo-location, expo-notifications, API calls)
+- Use @testing-library/react-native
+
+## Security
+- Never log sensitive data (tokens, passwords, emails in plain text)
+- Use SecureStore (not AsyncStorage) for tokens
+- Validate all user inputs with Zod before API calls
+- Never trust API responses (validate with Zod schemas)
+
+## Common Anti-Patterns to AVOID
+- Prop drilling more than 2 levels deep (use Zustand or Context)
+- useEffect with missing dependencies
+- Inline styles (use StyleSheet.create)
+- Direct database calls from components (use services layer)
+- Hardcoded strings (use i18n keys or constants)
+- Magic numbers (use named constants)
