@@ -1,9 +1,11 @@
 import { View, Text, StyleSheet } from 'react-native';
 
-export default function MapScreen(): JSX.Element {
+import { colors, spacing, typography } from '../../src/design/tokens';
+
+export default function MapScreen(): React.JSX.Element {
   return (
     <View style={styles.container}>
-      <Text>Map Feed — FE-010</Text>
+      <Text style={styles.text}>Map Feed - FE-010</Text>
     </View>
   );
 }
@@ -13,5 +15,11 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.background,
+    padding: spacing.lg,
+  },
+  text: {
+    color: colors.textPrimary,
+    ...typography.bodyStrong,
   },
 });
