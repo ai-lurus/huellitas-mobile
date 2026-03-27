@@ -8,11 +8,7 @@ jest.mock('@expo/vector-icons', () => ({
   Ionicons: (): null => null,
 }));
 
-jest.mock('../../services/authService', () => ({
-  authService: {
-    signIn: jest.fn(),
-  },
-}));
+jest.mock('../../services/authService');
 
 jest.mock('../../stores/authStore', () => ({
   useAuthStore: {

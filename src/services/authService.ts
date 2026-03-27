@@ -40,6 +40,30 @@ async function signIn(
   }
 }
 
+async function signUp(
+  name: string,
+  email: string,
+  password: string,
+): Promise<{
+  user: AuthUser;
+  isFirstLogin: boolean;
+}> {
+  try {
+    const res = await apiClient.post('/auth/sign-up', { name, email, password });
+    const parsed = signInResponseSchema.parse(res.data);
+
+    if (parsed.token) {
+      await SecureStore.setItemAsync(SESSION_TOKEN_KEY, parsed.token);
+    }
+
+    return { user: parsed.user, isFirstLogin: parsed.isFirstLogin };
+  } catch (err: unknown) {
+    if (err instanceof Error) throw err;
+    throw new Error('Something went wrong');
+  }
+}
+
 export const authService = {
   signIn,
+  signUp,
 };

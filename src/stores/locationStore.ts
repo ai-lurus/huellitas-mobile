@@ -15,6 +15,6 @@ interface LocationState {
 export const useLocationStore = create<LocationState>((set) => ({
   currentLocation: null,
   lastSyncedLocation: null,
-  setCurrentLocation: (coords) => set(() => ({ currentLocation: { ...coords } })),
-  setLastSyncedLocation: (coords) => set(() => ({ lastSyncedLocation: { ...coords } })),
+  setCurrentLocation: (coords): void => set(() => ({ currentLocation: { ...coords } })),
+  setLastSyncedLocation: (coords): void => set(() => ({ lastSyncedLocation: { ...coords } })),
 }));

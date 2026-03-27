@@ -1,42 +1,58 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, control, spacing, typography } from '../../src/design/tokens';
+import { colors, spacing } from '../../src/design/tokens';
+import { SignUpForm } from '../../src/components/auth/SignUpForm';
+import { useKeyboardHeight } from '../../src/hooks/useKeyboardHeight';
 
 export default function SignUpScreen(): React.JSX.Element {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const keyboardHeight = useKeyboardHeight();
+
   return (
-    <View style={styles.container}>
-      <Ionicons
-        name="person-outline"
-        size={control.iconLg}
-        color={colors.textSecondary}
-        style={styles.icon}
-      />
-      <Text style={styles.title}>Crear cuenta</Text>
-      <Text style={styles.subtitle}>Pantalla pendiente de implementar.</Text>
-    </View>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top : 0}
+      >
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+          contentInsetAdjustmentBehavior="automatic"
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingBottom: insets.bottom + spacing.xxl + spacing.lg + keyboardHeight,
+            },
+          ]}
+        >
+          <SignUpForm
+            onSuccess={() => router.replace('/(auth)/onboarding/step-1')}
+            onSignInPress={() => router.push('/(auth)/sign-in')}
+          />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  screen: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.lg,
     backgroundColor: colors.background,
   },
-  title: {
-    marginBottom: spacing.xs,
-    color: colors.textPrimary,
-    ...typography.heading,
+  flex: {
+    flex: 1,
   },
-  icon: {
-    marginBottom: spacing.sm,
-  },
-  subtitle: {
-    color: colors.textSecondary,
-    ...typography.body,
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    justifyContent: 'flex-start',
   },
 });

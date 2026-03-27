@@ -21,6 +21,7 @@
       }
     },
     "android": {
+      "softwareKeyboardLayoutMode": "resize",
       "package": "app.huellitas.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",

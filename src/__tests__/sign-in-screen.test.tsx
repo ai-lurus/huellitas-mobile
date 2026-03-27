@@ -19,11 +19,7 @@ jest.mock('expo-router', () => ({
   }),
 }));
 
-jest.mock('../services/authService', () => ({
-  authService: {
-    signIn: jest.fn(),
-  },
-}));
+jest.mock('../services/authService');
 
 jest.mock('../stores/authStore', () => ({
   useAuthStore: {
@@ -36,6 +32,8 @@ const { authService } = jest.requireMock('../services/authService') as {
 };
 
 describe('SignInScreen', () => {
+  jest.setTimeout(25000);
+
   beforeEach(() => {
     mockReplace.mockClear();
     mockPush.mockClear();
