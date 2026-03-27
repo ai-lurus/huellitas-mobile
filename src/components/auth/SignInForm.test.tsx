@@ -1,7 +1,8 @@
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 
-import { SignInForm } from '../../components/auth/SignInForm';
+import { SignInForm } from './SignInForm';
+import { authService } from '../../services/authService';
 
 jest.mock('@expo/vector-icons', () => ({
   Ionicons: (): null => null,
@@ -18,10 +19,6 @@ jest.mock('../../stores/authStore', () => ({
     getState: () => ({ setUser: jest.fn() }),
   },
 }));
-
-const { authService } = jest.requireMock('../../services/authService') as {
-  authService: { signIn: jest.Mock };
-};
 
 describe('SignInForm', () => {
   it('renders email, password, and submit button', () => {
@@ -55,10 +52,10 @@ describe('SignInForm', () => {
   });
 
   it('calls authService.signIn on valid submit', async () => {
-    authService.signIn.mockResolvedValueOnce({
+    jest.mocked(authService.signIn).mockImplementationOnce(async () => ({
       user: { id: '1', name: 'Test', email: 'a@b.com' },
       isFirstLogin: false,
-    });
+    }));
 
     const onSuccess = jest.fn();
     const { getByTestId } = render(<SignInForm onSuccess={onSuccess} />);
@@ -74,10 +71,10 @@ describe('SignInForm', () => {
   });
 
   it('calls onSuccess with isFirstLogin true when API returns first login', async () => {
-    authService.signIn.mockResolvedValueOnce({
+    jest.mocked(authService.signIn).mockImplementationOnce(async () => ({
       user: { id: '1', name: 'Test', email: 'a@b.com' },
       isFirstLogin: true,
-    });
+    }));
 
     const onSuccess = jest.fn();
     const { getByTestId } = render(<SignInForm onSuccess={onSuccess} />);
@@ -92,11 +89,11 @@ describe('SignInForm', () => {
   });
 
   it('shows loading indicator and disables submit while signing in', async () => {
-    let resolveSignIn: (value: unknown) => void = () => {};
-    const signInPromise = new Promise((resolve) => {
+    let resolveSignIn!: (value: Awaited<ReturnType<typeof authService.signIn>>) => void;
+    const signInPromise = new Promise<Awaited<ReturnType<typeof authService.signIn>>>((resolve) => {
       resolveSignIn = resolve;
     });
-    authService.signIn.mockReturnValueOnce(signInPromise as Promise<unknown>);
+    jest.mocked(authService.signIn).mockImplementationOnce(() => signInPromise);
 
     const { getByTestId } = render(<SignInForm onSuccess={jest.fn()} />);
 
@@ -137,7 +134,9 @@ describe('SignInForm', () => {
   });
 
   it('shows API error on failure', async () => {
-    authService.signIn.mockRejectedValueOnce(new Error('Invalid credentials'));
+    jest
+      .mocked(authService.signIn)
+      .mockImplementationOnce(() => Promise.reject(new Error('Invalid credentials')));
 
     const { getByTestId, findByText } = render(<SignInForm onSuccess={jest.fn()} />);
 

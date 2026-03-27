@@ -62,7 +62,7 @@ export function SignInForm({
   onGooglePress,
   onApplePress,
   onSignUpPress,
-}: SignInFormProps): React.JSX.Element {
+}: SignInFormProps): React.ReactElement {
   const [state, setState] = useState<SignInFormState>({
     fields: { email: '', password: '' },
     fieldErrors: {},
