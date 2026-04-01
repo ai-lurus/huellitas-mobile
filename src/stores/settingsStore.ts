@@ -11,6 +11,6 @@ interface SettingsState {
 export const useSettingsStore = create<SettingsState>((set) => ({
   alertRadiusKm: DEFAULT_ALERT_RADIUS_KM,
   alertsEnabled: true,
-  setAlertRadius: (km) => set(() => ({ alertRadiusKm: km })),
-  setAlertsEnabled: (enabled) => set(() => ({ alertsEnabled: enabled })),
+  setAlertRadius: (km): void => set(() => ({ alertRadiusKm: km })),
+  setAlertsEnabled: (enabled): void => set(() => ({ alertsEnabled: enabled })),
 }));

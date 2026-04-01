@@ -4,10 +4,10 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, spacing } from '../../src/design/tokens';
-import { SignInForm } from '../../src/components/auth/SignInForm';
+import { SignUpForm } from '../../src/components/auth/SignUpForm';
 import { useKeyboardHeight } from '../../src/hooks/useKeyboardHeight';
 
-export default function SignInScreen(): React.JSX.Element {
+export default function SignUpScreen(): React.JSX.Element {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const keyboardHeight = useKeyboardHeight();
@@ -31,17 +31,9 @@ export default function SignInScreen(): React.JSX.Element {
             },
           ]}
         >
-          <SignInForm
-            onSuccess={({ isFirstLogin }) => {
-              if (isFirstLogin) {
-                router.replace('/onboarding');
-                return;
-              }
-              router.replace('/(app)');
-            }}
-            onGooglePress={() => router.push('/(auth)/oauth/google')}
-            onApplePress={() => router.push('/(auth)/oauth/apple')}
-            onSignUpPress={() => router.push('/(auth)/sign-up')}
+          <SignUpForm
+            onSuccess={() => router.replace('/(auth)/onboarding/step-1')}
+            onSignInPress={() => router.push('/(auth)/sign-in')}
           />
         </ScrollView>
       </KeyboardAvoidingView>
@@ -61,6 +53,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
 });

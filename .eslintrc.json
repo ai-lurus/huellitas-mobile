@@ -28,7 +28,8 @@
   },
   "overrides": [
     {
-      "files": ["__tests__/**/*.{ts,tsx}", "**/*.test.{ts,tsx}"],
+      "files": ["**/__tests__/**/*.{ts,tsx}", "**/*.test.{ts,tsx}", "**/__mocks__/**/*.{ts,tsx}"],
+      "env": { "jest": true },
       "rules": {
         "@typescript-eslint/explicit-function-return-type": "off"
       }
