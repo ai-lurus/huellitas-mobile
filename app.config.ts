@@ -12,6 +12,7 @@ export default ({ config }: ConfigContext): ExpoConfig =>
     extra: {
       ...config.extra,
       EXPO_PUBLIC_API_URL: process.env.EXPO_PUBLIC_API_URL,
+      EXPO_PUBLIC_AUTH_BASE_PATH: process.env.EXPO_PUBLIC_AUTH_BASE_PATH,
       EXPO_PUBLIC_MAP_API_KEY: process.env.EXPO_PUBLIC_MAP_API_KEY,
       EXPO_PUBLIC_SENTRY_DSN: process.env.EXPO_PUBLIC_SENTRY_DSN,
       EXPO_PUBLIC_BETTER_AUTH_URL: process.env.EXPO_PUBLIC_BETTER_AUTH_URL,

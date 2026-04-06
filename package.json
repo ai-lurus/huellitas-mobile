@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "main": "expo-router/entry",
   "scripts": {
+    "dev:api": "node scripts/dev-auth-api.mjs",
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",

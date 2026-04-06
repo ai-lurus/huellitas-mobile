@@ -1,7 +1,6 @@
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
 
-const SESSION_TOKEN_KEY = 'huellitas_session_token';
+import { getSessionTokenAsync, SESSION_TOKEN_KEY } from './sessionTokenStorage';
 
 export const apiClient = axios.create({
   baseURL: process.env['EXPO_PUBLIC_API_URL'] ?? 'http://localhost:3000',
@@ -10,7 +9,7 @@ export const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use(async (config) => {
-  const token = await SecureStore.getItemAsync(SESSION_TOKEN_KEY);
+  const token = await getSessionTokenAsync();
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;
   }

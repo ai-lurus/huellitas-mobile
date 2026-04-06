@@ -70,7 +70,7 @@ describe('SignInScreen', () => {
     fireEvent.press(getByTestId('signIn.submit'));
 
     await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith('/onboarding');
+      expect(mockReplace).toHaveBeenCalledWith('/(auth)/onboarding/step-1');
     });
   });
 
