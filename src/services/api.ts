@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 const SESSION_TOKEN_KEY = 'huellitas_session_token';
@@ -9,7 +10,7 @@ export const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-apiClient.interceptors.request.use(async (config) => {
+apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   const token = await SecureStore.getItemAsync(SESSION_TOKEN_KEY);
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;

@@ -109,14 +109,17 @@ describe('SignInForm', () => {
     });
   });
 
-  it('calls onGooglePress when Google button is pressed', () => {
-    const onGooglePress = jest.fn();
+  it('calls onGooglePress when Google button is pressed', async () => {
+    const onGooglePress = jest.fn().mockResolvedValue(undefined);
     const { getByTestId } = render(
       <SignInForm onSuccess={jest.fn()} onGooglePress={onGooglePress} />,
     );
 
     fireEvent.press(getByTestId('signIn.google'));
-    expect(onGooglePress).toHaveBeenCalled();
+
+    await waitFor(() => {
+      expect(onGooglePress).toHaveBeenCalled();
+    });
   });
 
   it('calls onSignUpPress when register link is pressed', () => {
