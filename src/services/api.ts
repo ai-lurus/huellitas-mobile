@@ -15,6 +15,15 @@ apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =>
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;
   }
+  try {
+    const { getBetterAuthCookieHeader } = await import('./auth.service');
+    const cookie = getBetterAuthCookieHeader();
+    if (cookie) {
+      config.headers['Cookie'] = cookie;
+    }
+  } catch {
+    // Evita dependencias circulares en arranque o tests sin módulo auth
+  }
   return config;
 });
 
