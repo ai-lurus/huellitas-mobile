@@ -6,6 +6,7 @@ const envSchema = z.object({
   EXPO_PUBLIC_MAP_API_KEY: z.string().min(1),
   EXPO_PUBLIC_SENTRY_DSN: z.string().url().optional(),
   EXPO_PUBLIC_BETTER_AUTH_URL: z.string().url(),
+  EXPO_PUBLIC_OAUTH_CALLBACK_PATH: z.string().url(),
   EXPO_PUBLIC_ENV: z.enum(['development', 'staging', 'production']).default('development'),
 });
 
@@ -36,6 +37,10 @@ function readEnvRaw(): Record<string, string | undefined> {
       process.env.EXPO_PUBLIC_BETTER_AUTH_URL,
     ),
     EXPO_PUBLIC_ENV: pick('EXPO_PUBLIC_ENV', process.env.EXPO_PUBLIC_ENV),
+    EXPO_PUBLIC_OAUTH_CALLBACK_PATH: pick(
+      'EXPO_PUBLIC_OAUTH_CALLBACK_PATH',
+      process.env.EXPO_PUBLIC_OAUTH_CALLBACK_PATH,
+    ),
   };
 }
 

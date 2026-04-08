@@ -27,9 +27,11 @@ function formatSubmitError(err: unknown): string {
 
 export interface SignInFormProps {
   onSuccess: (result: { isFirstLogin: boolean }) => void;
-  onGooglePress?: () => void;
+  onGooglePress?: () => void | Promise<void>;
   onApplePress?: () => void;
   onSignUpPress?: () => void;
+  /** OAuth social (Google) — mensaje amigable si el backend falla. */
+  oauthError?: string | null;
 }
 
 type SignInFields = {
@@ -62,6 +64,7 @@ export function SignInForm({
   onGooglePress,
   onApplePress,
   onSignUpPress,
+  oauthError,
 }: SignInFormProps): React.ReactElement {
   const [state, setState] = useState<SignInFormState>({
     fields: { email: '', password: '' },
@@ -69,6 +72,7 @@ export function SignInForm({
     submitError: null,
     isLoading: false,
   });
+  const [googleBusy, setGoogleBusy] = useState(false);
   const [focusedField, setFocusedField] = useState<'email' | 'password' | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const blurTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -143,6 +147,7 @@ export function SignInForm({
     }
   };
 
+  const oauthBanner = oauthError ?? null;
   const hasSubmitError = Boolean(state.submitError);
   const emailFieldInvalid = Boolean(state.fieldErrors.email);
   const passwordFieldInvalid = Boolean(state.fieldErrors.password);
@@ -184,6 +189,18 @@ export function SignInForm({
             style={styles.errorBannerIcon}
           />
           <Text style={styles.errorBannerText}>{state.submitError}</Text>
+        </View>
+      ) : null}
+
+      {oauthBanner ? (
+        <View style={styles.errorBanner} accessibilityRole="alert">
+          <Ionicons
+            name="alert-circle-outline"
+            size={control.icon}
+            color={colors.dangerIcon}
+            style={styles.errorBannerIcon}
+          />
+          <Text style={styles.errorBannerText}>{oauthBanner}</Text>
         </View>
       ) : null}
 
@@ -295,9 +312,28 @@ export function SignInForm({
           <View style={styles.dividerLine} />
         </View>
 
-        <Pressable testID="signIn.google" onPress={onGooglePress} style={styles.socialButton}>
+        <Pressable
+          testID="signIn.google"
+          onPress={(): void => {
+            if (!onGooglePress || googleBusy) return;
+            void (async (): Promise<void> => {
+              setGoogleBusy(true);
+              try {
+                await onGooglePress();
+              } finally {
+                setGoogleBusy(false);
+              }
+            })();
+          }}
+          disabled={googleBusy || state.isLoading}
+          style={styles.socialButton}
+        >
           <View style={styles.socialIconSlot}>
-            <Ionicons name="logo-google" size={control.iconLg} color={colors.google} />
+            {googleBusy ? (
+              <ActivityIndicator size="small" color={colors.google} />
+            ) : (
+              <Ionicons name="logo-google" size={control.iconLg} color={colors.google} />
+            )}
           </View>
           <Text style={styles.socialButtonText}>Continuar con Google</Text>
           <View style={styles.socialIconSlot} />

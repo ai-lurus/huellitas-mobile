@@ -1,6 +1,8 @@
 import axios from 'axios';
+import type { InternalAxiosRequestConfig } from 'axios';
+import * as SecureStore from 'expo-secure-store';
 
-import { getSessionTokenAsync, SESSION_TOKEN_KEY } from './sessionTokenStorage';
+import { SESSION_TOKEN_KEY } from './sessionTokenStorage';
 
 export const apiClient = axios.create({
   baseURL: process.env['EXPO_PUBLIC_API_URL'] ?? 'http://localhost:3000',
@@ -8,10 +10,19 @@ export const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-apiClient.interceptors.request.use(async (config) => {
-  const token = await getSessionTokenAsync();
+apiClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
+  const token = await SecureStore.getItemAsync(SESSION_TOKEN_KEY);
   if (token) {
     config.headers['Authorization'] = `Bearer ${token}`;
+  }
+  try {
+    const { getBetterAuthCookieHeader } = await import('./auth.service');
+    const cookie = getBetterAuthCookieHeader();
+    if (cookie) {
+      config.headers['Cookie'] = cookie;
+    }
+  } catch {
+    // Evita dependencias circulares en arranque o tests sin módulo auth
   }
   return config;
 });
