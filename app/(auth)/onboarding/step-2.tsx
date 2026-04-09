@@ -128,7 +128,12 @@ export default function OnboardingStep2Screen(): React.JSX.Element {
           </Text>
           {RATIONALE.map((line) => (
             <View key={line} style={onboardingStyles.rationaleRow}>
-              <Ionicons name="checkmark" size={20} color={colors.black} style={styles.checkIcon} />
+              <Ionicons
+                name="checkmark"
+                size={20}
+                color={colors.textSecondary}
+                style={styles.checkIcon}
+              />
               <Text style={onboardingStyles.rationaleText}>{line}</Text>
             </View>
           ))}
@@ -157,7 +162,7 @@ export default function OnboardingStep2Screen(): React.JSX.Element {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
   },
   scroll: {
     paddingBottom: spacing.xl,

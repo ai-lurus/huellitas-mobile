@@ -84,12 +84,54 @@ function mapSessionUserToAuthUser(user: {
   };
 }
 
+const ORIGIN_403_COPY =
+  'El servidor rechazó la petición (403). Con Expo en el navegador, añade el origen de la app (p. ej. http://localhost:8081) a trustedOrigins o BETTER_AUTH_TRUSTED_ORIGINS en tu API Better Auth y reinicia el servidor.';
+
+const RATE_LIMIT_429_COPY =
+  'Demasiadas peticiones al servidor (429). Espera un minuto sin pulsar de nuevo. En desarrollo, relaja o desactiva el rate limiting de Better Auth (p. ej. opción `rateLimit` en la config del auth).';
+
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null;
+}
+
+function statusFromUnknown(err: unknown): number | null {
+  if (!isRecord(err)) return null;
+  const s = err['status'];
+  const sc = err['statusCode'];
+  if (typeof s === 'number') return s;
+  if (typeof sc === 'number') return sc;
+  return null;
+}
+
 export function formatOAuthErrorMessage(err: unknown): string {
+  const status = statusFromUnknown(err);
+  if (status === 429) {
+    return RATE_LIMIT_429_COPY;
+  }
+  if (status === 403) {
+    return ORIGIN_403_COPY;
+  }
   if (err instanceof BetterFetchError) {
     const msg = err.message?.trim();
-    if (msg) return msg;
+    if (msg) {
+      const lower = msg.toLowerCase();
+      if (lower.includes('429') || lower.includes('too many')) {
+        return RATE_LIMIT_429_COPY;
+      }
+      if (lower.includes('origin') || lower.includes('forbidden') || lower.includes('403')) {
+        return ORIGIN_403_COPY;
+      }
+      return msg;
+    }
   }
   if (err instanceof Error && err.message) {
+    const lower = err.message.toLowerCase();
+    if (lower.includes('429') || lower.includes('too many')) {
+      return RATE_LIMIT_429_COPY;
+    }
+    if (lower.includes('origin') || (lower.includes('403') && lower.includes('forbidden'))) {
+      return ORIGIN_403_COPY;
+    }
     return err.message;
   }
   return 'No pudimos completar el inicio de sesión con Google. Intenta de nuevo en unos minutos.';
@@ -108,27 +150,34 @@ export async function signInWithGoogle(): Promise<GoogleSignInResult> {
     return { status: 'error', message: formatOAuthErrorMessage(err) };
   }
 
-  const session = await authClient.getSession();
-  if (session.error || !session.data?.user) {
-    return { status: 'cancelled' };
+  try {
+    const session = await authClient.getSession();
+    if (session.error || !session.data?.user) {
+      return { status: 'cancelled' };
+    }
+    return { status: 'success' };
+  } catch (err: unknown) {
+    return { status: 'error', message: formatOAuthErrorMessage(err) };
   }
-
-  return { status: 'success' };
 }
 
 export async function syncBetterAuthSessionToAuthStore(): Promise<boolean> {
-  const session = await authClient.getSession();
-  const user = session.data?.user;
-  if (!user) {
+  try {
+    const session = await authClient.getSession();
+    const user = session.data?.user;
+    if (!user) {
+      return false;
+    }
+    useAuthStore.getState().setUser(mapSessionUserToAuthUser(user));
+    return true;
+  } catch {
     return false;
   }
-  useAuthStore.getState().setUser(mapSessionUserToAuthUser(user));
-  return true;
 }
 
 export async function runGoogleSignInFlow(): Promise<{
   result: GoogleSignInResult;
-  navigateTo: '/onboarding' | '/(app)' | null;
+  navigateTo: '/(auth)/onboarding/step-1' | '/(app)' | null;
 }> {
   const result = await signInWithGoogle();
   if (result.status !== 'success') {
@@ -144,6 +193,6 @@ export async function runGoogleSignInFlow(): Promise<{
   const dest = await getPostOAuthDestination();
   return {
     result: { status: 'success' },
-    navigateTo: dest === 'onboarding' ? '/onboarding' : '/(app)',
+    navigateTo: dest === 'onboarding' ? '/(auth)/onboarding/step-1' : '/(app)',
   };
 }

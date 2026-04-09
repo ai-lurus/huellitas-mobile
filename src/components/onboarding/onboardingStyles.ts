@@ -5,6 +5,8 @@ import { colors, control, radius, shadows, spacing, typography } from '../../des
 export const onboardingStyles = StyleSheet.create({
   primaryButton: {
     minHeight: control.minHeight,
+    alignSelf: 'stretch',
+    width: '100%',
     borderRadius: radius.button,
     backgroundColor: colors.primary,
     alignItems: 'center',
@@ -50,7 +52,7 @@ export const onboardingStyles = StyleSheet.create({
   },
   rationaleText: {
     flex: 1,
-    color: colors.textPrimary,
+    color: colors.textSecondary,
     ...typography.body,
   },
 });

@@ -2,9 +2,9 @@ import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { Linking } from 'react-native';
 
-import OnboardingStep1Screen from '../../app/(auth)/onboarding/step-1';
-import OnboardingStep2Screen from '../../app/(auth)/onboarding/step-2';
-import OnboardingStep3Screen from '../../app/(auth)/onboarding/step-3';
+import OnboardingStep1Screen from '@app-onboarding/step-1';
+import OnboardingStep2Screen from '@app-onboarding/step-2';
+import OnboardingStep3Screen from '@app-onboarding/step-3';
 import { usersService } from '../services/usersService';
 import { useAuthStore } from '../stores/authStore';
 import { useOnboardingStore } from '../stores/onboardingStore';
@@ -91,6 +91,20 @@ describe('Onboarding flow', () => {
 
     await waitFor(() => {
       expect(usersService.updateProfile).toHaveBeenCalled();
+      expect(mockReplace).toHaveBeenCalledWith('/(app)');
+    });
+  });
+
+  it('step 1: Omitir todo entra a la app aunque falle el PATCH', async () => {
+    jest
+      .mocked(usersService.updateProfile)
+      .mockRejectedValueOnce(new Error('Request failed with status code 404'));
+
+    const { getByTestId } = render(<OnboardingStep1Screen />);
+
+    fireEvent.press(getByTestId('onboarding.skipAll'));
+
+    await waitFor(() => {
       expect(mockReplace).toHaveBeenCalledWith('/(app)');
     });
   });
@@ -187,6 +201,20 @@ describe('Onboarding flow', () => {
           name: 'Ana García',
         }),
       );
+    });
+  });
+
+  it('step 3: Omitir este paso entra a la app aunque falle el PATCH', async () => {
+    jest
+      .mocked(usersService.updateProfile)
+      .mockRejectedValueOnce(new Error('Request failed with status code 404'));
+
+    const { getByText } = render(<OnboardingStep3Screen />);
+
+    fireEvent.press(getByText('Omitir este paso'));
+
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith('/(app)');
     });
   });
 });

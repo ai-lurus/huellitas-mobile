@@ -63,7 +63,7 @@ export function OnboardingChrome({
             key={i}
             style={[
               styles.progressSegment,
-              i < currentStep ? styles.progressActive : styles.progressInactive,
+              i === currentStep - 1 ? styles.progressActive : styles.progressInactive,
             ]}
           />
         ))}
@@ -78,7 +78,7 @@ export function OnboardingChrome({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
   },

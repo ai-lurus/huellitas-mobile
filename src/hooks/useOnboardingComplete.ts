@@ -43,7 +43,14 @@ export function useOnboardingComplete(): UseOnboardingCompleteResult {
         useOnboardingStore.getState().reset();
         router.replace('/(app)');
       } catch (e) {
-        setSubmitError(e instanceof Error ? e.message : 'No se pudo guardar el perfil');
+        if (__DEV__) {
+          console.warn(
+            '[onboarding] No se pudo sincronizar el perfil; se entra a la app de todos modos.',
+            e,
+          );
+        }
+        useOnboardingStore.getState().reset();
+        router.replace('/(app)');
       } finally {
         setSubmitting(false);
       }

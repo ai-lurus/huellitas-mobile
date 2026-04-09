@@ -12,52 +12,48 @@ import { useOnboardingComplete } from '../../../src/hooks/useOnboardingComplete'
 import { useOnboardingStore } from '../../../src/stores/onboardingStore';
 
 const RATIONALE: string[] = [
-  'Alertas de inicio de sesión sospechoso',
-  'Recordatorios de actualizar contraseñas',
-  'Puedes ajustarlas cuando quieras',
+  'Avisos cuando alguien reporta una mascota cerca',
+  'Recordatorios de tu búsqueda activa',
+  'Puedes desactivarlas en cualquier momento',
 ];
 
 export default function OnboardingStep3Screen(): React.JSX.Element {
   const router = useRouter();
   const setNotificationsGranted = useOnboardingStore((s) => s.setNotificationsGranted);
   const { request, openSettings } = useNotificationPermission();
-  const { complete, submitError, submitting, clearError } = useOnboardingComplete();
+  const { complete, submitting } = useOnboardingComplete();
   const [busy, setBusy] = useState(false);
-  const [phase, setPhase] = useState<'prompt' | 'denied'>('prompt');
+  const [deniedInfo, setDeniedInfo] = useState(false);
 
-  const runComplete = useCallback(async () => {
-    clearError();
-    await complete('normal');
-  }, [complete, clearError]);
+  const skipStep = useCallback(() => {
+    setNotificationsGranted(false);
+    void complete('normal');
+  }, [complete, setNotificationsGranted]);
 
   const skipAll = useCallback(() => {
     void complete('skipAll');
   }, [complete]);
 
-  const skipStep = useCallback(() => {
-    setNotificationsGranted(false);
-    void runComplete();
-  }, [setNotificationsGranted, runComplete]);
-
   const onAllow = useCallback(async () => {
     setBusy(true);
-    clearError();
+    setDeniedInfo(false);
     try {
       const granted = await request();
       setNotificationsGranted(granted);
       if (granted) {
-        await complete('normal');
+        void complete('normal');
       } else {
-        setPhase('denied');
+        setDeniedInfo(true);
       }
     } finally {
       setBusy(false);
     }
-  }, [request, setNotificationsGranted, complete, clearError]);
+  }, [request, setNotificationsGranted, complete]);
 
-  const onFinish = useCallback(() => {
-    void runComplete();
-  }, [runComplete]);
+  const onDoneAfterDeny = useCallback(() => {
+    setNotificationsGranted(false);
+    void complete('normal');
+  }, [complete, setNotificationsGranted]);
 
   const loading = busy || submitting;
 
@@ -68,7 +64,24 @@ export default function OnboardingStep3Screen(): React.JSX.Element {
         showBack
         footer={
           <>
-            {phase === 'prompt' ? (
+            {deniedInfo ? (
+              <Pressable
+                accessibilityRole="button"
+                disabled={loading}
+                onPress={onDoneAfterDeny}
+                style={[
+                  onboardingStyles.primaryButton,
+                  loading && onboardingStyles.primaryButtonDisabled,
+                ]}
+                testID="onboarding.done"
+              >
+                {loading ? (
+                  <ActivityIndicator color={colors.white} />
+                ) : (
+                  <Text style={onboardingStyles.primaryButtonLabel}>Finalizar</Text>
+                )}
+              </Pressable>
+            ) : (
               <Pressable
                 accessibilityRole="button"
                 disabled={loading}
@@ -92,31 +105,16 @@ export default function OnboardingStep3Screen(): React.JSX.Element {
                   </>
                 )}
               </Pressable>
-            ) : (
+            )}
+            {!deniedInfo ? (
               <Pressable
                 accessibilityRole="button"
-                disabled={loading}
-                onPress={onFinish}
-                style={[
-                  onboardingStyles.primaryButton,
-                  loading && onboardingStyles.primaryButtonDisabled,
-                ]}
-                testID="onboarding.done"
+                onPress={skipStep}
+                style={onboardingStyles.textLink}
               >
-                {loading ? (
-                  <ActivityIndicator color={colors.white} />
-                ) : (
-                  <Text style={onboardingStyles.primaryButtonLabel}>Finalizar</Text>
-                )}
+                <Text style={onboardingStyles.textLinkLabel}>Omitir este paso</Text>
               </Pressable>
-            )}
-            <Pressable
-              accessibilityRole="button"
-              onPress={skipStep}
-              style={onboardingStyles.textLink}
-            >
-              <Text style={onboardingStyles.textLinkLabel}>Omitir este paso</Text>
-            </Pressable>
+            ) : null}
           </>
         }
         onBack={() => router.back()}
@@ -126,23 +124,28 @@ export default function OnboardingStep3Screen(): React.JSX.Element {
           <View style={styles.iconCircle}>
             <Ionicons name="notifications" size={48} color={colors.white} />
           </View>
-          <Text style={onboardingStyles.title}>No te pierdas nada importante</Text>
+          <Text style={onboardingStyles.title}>Activa las notificaciones</Text>
           <Text style={onboardingStyles.description}>
-            Activa las notificaciones para recibir alertas de búsqueda y actualizaciones de tu
-            cuenta al instante.
+            Te avisamos cuando haya novedades importantes para ayudarte a encontrar o reportar
+            mascotas.
           </Text>
           {RATIONALE.map((line) => (
             <View key={line} style={onboardingStyles.rationaleRow}>
-              <Ionicons name="checkmark" size={20} color={colors.black} style={styles.checkIcon} />
+              <Ionicons
+                name="checkmark"
+                size={20}
+                color={colors.textSecondary}
+                style={styles.checkIcon}
+              />
               <Text style={onboardingStyles.rationaleText}>{line}</Text>
             </View>
           ))}
-          {phase === 'denied' ? (
+          {deniedInfo ? (
             <View style={styles.deniedBox} testID="onboarding.step3.denied">
-              <Text style={styles.deniedTitle}>Notificaciones desactivadas</Text>
+              <Text style={styles.deniedTitle}>Notificaciones no disponibles</Text>
               <Text style={styles.deniedBody}>
-                Puedes activarlas más tarde en los ajustes del sistema para no perderte alertas
-                importantes.
+                Sin permiso no podremos enviarte alertas. Puedes activarlas cuando quieras en los
+                ajustes del dispositivo.
               </Text>
               <Pressable
                 accessibilityRole="link"
@@ -153,11 +156,6 @@ export default function OnboardingStep3Screen(): React.JSX.Element {
               </Pressable>
             </View>
           ) : null}
-          {submitError ? (
-            <Text style={styles.error} testID="onboarding.submitError">
-              {submitError}
-            </Text>
-          ) : null}
         </ScrollView>
       </OnboardingChrome>
     </SafeAreaView>
@@ -167,7 +165,7 @@ export default function OnboardingStep3Screen(): React.JSX.Element {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
   },
   scroll: {
     paddingBottom: spacing.xl,
@@ -204,11 +202,5 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: spacing.sm,
     ...typography.body,
-  },
-  error: {
-    marginTop: spacing.md,
-    color: colors.danger,
-    ...typography.caption,
-    textAlign: 'center',
   },
 });

@@ -77,6 +77,8 @@ const userSchema = z
 const authSessionSchema = z.object({
   token: z.string().min(1).nullable().optional(),
   user: userSchema,
+  /** Si el API lo envía, controla navegación a onboarding vs home. */
+  isFirstLogin: z.boolean().optional(),
 });
 
 export type AuthUser = z.infer<typeof userSchema>;
@@ -96,7 +98,10 @@ async function signIn(
       await setSessionTokenAsync(parsed.token);
     }
 
-    return { user: parsed.user, isFirstLogin: false };
+    return {
+      user: parsed.user,
+      isFirstLogin: parsed.isFirstLogin ?? false,
+    };
   } catch (err: unknown) {
     throw toFriendlyAuthError(err);
   }
@@ -121,7 +126,10 @@ async function signUp(
     }
     await setSessionTokenAsync(parsed.token);
 
-    return { user: parsed.user, isFirstLogin: true };
+    return {
+      user: parsed.user,
+      isFirstLogin: parsed.isFirstLogin ?? true,
+    };
   } catch (err: unknown) {
     throw toFriendlyAuthError(err);
   }

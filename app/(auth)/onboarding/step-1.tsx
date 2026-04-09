@@ -103,26 +103,28 @@ export default function OnboardingStep1Screen(): React.JSX.Element {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.centerTop}>
-            <View style={styles.avatarWrap}>
-              {avatarUri ? (
-                <Image
-                  accessibilityLabel="Foto de perfil"
-                  source={{ uri: avatarUri }}
-                  style={styles.avatarImg}
-                />
-              ) : (
-                <View style={styles.avatarPlaceholder}>
-                  <Ionicons name="person" size={56} color={colors.white} />
-                </View>
-              )}
-              <Pressable
-                accessibilityRole="button"
-                onPress={pickImage}
-                style={styles.cameraBadge}
-                testID="onboarding.step1.camera"
-              >
-                <Ionicons name="camera" size={18} color={colors.white} />
-              </Pressable>
+            <View style={styles.avatarOuter}>
+              <View style={styles.avatarWrap}>
+                {avatarUri ? (
+                  <Image
+                    accessibilityLabel="Foto de perfil"
+                    source={{ uri: avatarUri }}
+                    style={styles.avatarImg}
+                  />
+                ) : (
+                  <View style={styles.avatarPlaceholder}>
+                    <Ionicons name="person" size={56} color={colors.white} />
+                  </View>
+                )}
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={pickImage}
+                  style={styles.cameraBadge}
+                  testID="onboarding.step1.camera"
+                >
+                  <Ionicons name="camera" size={18} color={colors.white} />
+                </Pressable>
+              </View>
             </View>
 
             <Text style={onboardingStyles.title}>Elige una foto para tu perfil</Text>
@@ -131,7 +133,9 @@ export default function OnboardingStep1Screen(): React.JSX.Element {
             </Text>
 
             <View style={styles.nameCard} testID="onboarding.step1.name">
-              <Ionicons name="person-circle-outline" size={28} color={colors.primary} />
+              <View style={styles.nameIconBox}>
+                <Ionicons name="person-outline" size={22} color={colors.iconMuted} />
+              </View>
               <Text style={styles.nameText}>{displayName}</Text>
               <View style={styles.onlineDot} />
             </View>
@@ -142,10 +146,10 @@ export default function OnboardingStep1Screen(): React.JSX.Element {
               style={styles.uploadBox}
               testID="onboarding.step1.upload"
             >
-              <Ionicons name="image-outline" size={28} color={colors.primary} />
+              <Ionicons name="arrow-up-circle-outline" size={28} color={colors.primary} />
               <View style={styles.uploadTextWrap}>
                 <Text style={styles.uploadTitle}>Subir foto</Text>
-                <Text style={styles.uploadHint}>JPG, PNG - Máx. 5 MB</Text>
+                <Text style={styles.uploadHint}>JPG, PNG · Máx. 5 MB</Text>
               </View>
               <View style={styles.chooseChip}>
                 <Text style={styles.chooseChipLabel}>Elegir</Text>
@@ -183,7 +187,7 @@ export default function OnboardingStep1Screen(): React.JSX.Element {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: colors.surface,
+    backgroundColor: colors.background,
   },
   scrollContent: {
     flexGrow: 1,
@@ -193,8 +197,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: spacing.md,
   },
-  avatarWrap: {
+  avatarOuter: {
     marginBottom: spacing.lg,
+    padding: spacing.xxs,
+    borderRadius: 72,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: colors.surface,
+    backgroundColor: colors.background,
+    ...shadows.md,
+  },
+  avatarWrap: {
+    position: 'relative',
   },
   avatarImg: {
     width: 120,
@@ -222,6 +236,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 3,
     borderColor: colors.surface,
+  },
+  nameIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   nameCard: {
     flexDirection: 'row',
