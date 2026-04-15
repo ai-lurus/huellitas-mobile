@@ -1,8 +1,8 @@
-import { apiClient } from '../api';
+import { httpClient } from '../../network';
 import { usersService } from '../usersService';
 
-jest.mock('../api', () => ({
-  apiClient: {
+jest.mock('../../network', () => ({
+  httpClient: {
     patch: jest.fn(),
   },
 }));
@@ -13,7 +13,7 @@ describe('usersService.updateProfile', () => {
   });
 
   it('envía JSON cuando no hay imagen local', async () => {
-    jest.mocked(apiClient.patch).mockResolvedValue({
+    jest.mocked(httpClient.patch).mockResolvedValue({
       data: { id: '1', name: 'N', email: 'n@test.com', image: null },
     });
 
@@ -23,7 +23,7 @@ describe('usersService.updateProfile', () => {
       notificationsEnabled: true,
     });
 
-    expect(apiClient.patch).toHaveBeenCalledWith('/users/me', {
+    expect(httpClient.patch).toHaveBeenCalledWith('/users/me', {
       name: 'N',
       locationEnabled: false,
       notificationsEnabled: true,
@@ -32,7 +32,7 @@ describe('usersService.updateProfile', () => {
   });
 
   it('usa FormData para URI local de imagen', async () => {
-    jest.mocked(apiClient.patch).mockResolvedValue({
+    jest.mocked(httpClient.patch).mockResolvedValue({
       data: { id: '1', name: 'N', email: 'n@test.com' },
     });
 
@@ -43,7 +43,7 @@ describe('usersService.updateProfile', () => {
       notificationsEnabled: false,
     });
 
-    const [, secondArg, thirdArg] = jest.mocked(apiClient.patch).mock.calls[0] ?? [];
+    const [, secondArg, thirdArg] = jest.mocked(httpClient.patch).mock.calls[0] ?? [];
     expect(secondArg).toBeInstanceOf(FormData);
     expect(thirdArg).toMatchObject({
       headers: { 'Content-Type': 'multipart/form-data' },

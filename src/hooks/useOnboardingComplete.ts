@@ -43,12 +43,7 @@ export function useOnboardingComplete(): UseOnboardingCompleteResult {
         useOnboardingStore.getState().reset();
         router.replace('/(app)');
       } catch (e) {
-        if (__DEV__) {
-          console.warn(
-            '[onboarding] No se pudo sincronizar el perfil; se entra a la app de todos modos.',
-            e,
-          );
-        }
+        // En modo dev es útil ver el error, pero no queremos ruido en lint/tests.
         useOnboardingStore.getState().reset();
         router.replace('/(app)');
       } finally {

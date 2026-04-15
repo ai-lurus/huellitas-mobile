@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import type { AuthUser } from './authService';
-import { apiClient } from './api';
+import { httpClient } from '../network';
 import type { OnboardingProfileUpdatePayload } from '../types/onboarding';
 
 const userSchema = z.object({
@@ -39,7 +39,7 @@ async function updateProfile(payload: OnboardingProfileUpdatePayload): Promise<A
     if (payload.notificationsEnabled != null) {
       form.append('notificationsEnabled', String(payload.notificationsEnabled));
     }
-    const res = await apiClient.patch<unknown>('/users/me', form, {
+    const res = await httpClient.patch<unknown>('/users/me', form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     const parsed = userSchema.parse(res.data);
@@ -65,7 +65,7 @@ async function updateProfile(payload: OnboardingProfileUpdatePayload): Promise<A
   if (payload.notificationsEnabled != null)
     body['notificationsEnabled'] = payload.notificationsEnabled;
 
-  const res = await apiClient.patch<unknown>('/users/me', body);
+  const res = await httpClient.patch<unknown>('/users/me', body);
   const parsed = userSchema.parse(res.data);
   return {
     id: parsed.id,

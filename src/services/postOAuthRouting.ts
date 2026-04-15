@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { z } from 'zod';
 
-import { apiClient } from './api';
+import { httpClient } from '../network';
 
 const meResponseSchema = z.object({
   isFirstLogin: z.boolean().optional(),
@@ -23,7 +23,7 @@ const meResponseSchema = z.object({
  */
 export async function getPostOAuthDestination(): Promise<'onboarding' | 'app'> {
   try {
-    const res = await apiClient.get<unknown>('/users/me');
+    const res = await httpClient.get<unknown>('/users/me');
     const parsed = meResponseSchema.safeParse(res.data);
     if (!parsed.success) {
       return 'app';

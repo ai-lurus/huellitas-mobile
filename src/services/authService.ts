@@ -2,7 +2,7 @@ import { isAxiosError } from 'axios';
 import { z } from 'zod';
 
 import { getSignInPath, getSignUpPath } from '../config/authEndpoints';
-import { apiClient } from './api';
+import { httpClient } from '../network';
 import { setSessionTokenAsync } from './sessionTokenStorage';
 
 function toFriendlyAuthError(err: unknown): Error {
@@ -91,7 +91,7 @@ async function signIn(
   isFirstLogin: boolean;
 }> {
   try {
-    const res = await apiClient.post(getSignInPath(), { email, password });
+    const res = await httpClient.post(getSignInPath(), { email, password });
     const parsed = authSessionSchema.parse(res.data);
 
     if (parsed.token) {
@@ -116,7 +116,7 @@ async function signUp(
   isFirstLogin: boolean;
 }> {
   try {
-    const res = await apiClient.post(getSignUpPath(), { name, email, password });
+    const res = await httpClient.post(getSignUpPath(), { name, email, password });
     const parsed = authSessionSchema.parse(res.data);
 
     if (!parsed.token) {
