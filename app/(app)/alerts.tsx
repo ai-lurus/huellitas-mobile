@@ -2,11 +2,10 @@ import { View, Text, StyleSheet } from 'react-native';
 
 import { colors, spacing, typography } from '../../src/design/tokens';
 
-export default function HomeScreen(): React.JSX.Element {
+export default function AlertsScreen(): React.JSX.Element {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Inicio</Text>
-      <Text style={styles.sub}>Contenido del feed principal (próximamente).</Text>
+      <Text style={styles.text}>Alerta</Text>
     </View>
   );
 }
@@ -19,11 +18,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundApp,
     padding: spacing.lg,
   },
-  title: { color: colors.textPrimary, ...typography.heading },
-  sub: {
-    color: colors.textSecondary,
-    ...typography.body,
-    textAlign: 'center',
-    marginTop: spacing.sm,
+  text: {
+    color: colors.textPrimary,
+    ...typography.bodyStrong,
   },
 });

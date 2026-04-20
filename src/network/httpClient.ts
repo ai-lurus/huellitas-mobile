@@ -15,9 +15,14 @@ export const httpClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+function isAnonymousEmailAuthPath(url: string | undefined): boolean {
+  if (!url) return false;
+  return url.includes('/sign-in/email') || url.includes('/sign-up/email');
+}
+
 httpClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) => {
   const token = await getSessionTokenAsync();
-  if (token) {
+  if (token && !isAnonymousEmailAuthPath(config.url)) {
     config.headers['Authorization'] = `Bearer ${token}`;
   }
 
