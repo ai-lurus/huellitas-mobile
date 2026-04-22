@@ -1,5 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { z } from 'zod';
 
@@ -8,6 +16,7 @@ import { authService } from '../../services/authService';
 import { useAuthStore } from '../../stores/authStore';
 
 const AUTH_ERROR_COPY = 'Correo o contraseña incorrectos. Verifica tus datos e intenta de nuevo.';
+import BRAND_LOGO from '../../../assets/icon.png';
 
 function formatSubmitError(err: unknown): string {
   if (err instanceof Error && err.message) {
@@ -175,7 +184,11 @@ export function SignInForm({
   return (
     <View style={styles.container}>
       <View style={styles.branding}>
-        <Ionicons name="paw-outline" size={control.logo} color={colors.primary} />
+        <Image
+          source={BRAND_LOGO}
+          style={styles.brandLogo}
+          accessibilityLabel="Logo de Huellitas"
+        />
         <Text style={styles.brandTitle}>Huellitas</Text>
         <Text style={styles.brandSubtitle}>Encuentra a tu mascota perdida</Text>
       </View>
@@ -369,6 +382,11 @@ const styles = StyleSheet.create({
   branding: {
     alignItems: 'center',
     marginBottom: spacing.xl,
+  },
+  brandLogo: {
+    width: control.logo,
+    height: control.logo,
+    resizeMode: 'contain',
   },
   brandTitle: {
     marginTop: spacing.sm,

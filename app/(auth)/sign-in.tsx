@@ -37,7 +37,7 @@ export default function SignInScreen(): React.JSX.Element {
             oauthError={oauthError}
             onSuccess={({ isFirstLogin }) => {
               if (isFirstLogin) {
-                router.replace('/onboarding');
+                router.replace('/(auth)/onboarding/step-1');
                 return;
               }
               router.replace('/(app)');

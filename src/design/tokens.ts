@@ -16,6 +16,7 @@ export const colors = {
   successIcon: '#2E7D32',
   iconMuted: '#6B7280',
   google: '#4285F4',
+  accent: '#FF8A34',
   white: '#FFFFFF',
   black: '#000000',
 } as const;

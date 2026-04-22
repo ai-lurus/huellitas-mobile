@@ -22,6 +22,7 @@ jest.mock('../../config/env', () => ({
     EXPO_PUBLIC_API_URL: 'http://localhost:3000',
     EXPO_PUBLIC_MAP_API_KEY: 'x',
     EXPO_PUBLIC_BETTER_AUTH_URL: 'http://localhost:3000/api/auth',
+    EXPO_PUBLIC_OAUTH_CALLBACK_PATH: 'http://localhost:8081/auth/callback',
     EXPO_PUBLIC_ENV: 'development',
   },
 }));
@@ -41,5 +42,13 @@ describe('auth.service OAuth helpers', () => {
 
   it('formatOAuthErrorMessage propaga el mensaje de Error', () => {
     expect(formatOAuthErrorMessage(new Error('Red no disponible'))).toBe('Red no disponible');
+  });
+
+  it('formatOAuthErrorMessage explica trustedOrigins ante 403', () => {
+    expect(formatOAuthErrorMessage({ status: 403 })).toMatch(/trustedOrigins/);
+  });
+
+  it('formatOAuthErrorMessage explica rate limit ante 429', () => {
+    expect(formatOAuthErrorMessage({ status: 429 })).toMatch(/429/);
   });
 });

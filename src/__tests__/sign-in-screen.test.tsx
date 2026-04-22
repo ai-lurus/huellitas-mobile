@@ -79,7 +79,7 @@ describe('SignInScreen', () => {
     fireEvent.press(getByTestId('signIn.submit'));
 
     await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith('/onboarding');
+      expect(mockReplace).toHaveBeenCalledWith('/(auth)/onboarding/step-1');
     });
   });
 
@@ -118,7 +118,7 @@ describe('SignInScreen', () => {
   it('navega a onboarding tras Google OAuth cuando el backend indica primer acceso', async () => {
     runGoogleSignInFlow.mockResolvedValueOnce({
       result: { status: 'success' },
-      navigateTo: '/onboarding',
+      navigateTo: '/(auth)/onboarding/step-1',
     });
 
     const { getByTestId } = render(<SignInScreen />);
@@ -126,7 +126,7 @@ describe('SignInScreen', () => {
     fireEvent.press(getByTestId('signIn.google'));
 
     await waitFor(() => {
-      expect(mockReplace).toHaveBeenCalledWith('/onboarding');
+      expect(mockReplace).toHaveBeenCalledWith('/(auth)/onboarding/step-1');
     });
   });
 
