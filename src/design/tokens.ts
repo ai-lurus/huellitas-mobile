@@ -2,8 +2,12 @@ import type { TextStyle, ViewStyle } from 'react-native';
 
 export const colors = {
   background: '#FAFAFA',
+  /** Fondo tipo app (Mis mascotas / home) */
+  backgroundApp: '#F9F8F6',
   surface: '#FFFFFF',
   primary: '#5E72E4',
+  /** Texto / acentos de navegación activa (Inicio, Alerta…) */
+  navActive: '#FF6B35',
   textPrimary: '#1E2A44',
   textSecondary: '#8E94A3',
   textMuted: 'rgba(60, 60, 70, 0.38)',
@@ -17,6 +21,9 @@ export const colors = {
   iconMuted: '#6B7280',
   google: '#4285F4',
   accent: '#FF8A34',
+  /** Caja info límite mascotas */
+  infoBorder: '#5E72E4',
+  infoBackground: 'rgba(94, 114, 228, 0.06)',
   white: '#FFFFFF',
   black: '#000000',
 } as const;
