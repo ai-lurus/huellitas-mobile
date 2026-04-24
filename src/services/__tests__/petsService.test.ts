@@ -5,6 +5,7 @@ jest.mock('../../network', () => ({
   httpClient: {
     post: jest.fn(),
     get: jest.fn(),
+    patch: jest.fn(),
     delete: jest.fn(),
   },
 }));
@@ -72,6 +73,68 @@ describe('petsService', () => {
     it('devuelve [] si la respuesta no es un array', async () => {
       jest.mocked(httpClient.get).mockResolvedValueOnce({ data: {} });
       await expect(petsService.listPets()).resolves.toEqual([]);
+    });
+
+    it('mapea photoUrl desde images[{url}] cuando el backend no manda photoUrl', async () => {
+      jest.mocked(httpClient.get).mockResolvedValueOnce({
+        data: [
+          {
+            id: '1',
+            name: 'Luna',
+            species: 'cat',
+            images: [{ url: 'https://cdn.test/a.jpg' }, { url: 'https://cdn.test/b.jpg' }],
+          },
+        ],
+      });
+
+      const list = await petsService.listPets();
+      expect(list[0]?.photoUrl).toBe('https://cdn.test/a.jpg');
+    });
+  });
+
+  describe('getPet', () => {
+    it('normaliza photos desde images[{url}]', async () => {
+      jest.mocked(httpClient.get).mockResolvedValueOnce({
+        data: {
+          id: 'pet_1',
+          name: 'Luna',
+          species: 'cat',
+          sex: 'female',
+          images: [{ url: 'https://cdn.test/a.jpg' }, { url: 'https://cdn.test/b.jpg' }],
+        },
+      });
+
+      const pet = await petsService.getPet('pet_1');
+      expect(pet.photos).toEqual(['https://cdn.test/a.jpg', 'https://cdn.test/b.jpg']);
+    });
+  });
+
+  describe('updatePet', () => {
+    it('PATCH /api/v1/pets/:id con el payload', async () => {
+      jest.mocked(httpClient.patch).mockResolvedValueOnce({
+        data: { id: 'pet_1', name: 'Max', species: 'dog', sex: 'male' },
+      });
+
+      const pet = await petsService.updatePet('pet_1', {
+        name: 'Max',
+        species: 'dog',
+        sex: 'male',
+        breed: 'Golden',
+        color: 'Dorado',
+        age: 3,
+        notes: 'ok',
+      });
+
+      expect(httpClient.patch).toHaveBeenCalledWith('/api/v1/pets/pet_1', {
+        name: 'Max',
+        species: 'dog',
+        sex: 'male',
+        breed: 'Golden',
+        color: 'Dorado',
+        age: 3,
+        notes: 'ok',
+      });
+      expect(pet.id).toBe('pet_1');
     });
   });
 

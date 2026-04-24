@@ -23,6 +23,12 @@ export type CreatePetDto = {
   notes?: string;
 };
 
+export type UpdatePetDto = Partial<CreatePetDto> & {
+  name: string;
+  species: PetSpecies;
+  sex: PetSex;
+};
+
 const uploadPetPhotoResponseSchema = z.object({
   url: z.string().optional(),
   id: z.string().optional(),
@@ -57,6 +63,97 @@ function readPetId(record: Record<string, unknown>): string | undefined {
   return undefined;
 }
 
+function readNonEmptyString(v: unknown): string | undefined {
+  if (typeof v !== 'string') return undefined;
+  const s = v.trim();
+  return s.length > 0 ? s : undefined;
+}
+
+function pushPhotoUrl(out: string[], url: string | undefined): void {
+  if (!url) return;
+  const trimmed = url.trim();
+  if (!trimmed) return;
+  if (!out.includes(trimmed)) out.push(trimmed);
+}
+
+function extractPhotoUrlFromItem(item: unknown): string | undefined {
+  if (typeof item === 'string') return readNonEmptyString(item);
+  if (!isRecord(item)) return undefined;
+  return (
+    readNonEmptyString(item.url) ??
+    readNonEmptyString(item.uri) ??
+    readNonEmptyString(item.path) ??
+    readNonEmptyString(item.src) ??
+    readNonEmptyString(item.photoUrl) ??
+    readNonEmptyString(item.imageUrl)
+  );
+}
+
+/**
+ * Normaliza distintas formas comunes de payload de fotos del backend a `string[]`.
+ * Ejemplos: `photos: string[]`, `images: {url}[]`, `media: [{url}]`, etc.
+ */
+function normalizePhotoUrlsFromRecord(record: Record<string, unknown>): string[] {
+  const out: string[] = [];
+
+  const candidates: unknown[] = [
+    record['photos'],
+    record['images'],
+    record['imageUrls'],
+    record['photoUrls'],
+    record['gallery'],
+    record['media'],
+    record['attachments'],
+  ];
+
+  for (const c of candidates) {
+    if (!Array.isArray(c)) continue;
+    for (const item of c) {
+      pushPhotoUrl(out, extractPhotoUrlFromItem(item));
+    }
+  }
+
+  // A veces viene un solo objeto en vez de array
+  for (const key of ['photo', 'image', 'coverPhoto', 'avatar', 'profilePhoto'] as const) {
+    const v = record[key];
+    pushPhotoUrl(out, extractPhotoUrlFromItem(v));
+  }
+
+  // URLs sueltas (prioridad baja; se agregan al final si no estaban)
+  for (const key of ['photoUrl', 'imageUrl', 'coverUrl', 'avatarUrl'] as const) {
+    pushPhotoUrl(out, readNonEmptyString(record[key]));
+  }
+
+  return out.slice(0, 25);
+}
+
+function mergePetRecordWithNormalizedPhotos(
+  record: Record<string, unknown>,
+  petId: string,
+): Record<string, unknown> {
+  const normalized = normalizePhotoUrlsFromRecord(record);
+  const existing = Array.isArray(record['photos'])
+    ? (record['photos'] as unknown[]).flatMap((p) => {
+        const u = extractPhotoUrlFromItem(p);
+        return u ? [u] : [];
+      })
+    : [];
+
+  const mergedPhotos = [...existing, ...normalized].filter((u, idx, arr) => arr.indexOf(u) === idx);
+
+  const photoUrl =
+    readNonEmptyString(record['photoUrl']) ??
+    readNonEmptyString(record['imageUrl']) ??
+    (mergedPhotos.length > 0 ? mergedPhotos[0] : undefined);
+
+  return {
+    ...record,
+    id: typeof record['id'] === 'string' && record['id'].length > 0 ? record['id'] : petId,
+    photos: mergedPhotos.length > 0 ? mergedPhotos.slice(0, 5) : record['photos'],
+    ...(photoUrl ? { photoUrl } : null),
+  };
+}
+
 async function createPet(data: CreatePetDto): Promise<Pet> {
   const res = await httpClient.post<unknown>('/api/v1/pets', data);
   const body = unwrapCreatedPetBody(res.data);
@@ -69,7 +166,8 @@ async function createPet(data: CreatePetDto): Promise<Pet> {
       'El servidor no devolvió el id de la mascota. Revisa el contrato del POST /pets.',
     );
   }
-  return petSchema.parse({ ...body, id });
+  const merged = mergePetRecordWithNormalizedPhotos(body, id);
+  return petSchema.parse(merged);
 }
 
 async function listPets(): Promise<PetSummary[]> {
@@ -78,11 +176,50 @@ async function listPets(): Promise<PetSummary[]> {
     const body = res.data;
     const list = Array.isArray(body) ? body : (body as { data?: unknown })?.data;
     if (!Array.isArray(list)) return [];
-    const parsed = z.array(petSummarySchema).safeParse(list);
+    const parsedList = z.array(z.record(z.string(), z.unknown())).safeParse(list);
+    if (!parsedList.success) return [];
+
+    const normalized = parsedList.data.map((raw) => {
+      if (!isRecord(raw)) return raw;
+      const photos = normalizePhotoUrlsFromRecord(raw);
+      const photoUrl =
+        readNonEmptyString(raw['photoUrl']) ?? readNonEmptyString(raw['imageUrl']) ?? photos[0];
+      return { ...raw, photoUrl: photoUrl ?? raw['photoUrl'] };
+    });
+
+    const parsed = z.array(petSummarySchema).safeParse(normalized);
     return parsed.success ? parsed.data : [];
   } catch {
     return [];
   }
+}
+
+async function getPet(petId: string): Promise<Pet> {
+  const res = await httpClient.get<unknown>(`/api/v1/pets/${petId}`);
+  const body = res.data;
+  const record = isRecord(body)
+    ? isRecord(body.data)
+      ? body.data
+      : isRecord(body.pet)
+        ? body.pet
+        : body
+    : {};
+  const merged = mergePetRecordWithNormalizedPhotos(isRecord(record) ? record : {}, petId);
+  return petSchema.parse(merged);
+}
+
+async function updatePet(petId: string, data: UpdatePetDto): Promise<Pet> {
+  const res = await httpClient.patch<unknown>(`/api/v1/pets/${petId}`, data);
+  const body = res.data;
+  const record = isRecord(body)
+    ? isRecord(body.data)
+      ? body.data
+      : isRecord(body.pet)
+        ? body.pet
+        : body
+    : {};
+  const merged = mergePetRecordWithNormalizedPhotos(isRecord(record) ? record : {}, petId);
+  return petSchema.parse(merged);
 }
 
 async function deletePet(petId: string): Promise<void> {
@@ -111,5 +248,7 @@ export const petsService = {
   createPet,
   uploadPetPhoto,
   listPets,
+  getPet,
+  updatePet,
   deletePet,
 };
