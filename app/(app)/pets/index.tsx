@@ -1,20 +1,11 @@
 import React, { useCallback } from 'react';
-import {
-  ActivityIndicator,
-  FlatList,
-  Image,
-  Pressable,
-  RefreshControl,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { PetSummaryCard } from '../../../src/components/pets/PetSummaryCard';
+import { PetCard, PetCardSkeleton } from '../../../src/components/pets/PetCard';
 import { colors, radius, shadows, spacing, typography } from '../../../src/design/tokens';
 import { usePets } from '../../../src/hooks/usePets';
 import { MAX_PETS_PER_USER } from '../../../src/services/petsService';
@@ -67,9 +58,12 @@ export default function PetsScreen(): React.ReactElement {
       </View>
 
       {isLoading ? (
-        <View style={styles.loading}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
+        <FlatList
+          data={[1, 2, 3, 4]}
+          keyExtractor={(i) => String(i)}
+          contentContainerStyle={styles.listContent}
+          renderItem={() => <PetCardSkeleton />}
+        />
       ) : isEmpty ? (
         <View style={styles.emptyWrap}>
           <View style={styles.pawOuter}>
@@ -82,9 +76,9 @@ export default function PetsScreen(): React.ReactElement {
               />
             </View>
           </View>
-          <Text style={styles.emptyTitle}>Sin mascotas aún</Text>
+          <Text style={styles.emptyTitle}>Add your first pet</Text>
           <Text style={styles.emptySubtitle}>
-            Agrega tu primera mascota y mantén su perfil siempre actualizado.
+            Crea la tarjeta de tu mascota para mantener su info al día.
           </Text>
         </View>
       ) : (
@@ -120,7 +114,7 @@ export default function PetsScreen(): React.ReactElement {
               </View>
             )
           }
-          renderItem={({ item }) => <PetSummaryCard pet={item} onPress={() => openPet(item.id)} />}
+          renderItem={({ item }) => <PetCard pet={item} onPress={() => openPet(item.id)} />}
         />
       )}
 

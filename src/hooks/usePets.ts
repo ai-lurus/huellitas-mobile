@@ -6,16 +6,31 @@ import { petsService } from '../services/petsService';
 import type { PetFormSubmitPayload } from '../components/pets/PetForm';
 
 export const PETS_QUERY_KEY = ['pets'] as const;
+export const petQueryKey = (id: string) => ['pets', id] as const;
 
 export function usePets(): {
+  /** API “simple” para pantallas (según ticket). */
+  pets: ReturnType<typeof usePetsQuery>['data'];
+  isLoading: boolean;
+  refetch: ReturnType<typeof usePetsQuery>['refetch'];
+  deleteMutation: ReturnType<typeof useDeletePetMutation>;
+
+  /** API extendida (compatibilidad con pantallas existentes). */
   createPetMutation: ReturnType<typeof useCreatePetMutation>;
   petsQuery: ReturnType<typeof usePetsQuery>;
   deletePetMutation: ReturnType<typeof useDeletePetMutation>;
 } {
+  const petsQuery = usePetsQuery();
+  const deletePetMutation = useDeletePetMutation();
   return {
+    pets: petsQuery.data ?? [],
+    isLoading: petsQuery.isPending,
+    refetch: petsQuery.refetch,
+    deleteMutation: deletePetMutation,
+
     createPetMutation: useCreatePetMutation(),
-    petsQuery: usePetsQuery(),
-    deletePetMutation: useDeletePetMutation(),
+    petsQuery,
+    deletePetMutation,
   };
 }
 
@@ -33,6 +48,37 @@ function useDeletePetMutation() {
     mutationFn: (petId: string) => petsService.deletePet(petId),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: PETS_QUERY_KEY });
+    },
+  });
+}
+
+export function usePet(petId: string) {
+  return useQuery({
+    queryKey: petQueryKey(petId),
+    queryFn: () => petsService.getPet(petId),
+    enabled: Boolean(petId),
+    staleTime: 15000,
+  });
+}
+
+export function useUpdatePetMutation(petId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: PetFormSubmitPayload) =>
+      petsService.updatePet(petId, {
+        name: data.name,
+        species: data.species,
+        sex: data.sex,
+        breed: data.breed,
+        color: data.color,
+        age: data.age,
+        notes: data.notes,
+      }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: PETS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: petQueryKey(petId) }),
+      ]);
     },
   });
 }
