@@ -21,6 +21,10 @@ export function AppTabBar({
     <View style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
       <View style={styles.row}>
         {state.routes.map((route, index) => {
+          // Evita duplicados cuando hay rutas anidadas (p. ej. profile/settings)
+          if (route.name.includes('/')) {
+            return null;
+          }
           const { options } = descriptors[route.key];
           const label =
             options.title != null && String(options.title).length > 0
