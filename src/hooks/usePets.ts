@@ -5,6 +5,19 @@ import type { CreatePetDto } from '../services/petsService';
 import { petsService } from '../services/petsService';
 import type { PetFormSubmitPayload } from '../components/pets/PetForm';
 
+/** URIs que aún no están en el servidor y deben subirse con `uploadPetPhoto`. */
+function isLocalPetPhotoUri(uri: string): boolean {
+  const s = uri.trim();
+  if (!s) return false;
+  const lower = s.toLowerCase();
+  return (
+    lower.startsWith('file:') ||
+    lower.startsWith('content:') ||
+    lower.startsWith('ph://') ||
+    lower.startsWith('assets-library://')
+  );
+}
+
 export const PETS_QUERY_KEY = ['pets'] as const;
 export const petQueryKey = (id: string) => ['pets', id] as const;
 
@@ -64,8 +77,8 @@ export function usePet(petId: string) {
 export function useUpdatePetMutation(petId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: PetFormSubmitPayload) =>
-      petsService.updatePet(petId, {
+    mutationFn: async (data: PetFormSubmitPayload): Promise<Pet> => {
+      await petsService.updatePet(petId, {
         name: data.name,
         species: data.species,
         sex: data.sex,
@@ -73,7 +86,14 @@ export function useUpdatePetMutation(petId: string) {
         color: data.color,
         age: data.age,
         notes: data.notes,
-      }),
+      });
+      const photos = data.photos ?? [];
+      const localUris = photos.filter(isLocalPetPhotoUri).slice(0, 5);
+      if (localUris.length > 0) {
+        await Promise.all(localUris.map((uri) => petsService.uploadPetPhoto(petId, uri)));
+      }
+      return petsService.getPet(petId);
+    },
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: PETS_QUERY_KEY }),

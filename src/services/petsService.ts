@@ -120,7 +120,15 @@ function normalizePhotoUrlsFromRecord(record: Record<string, unknown>): string[]
   }
 
   // URLs sueltas (prioridad baja; se agregan al final si no estaban)
-  for (const key of ['photoUrl', 'imageUrl', 'coverUrl', 'avatarUrl'] as const) {
+  for (const key of [
+    'photoUrl',
+    'imageUrl',
+    'coverUrl',
+    'coverPhotoUrl',
+    'coverPhotoURL',
+    'coverImageUrl',
+    'avatarUrl',
+  ] as const) {
     pushPhotoUrl(out, readNonEmptyString(record[key]));
   }
 
@@ -144,6 +152,9 @@ function mergePetRecordWithNormalizedPhotos(
   const photoUrl =
     readNonEmptyString(record['photoUrl']) ??
     readNonEmptyString(record['imageUrl']) ??
+    readNonEmptyString(record['coverPhotoUrl']) ??
+    readNonEmptyString(record['coverPhotoURL']) ??
+    readNonEmptyString(record['coverImageUrl']) ??
     (mergedPhotos.length > 0 ? mergedPhotos[0] : undefined);
 
   return {
