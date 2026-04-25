@@ -9,10 +9,52 @@ const userSchema = z.object({
   name: z.string(),
   email: z.string().email(),
   image: z.union([z.string().url(), z.null()]).optional(),
+  alertRadiusKm: z.number().optional(),
+  alertsEnabled: z.boolean().optional(),
+  notificationsEnabled: z.boolean().optional(),
+  emailAlertsEnabled: z.boolean().optional(),
 });
+
+const meSchema = userSchema;
 
 function isLocalImageUri(uri: string): boolean {
   return uri.startsWith('file:') || uri.startsWith('content:') || uri.startsWith('ph://');
+}
+
+export interface UserSettingsPatchPayload {
+  alertRadiusKm?: number;
+  alertsEnabled?: boolean;
+  notificationsEnabled?: boolean;
+  emailAlertsEnabled?: boolean;
+}
+
+export type MeProfile = {
+  user: AuthUser;
+  settings: {
+    alertRadiusKm?: number;
+    alertsEnabled?: boolean;
+    pushNotificationsEnabled?: boolean;
+    emailAlertsEnabled?: boolean;
+  };
+};
+
+async function getMe(): Promise<MeProfile> {
+  const res = await httpClient.get<unknown>('/users/me');
+  const parsed = meSchema.parse(res.data);
+  return {
+    user: {
+      id: parsed.id,
+      name: parsed.name,
+      email: parsed.email,
+      image: parsed.image ?? undefined,
+    },
+    settings: {
+      alertRadiusKm: parsed.alertRadiusKm,
+      alertsEnabled: parsed.alertsEnabled,
+      pushNotificationsEnabled: parsed.notificationsEnabled,
+      emailAlertsEnabled: parsed.emailAlertsEnabled,
+    },
+  };
 }
 
 async function updateProfile(payload: OnboardingProfileUpdatePayload): Promise<AuthUser> {
@@ -75,6 +117,24 @@ async function updateProfile(payload: OnboardingProfileUpdatePayload): Promise<A
   };
 }
 
+async function patchSettings(payload: UserSettingsPatchPayload): Promise<MeProfile['settings']> {
+  const res = await httpClient.patch<unknown>('/users/me', payload);
+  const parsed = userSchema.parse(res.data);
+  return {
+    alertRadiusKm: parsed.alertRadiusKm,
+    alertsEnabled: parsed.alertsEnabled,
+    pushNotificationsEnabled: parsed.notificationsEnabled,
+    emailAlertsEnabled: parsed.emailAlertsEnabled,
+  };
+}
+
+async function deleteAccount(): Promise<void> {
+  await httpClient.delete('/users/me');
+}
+
 export const usersService = {
+  getMe,
   updateProfile,
+  patchSettings,
+  deleteAccount,
 };

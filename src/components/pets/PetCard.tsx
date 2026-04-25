@@ -109,7 +109,7 @@ export function PetCardSkeleton(): React.ReactElement {
   return (
     <View style={styles.card} accessibilityLabel="Cargando mascota">
       <View style={styles.row}>
-        <View style={[styles.avatarOuter, styles.skeleton]} />
+        <View style={[styles.avatarOuter, styles.skeletonAvatar]} />
         <View style={styles.textCol}>
           <View style={styles.skeletonLineRow}>
             <View style={[styles.skeletonLine, { width: '55%' }]} />
@@ -159,6 +159,11 @@ const styles = StyleSheet.create({
   meta: { color: colors.textSecondary, ...typography.caption, flexShrink: 1 },
 
   skeleton: { backgroundColor: '#ECEFF5' },
+  skeletonAvatar: {
+    backgroundColor: '#ECEFF5',
+    borderWidth: 0,
+    borderColor: 'transparent',
+  },
   skeletonLineRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   skeletonLine: {
     height: 14,

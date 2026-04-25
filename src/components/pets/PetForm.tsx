@@ -102,7 +102,8 @@ export function PetForm({
       }
 
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        // `MediaTypeOptions` está deprecado en versiones nuevas.
+        mediaTypes: ['images'],
         allowsMultipleSelection: true,
         selectionLimit: remainingPhotos,
         quality: 0.85,
