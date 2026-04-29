@@ -4,4 +4,6 @@ export const DEFAULT_ALERT_RADIUS_KM = 3;
 export const MAX_ALERTS_PER_DAY = 3;
 export const POLLING_INTERVAL_MS = 30_000;
 export const LOCATION_UPDATE_THRESHOLD_METERS = 100;
+/** Si el usuario rechaza el diálogo de ubicación en segundo plano, no volver a mostrarlo. */
+export const STORAGE_KEY_LOCATION_BG_PROMPT_DECLINED = '@huellitas/location_bg_prompt_declined';
 export const MAX_PET_NOTES_LENGTH = 300;

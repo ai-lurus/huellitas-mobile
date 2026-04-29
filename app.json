@@ -38,7 +38,13 @@
     "plugins": [
       "expo-font",
       "expo-router",
-      "expo-location",
+      [
+        "expo-location",
+        {
+          "isAndroidBackgroundLocationEnabled": true,
+          "isIosBackgroundLocationEnabled": true
+        }
+      ],
       [
         "expo-notifications",
         {

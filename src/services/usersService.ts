@@ -28,6 +28,11 @@ export interface UserSettingsPatchPayload {
   emailAlertsEnabled?: boolean;
 }
 
+export interface UserLocationPayload {
+  lat: number;
+  lng: number;
+}
+
 export type MeProfile = {
   user: AuthUser;
   settings: {
@@ -132,9 +137,14 @@ async function deleteAccount(): Promise<void> {
   await httpClient.delete('/users/me');
 }
 
+async function patchMyLocation(payload: UserLocationPayload): Promise<void> {
+  await httpClient.patch('/users/me/location', payload);
+}
+
 export const usersService = {
   getMe,
   updateProfile,
   patchSettings,
+  patchMyLocation,
   deleteAccount,
 };
