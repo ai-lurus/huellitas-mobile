@@ -79,6 +79,21 @@ function normalizeLostReport(raw: unknown, params: NearbyLostReportsParams): Los
     asString(record.created_at) ??
     new Date().toISOString();
 
+  const kindRaw =
+    asString(record.reportKind) ??
+    asString(record.kind) ??
+    asString(record.reportType) ??
+    asString(record.status);
+  const lower = kindRaw?.toLowerCase() ?? '';
+  const reportKind =
+    lower === 'sighted' ||
+    lower === 'seen' ||
+    lower === 'visto' ||
+    lower === 'avistado' ||
+    lower === 'spotting'
+      ? ('sighted' as const)
+      : ('lost' as const);
+
   const parsed = lostReportSchema.safeParse({
     id: asString(record.id) ?? asString(record.reportId),
     lat: coords.lat,
@@ -92,6 +107,7 @@ function normalizeLostReport(raw: unknown, params: NearbyLostReportsParams): Los
       asNumber(record.distance) ??
       distanceMeters({ lat: params.lat, lng: params.lng }, coords),
     createdAt,
+    reportKind,
   });
   return parsed.success ? parsed.data : null;
 }

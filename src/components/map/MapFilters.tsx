@@ -5,22 +5,17 @@ import { colors, radius, spacing, typography } from '../../design/tokens';
 
 interface MapFiltersProps {
   selected: LostReportSpeciesFilter;
-  activeCount: number;
   onChange: (next: LostReportSpeciesFilter) => void;
 }
 
-const FILTERS: Array<{ key: LostReportSpeciesFilter; label: string }> = [
-  { key: 'all', label: 'Todos' },
-  { key: 'dog', label: 'Perro' },
-  { key: 'cat', label: 'Gato' },
-  { key: 'other', label: 'Otros' },
+const FILTERS: Array<{ key: LostReportSpeciesFilter; label: string; dotColor: string }> = [
+  { key: 'all', label: 'Todos', dotColor: '#5E72E4' },
+  { key: 'dog', label: 'Perdidos', dotColor: '#FF6B35' },
+  { key: 'cat', label: 'Avistados', dotColor: '#3B82F6' },
+  { key: 'other', label: 'Resueltos', dotColor: '#22C55E' },
 ];
 
-export function MapFilters({
-  selected,
-  activeCount,
-  onChange,
-}: MapFiltersProps): React.JSX.Element {
+export function MapFilters({ selected, onChange }: MapFiltersProps): React.JSX.Element {
   return (
     <View style={styles.container} testID="map.filters">
       <View style={styles.row}>
@@ -35,6 +30,9 @@ export function MapFilters({
               style={[styles.chip, isSelected && styles.chipSelected]}
               testID={`map.filter.${filter.key}`}
             >
+              {filter.key === 'all' ? null : (
+                <View style={[styles.dot, { backgroundColor: filter.dotColor }]} />
+              )}
               <Text style={[styles.chipLabel, isSelected && styles.chipLabelSelected]}>
                 {filter.label}
               </Text>
@@ -42,23 +40,14 @@ export function MapFilters({
           );
         })}
       </View>
-      <View style={styles.badge} testID="map.active-count">
-        <Text style={styles.badgeLabel}>{activeCount} activos</Text>
-      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
-    top: spacing.md,
-    left: spacing.md,
-    right: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
   },
   row: {
     flexDirection: 'row',
@@ -71,11 +60,19 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   chipSelected: {
     borderColor: colors.primary,
     backgroundColor: colors.primary,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   chipLabel: {
     ...typography.caption,
@@ -83,17 +80,5 @@ const styles = StyleSheet.create({
   },
   chipLabelSelected: {
     color: colors.white,
-  },
-  badge: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  badgeLabel: {
-    ...typography.caption,
-    color: colors.textPrimary,
   },
 });

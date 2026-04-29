@@ -1,7 +1,7 @@
 import React from 'react';
 import { fireEvent, render } from '@testing-library/react-native';
 
-import HomeScreen from '../../app/(app)/index';
+import MapScreen from '../../app/(app)/map';
 import type { LostReport } from '../domain/lostReports';
 import { useLostReports } from '../hooks/useLostReports';
 import { useLocationStore } from '../stores/locationStore';
@@ -77,6 +77,7 @@ const baseReports: LostReport[] = [
     petPhotoUrl: null,
     distanceMeters: 120,
     createdAt: '2026-04-28T18:00:00.000Z',
+    reportKind: 'lost',
   },
   {
     id: 'r2',
@@ -88,10 +89,11 @@ const baseReports: LostReport[] = [
     petPhotoUrl: null,
     distanceMeters: 240,
     createdAt: '2026-04-28T18:30:00.000Z',
+    reportKind: 'lost',
   },
 ];
 
-describe('Home map screen', () => {
+describe('Map tab screen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     useLocationStore.getState().reset();
@@ -104,20 +106,20 @@ describe('Home map screen', () => {
   });
 
   it('renderiza markers para cada reporte', () => {
-    const { getByTestId } = render(<HomeScreen />);
+    const { getByTestId } = render(<MapScreen />);
     expect(getByTestId('marker.r1')).toBeTruthy();
     expect(getByTestId('marker.r2')).toBeTruthy();
   });
 
   it('filtra markers por especie sin refetch', () => {
-    const { getByTestId, queryByTestId } = render(<HomeScreen />);
+    const { getByTestId, queryByTestId } = render(<MapScreen />);
     fireEvent.press(getByTestId('map.filter.dog'));
     expect(getByTestId('marker.r1')).toBeTruthy();
     expect(queryByTestId('marker.r2')).toBeNull();
   });
 
   it('tap en callout navega al detalle del reporte', () => {
-    const { getByTestId } = render(<HomeScreen />);
+    const { getByTestId } = render(<MapScreen />);
     fireEvent.press(getByTestId('marker.callout.r1'));
     expect(mockPush).toHaveBeenCalledWith('/(app)/reports/r1');
   });
