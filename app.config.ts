@@ -17,5 +17,13 @@ export default ({ config }: ConfigContext): ExpoConfig =>
       EXPO_PUBLIC_SENTRY_DSN: process.env.EXPO_PUBLIC_SENTRY_DSN,
       EXPO_PUBLIC_BETTER_AUTH_URL: process.env.EXPO_PUBLIC_BETTER_AUTH_URL,
       EXPO_PUBLIC_ENV: process.env.EXPO_PUBLIC_ENV,
+      eas: {
+        ...((config.extra as { eas?: Record<string, unknown> } | undefined)?.eas ?? {}),
+        projectId:
+          process.env.EXPO_PUBLIC_EAS_PROJECT_ID ??
+          ((config.extra as { eas?: { projectId?: string } } | undefined)?.eas?.projectId as
+            | string
+            | undefined),
+      },
     },
   }) as ExpoConfig;

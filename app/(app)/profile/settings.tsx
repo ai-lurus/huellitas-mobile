@@ -21,6 +21,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { colors, radius, shadows, spacing, typography } from '../../../src/design/tokens';
 import { deleteSessionTokenAsync } from '../../../src/services/sessionTokenStorage';
 import { authClient } from '../../../src/services/auth.service';
+import { notificationsService } from '../../../src/services/notificationsService';
 import { usersService } from '../../../src/services/usersService';
 import { useAuthStore } from '../../../src/stores/authStore';
 import { useSettingsStore } from '../../../src/stores/settingsStore';
@@ -150,6 +151,8 @@ export default function SettingsScreen({
     } catch {
       // Si Better Auth falla, igualmente limpiamos sesión local.
     }
+    await notificationsService.deletePushToken().catch(() => {});
+    await notificationsService.clearStoredExpoPushToken().catch(() => {});
     await deleteSessionTokenAsync().catch(() => {});
     useAuthStore.getState().clearAuth();
     useSettingsStore.getState().reset();
