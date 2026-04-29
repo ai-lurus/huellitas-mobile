@@ -122,11 +122,12 @@ async function getNearby(params: NearbyLostReportsParams): Promise<LostReport[]>
   });
 
   const body = response.data;
+  const bodyRec = asRecord(body);
   const list =
     (Array.isArray(body) ? body : null) ??
-    (asRecord(body) && Array.isArray(body.data) ? body.data : null) ??
-    (asRecord(body) && Array.isArray(body.items) ? body.items : null) ??
-    (asRecord(body) && Array.isArray(body.reports) ? body.reports : null) ??
+    (bodyRec && Array.isArray(bodyRec.data) ? bodyRec.data : null) ??
+    (bodyRec && Array.isArray(bodyRec.items) ? bodyRec.items : null) ??
+    (bodyRec && Array.isArray(bodyRec.reports) ? bodyRec.reports : null) ??
     [];
 
   return z
@@ -136,6 +137,67 @@ async function getNearby(params: NearbyLostReportsParams): Promise<LostReport[]>
     .filter((item): item is LostReport => item !== null);
 }
 
+export interface CreateLostReportDto {
+  lat: number;
+  lng: number;
+  /** ISO 8601 */
+  lastSeenAt: string;
+  message?: string | null;
+}
+
+export interface CreateLostReportResult {
+  id: string;
+  notifiedUsersCount?: number;
+  searchRadiusKm?: number;
+}
+
+function pickIdFromRecord(record: Record<string, unknown> | null): string | undefined {
+  if (!record) return undefined;
+  return asString(record.id) ?? asString(record.reportId);
+}
+
+function normalizeCreateLostReportResponse(data: unknown): CreateLostReportResult {
+  const root = asRecord(data);
+  if (!root) {
+    throw new Error('Respuesta inválida al crear reporte');
+  }
+  const nested = asRecord(root.data) ?? asRecord(root.report) ?? root;
+  const id = pickIdFromRecord(nested) ?? pickIdFromRecord(root);
+  if (!id) {
+    throw new Error('Respuesta inválida al crear reporte');
+  }
+  const notified =
+    asNumber(root.notifiedUsersCount) ??
+    asNumber(root.notifiedCount) ??
+    asNumber(nested.notifiedUsersCount);
+  const searchRadiusKm =
+    asNumber(root.searchRadiusKm) ?? asNumber(nested.searchRadiusKm) ?? asNumber(root.radiusKm);
+  return {
+    id,
+    notifiedUsersCount: notified,
+    searchRadiusKm,
+  };
+}
+
+async function createLostReport(
+  petId: string,
+  dto: CreateLostReportDto,
+): Promise<CreateLostReportResult> {
+  const response = await httpClient.post<unknown>(
+    `/api/v1/pets/${encodeURIComponent(petId)}/lost-reports`,
+    {
+      lat: dto.lat,
+      lng: dto.lng,
+      lastSeenAt: dto.lastSeenAt,
+      ...(dto.message != null && String(dto.message).trim().length > 0
+        ? { message: dto.message.trim() }
+        : {}),
+    },
+  );
+  return normalizeCreateLostReportResponse(response.data);
+}
+
 export const reportsService = {
   getNearby,
+  createLostReport,
 };

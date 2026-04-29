@@ -71,7 +71,7 @@ export default function PetDetailScreen(): React.ReactElement {
         pet={pet}
         onBack={() => router.back()}
         onEdit={() => router.push(`/(app)/pets/${petId}/edit`)}
-        onReportLost={() => router.push(`/(app)/pets/${petId}/lost-report`)}
+        onReportLost={() => router.push(`/(app)/pets/${petId}/report-lost`)}
         onMarkFound={() => router.push(`/(app)/pets/${petId}/found`)}
         onDelete={confirmDelete}
       />

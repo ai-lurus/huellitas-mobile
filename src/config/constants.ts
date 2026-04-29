@@ -8,3 +8,5 @@ export const LOCATION_UPDATE_THRESHOLD_METERS = 100;
 /** Si el usuario rechaza el diálogo de ubicación en segundo plano, no volver a mostrarlo. */
 export const STORAGE_KEY_LOCATION_BG_PROMPT_DECLINED = '@huellitas/location_bg_prompt_declined';
 export const MAX_PET_NOTES_LENGTH = 300;
+/** Mensaje opcional al reportar mascota perdida (FE-012). */
+export const MAX_LOST_REPORT_MESSAGE_LENGTH = 500;
