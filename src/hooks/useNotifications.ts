@@ -121,9 +121,20 @@ export function useNotifications(): void {
         await AsyncStorage.setItem(STORAGE_KEY_PUSH_PERMISSION_PROMPTED, '1');
       }
       await syncExpoPushToken();
-      const last = await Notifications.getLastNotificationResponseAsync();
-      if (last?.notification) {
-        handleNotificationTap(last.notification.request.content.data);
+      // En web, `getLastNotificationResponseAsync` puede no existir si no hay dependencias nativas.
+      if (Platform.OS === 'web') return;
+      if (typeof Notifications.getLastNotificationResponseAsync !== 'function') return;
+
+      try {
+        const last = await Notifications.getLastNotificationResponseAsync();
+        if (last?.notification) {
+          handleNotificationTap(last.notification.request.content.data);
+        }
+      } catch (e) {
+        Sentry.captureException(e, {
+          level: 'warning',
+          extra: { where: 'getLastNotificationResponseAsync' },
+        });
       }
     })();
 
