@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, spacing, typography } from '../../src/design/tokens';
 
@@ -6,7 +6,9 @@ export default function HomeScreen(): React.JSX.Element {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Inicio</Text>
-      <Text style={styles.sub}>Contenido del feed principal (próximamente).</Text>
+      <Text style={styles.sub}>
+        Desde la pestaña Mapa puedes ver reportes cercanos en tiempo real.
+      </Text>
     </View>
   );
 }

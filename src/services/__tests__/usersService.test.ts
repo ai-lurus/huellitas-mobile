@@ -7,6 +7,20 @@ jest.mock('../../network', () => ({
   },
 }));
 
+describe('usersService.patchMyLocation', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('envía PATCH a /users/me/location', async () => {
+    jest.mocked(httpClient.patch).mockResolvedValue({ data: {} });
+
+    await usersService.patchMyLocation({ lat: 40.4, lng: -3.7 });
+
+    expect(httpClient.patch).toHaveBeenCalledWith('/users/me/location', { lat: 40.4, lng: -3.7 });
+  });
+});
+
 describe('usersService.updateProfile', () => {
   beforeEach(() => {
     jest.clearAllMocks();
