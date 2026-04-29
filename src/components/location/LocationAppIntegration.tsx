@@ -97,43 +97,47 @@ export function LocationAppIntegration(): React.JSX.Element | null {
 
   if (foregroundStatus === 'denied') {
     return (
-      <View
-        style={[styles.banner, styles.bannerAbsolute, { paddingTop: insets.top }]}
-        accessibilityRole="alert"
-        testID="location.permission.denied.banner"
-      >
-        <Text style={styles.bannerText}>
-          Sin acceso a la ubicación no podremos mostrarte alertas cercanas. Activa el permiso en
-          Ajustes.
-        </Text>
-        <Pressable
-          accessibilityRole="button"
-          onPress={openSettings}
-          style={styles.bannerButton}
-          testID="location.permission.openSettings"
+      <View pointerEvents="box-none" style={styles.overlayRoot}>
+        <View
+          style={[styles.banner, { paddingTop: insets.top + spacing.sm }]}
+          accessibilityRole="alert"
+          testID="location.permission.denied.banner"
         >
-          <Text style={styles.bannerButtonLabel}>Abrir ajustes</Text>
-        </Pressable>
+          <Text style={styles.bannerText}>
+            Sin acceso a la ubicación no podremos mostrarte alertas cercanas. Activa el permiso en
+            Ajustes.
+          </Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={openSettings}
+            style={styles.bannerButton}
+            testID="location.permission.openSettings"
+          >
+            <Text style={styles.bannerButtonLabel}>Abrir ajustes</Text>
+          </Pressable>
+        </View>
       </View>
     );
   }
 
   if (locationError) {
     return (
-      <View
-        style={[styles.bannerMuted, styles.bannerAbsolute, { paddingTop: insets.top }]}
-        accessibilityRole="alert"
-        testID="location.gps.error.banner"
-      >
-        <Text style={styles.bannerText}>{locationError}</Text>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => setLocationError(null)}
-          style={styles.dismissLink}
-          testID="location.error.dismiss"
+      <View pointerEvents="box-none" style={styles.overlayRoot}>
+        <View
+          style={[styles.bannerMuted, { paddingTop: insets.top + spacing.sm }]}
+          accessibilityRole="alert"
+          testID="location.gps.error.banner"
         >
-          <Text style={styles.dismissLinkLabel}>Cerrar</Text>
-        </Pressable>
+          <Text style={styles.bannerText}>{locationError}</Text>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setLocationError(null)}
+            style={styles.dismissLink}
+            testID="location.error.dismiss"
+          >
+            <Text style={styles.dismissLinkLabel}>Cerrar</Text>
+          </Pressable>
+        </View>
       </View>
     );
   }
@@ -142,12 +146,17 @@ export function LocationAppIntegration(): React.JSX.Element | null {
 }
 
 const styles = StyleSheet.create({
-  bannerAbsolute: {
+  overlayRoot: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    zIndex: 100,
+    zIndex: 200,
+  },
+  bannerAbsolute: {
+    zIndex: 201,
+    elevation: 8,
+    width: '100%',
   },
   banner: {
     backgroundColor: colors.dangerSoft,

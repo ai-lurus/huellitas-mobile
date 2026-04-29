@@ -6,8 +6,10 @@ import { StatusBar } from 'expo-status-bar';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
 
 import { LocationAppIntegration } from '../src/components/location/LocationAppIntegration';
+import { NotificationBootstrap } from '../src/components/notifications/NotificationBootstrap';
 import { colors } from '../src/design/tokens';
 import { authClient } from '../src/services/auth.service';
 
@@ -54,7 +56,9 @@ export default function RootLayout(): React.JSX.Element {
           <AuthDeepLinkSync />
           <StatusBar style="dark" backgroundColor={colors.background} />
           <Stack screenOptions={{ headerShown: false }} />
+          <NotificationBootstrap />
           <LocationAppIntegration />
+          <Toast />
         </View>
       </QueryClientProvider>
     </SafeAreaProvider>
