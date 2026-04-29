@@ -6,6 +6,7 @@ import { useRouter, type Href } from 'expo-router';
 import { AlertMarker } from '../../src/components/map/AlertMarker';
 import { HuellitasMap } from '../../src/components/map/HuellitasMap';
 import { MapFilters } from '../../src/components/map/MapFilters';
+import { Skeleton } from '../../src/components/skeleton/Skeleton';
 import type { LostReport, LostReportSpeciesFilter } from '../../src/domain/lostReports';
 import { colors, radius, spacing, typography } from '../../src/design/tokens';
 import { useLostReports } from '../../src/hooks/useLostReports';
@@ -63,6 +64,10 @@ export default function MapScreen(): React.JSX.Element {
 
       <View style={styles.mapCard}>
         <HuellitasMap containerStyle={styles.mapInner} showCenterButton={false}>
+          {reportsQuery.isPending ? (
+            <Skeleton style={StyleSheet.absoluteFillObject} borderRadius={18} />
+          ) : null}
+
           <View style={styles.mapChips}>
             <View style={styles.smallChip}>
               <Ionicons color={colors.textSecondary} name="location" size={12} />

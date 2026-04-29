@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 import type { LostReport } from '../domain/lostReports';
 import { lostReportSchema } from '../domain/lostReports';
+import type { LostReportDetail, LostReportSighting } from '../domain/lostReportDetail';
+import { lostReportDetailSchema, lostReportSightingSchema } from '../domain/lostReportDetail';
 import { petSpeciesSchema } from '../domain/pets';
 import { httpClient } from '../network';
 import { distanceMeters } from '../utils/geo';
@@ -63,6 +65,189 @@ function pickPhotoUrl(pet: Record<string, unknown>): string | undefined {
   return undefined;
 }
 
+function guessImageMimeType(uri: string): string {
+  const lower = uri.toLowerCase();
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.webp')) return 'image/webp';
+  return 'image/jpeg';
+}
+
+function extractPhotoUrls(record: Record<string, unknown>): string[] {
+  const out: string[] = [];
+
+  const push = (u: string | undefined): void => {
+    if (u == null) return;
+    const trimmed = u.trim();
+    if (!trimmed) return;
+    if (!out.includes(trimmed)) out.push(trimmed);
+  };
+
+  const candidates: unknown[] = [
+    record['photos'],
+    record['images'],
+    record['photoUrls'],
+    record['gallery'],
+    record['media'],
+    record['attachments'],
+  ];
+
+  for (const candidate of candidates) {
+    if (!Array.isArray(candidate)) continue;
+    for (const item of candidate) {
+      if (typeof item === 'string') push(item);
+      else if (typeof item === 'object' && item != null) {
+        const r = item as Record<string, unknown>;
+        push(
+          asString(r['url']) ??
+            asString(r['uri']) ??
+            asString(r['imageUrl']) ??
+            asString(r['photoUrl']),
+        );
+      }
+    }
+  }
+
+  for (const k of ['photoUrl', 'imageUrl', 'coverPhotoUrl', 'coverImageUrl', 'avatarUrl']) {
+    push(asString(record[k]));
+  }
+
+  return out.slice(0, 25);
+}
+
+function normalizeUserSummary(
+  raw: unknown,
+): { id: string; name: string; imageUrl?: string } | null {
+  const record = asRecord(raw);
+  if (!record) return null;
+
+  const id = asString(record.id) ?? asString(record.userId) ?? asString(record.ownerId);
+  const name = asString(record.name) ?? asString(record.fullName) ?? asString(record.username);
+  if (!id || !name) return null;
+
+  return {
+    id,
+    name,
+    imageUrl: asString(record.imageUrl) ?? asString(record.image) ?? asString(record.avatarUrl),
+  };
+}
+
+function normalizeSighting(raw: unknown): LostReportSighting | null {
+  const record = asRecord(raw);
+  if (!record) return null;
+
+  const id = asString(record.id) ?? asString(record.sightingId);
+  const createdAt =
+    asString(record.createdAt) ?? asString(record.created_at) ?? asString(record.timestamp);
+  if (!id || !createdAt) return null;
+
+  const user =
+    normalizeUserSummary(
+      record.user ?? record.author ?? record.reportedBy ?? record.by ?? record,
+    ) ?? null;
+  if (!user) return null;
+
+  const nestedCoordsRecord = asRecord(record.location ?? record.coords ?? record.coordinate);
+  const coords =
+    pickCoordinates(record) ?? (nestedCoordsRecord ? pickCoordinates(nestedCoordsRecord) : null);
+  if (!coords) return null;
+
+  const notes = asString(record.notes) ?? asString(record.note) ?? asString(record.description);
+  const photoUrls = extractPhotoUrls(record);
+
+  const parsed = lostReportSightingSchema.safeParse({
+    id,
+    createdAt,
+    user: {
+      id: user.id,
+      name: user.name,
+      imageUrl: user.imageUrl,
+    },
+    location: coords,
+    notes,
+    photoUrls: photoUrls.length > 0 ? photoUrls : undefined,
+  });
+
+  return parsed.success ? parsed.data : null;
+}
+
+function toMetersFromPossibleRadiusKm(radius: number): number {
+  // Heurística: si está entre 1..80, asumimos km.
+  if (radius >= 1 && radius <= 80) return radius * 1000;
+  return radius;
+}
+
+function normalizeLostReportDetailBase(raw: unknown): Omit<LostReportDetail, 'sightings'> | null {
+  const record = asRecord(raw);
+  if (!record) return null;
+
+  const pet = asRecord(record.pet) ?? asRecord(record.petInfo) ?? record;
+
+  const speciesRaw =
+    asString(pet.species) ?? asString(record.petSpecies) ?? asString(record.species) ?? 'other';
+  const species = petSpeciesSchema.safeParse(speciesRaw.toLowerCase());
+
+  const petName =
+    asString(pet.name) ?? asString(record.petName) ?? asString(record.name) ?? 'Mascota';
+  const petBreed = asString(pet.breed) ?? asString(record.petBreed) ?? null;
+  const petPhotoUrl = pickPhotoUrl(pet);
+
+  const nestedCoordsRecord = asRecord(record.location ?? record.coords ?? record.coordinate);
+  const lossLocation =
+    pickCoordinates(record) ?? (nestedCoordsRecord ? pickCoordinates(nestedCoordsRecord) : null);
+  if (!lossLocation) return null;
+
+  const radiusKm =
+    asNumber(record.lossRadiusKm) ??
+    asNumber(record.radiusKm) ??
+    asNumber(record.searchRadiusKm) ??
+    asNumber(record.searchRadius);
+  const radiusMeters =
+    asNumber(record.lossRadiusMeters) ?? asNumber(record.radiusMeters) ?? asNumber(record.radius);
+
+  const lossRadiusMeters =
+    radiusMeters && radiusMeters > 0
+      ? radiusMeters
+      : radiusKm && radiusKm > 0
+        ? toMetersFromPossibleRadiusKm(radiusKm)
+        : undefined;
+
+  const ownerId =
+    asString(record.ownerId) ?? asString(record.reportedBy) ?? asString(record.userId);
+  const resolvedAt = asString(record.resolvedAt) ?? asString(record.resolved_at);
+
+  const parsed = lostReportDetailSchema.safeParse({
+    id: asString(record.id) ?? asString(record.reportId),
+    ownerId,
+    petName,
+    petSpecies: species.success ? species.data : 'other',
+    petBreed,
+    petPhotoUrl: petPhotoUrl ?? null,
+    lossLocation,
+    lossRadiusMeters,
+    resolvedAt: resolvedAt ?? null,
+    sightings: [],
+  });
+
+  return parsed.success ? { ...parsed.data } : null;
+}
+
+function normalizeSightingsList(raw: unknown): LostReportSighting[] {
+  const record = asRecord(raw);
+  const list =
+    (Array.isArray(raw) ? raw : null) ??
+    (record && Array.isArray(record.data) ? record.data : null) ??
+    (record && Array.isArray(record.items) ? record.items : null) ??
+    (record && Array.isArray(record.sightings) ? record.sightings : null) ??
+    [];
+
+  const parsed = z.array(z.unknown()).safeParse(list);
+  if (!parsed.success) return [];
+
+  return parsed.data
+    .map((item) => normalizeSighting(item))
+    .filter((s): s is LostReportSighting => s != null);
+}
+
 function normalizeLostReport(raw: unknown, params: NearbyLostReportsParams): LostReport | null {
   const record = asRecord(raw);
   if (!record) return null;
@@ -85,12 +270,21 @@ function normalizeLostReport(raw: unknown, params: NearbyLostReportsParams): Los
     asString(record.reportType) ??
     asString(record.status);
   const lower = kindRaw?.toLowerCase() ?? '';
-  const reportKind =
-    lower === 'sighted' ||
-    lower === 'seen' ||
-    lower === 'visto' ||
-    lower === 'avistado' ||
-    lower === 'spotting'
+  const resolvedAt = asString(record.resolvedAt) ?? asString(record.resolved_at);
+  const isResolved =
+    resolvedAt != null ||
+    lower === 'resolved' ||
+    lower === 'found' ||
+    lower === 'encontrado' ||
+    lower === 'resuelto';
+
+  const reportKind = isResolved
+    ? ('resolved' as const)
+    : lower === 'sighted' ||
+        lower === 'seen' ||
+        lower === 'visto' ||
+        lower === 'avistado' ||
+        lower === 'spotting'
       ? ('sighted' as const)
       : ('lost' as const);
 
@@ -102,6 +296,18 @@ function normalizeLostReport(raw: unknown, params: NearbyLostReportsParams): Los
     petBreed: asString(pet.breed) ?? asString(record.petBreed) ?? null,
     petSpecies: species.success ? species.data : 'other',
     petPhotoUrl: pickPhotoUrl(pet) ?? null,
+    description:
+      asString(record.message) ??
+      asString(record.description) ??
+      asString(record.details) ??
+      asString(record.notes) ??
+      undefined,
+    locationLabel:
+      asString(record.locationLabel) ??
+      asString(record.location) ??
+      asString(record.address) ??
+      asString(record.city) ??
+      undefined,
     distanceMeters:
       asNumber(record.distanceMeters) ??
       asNumber(record.distance) ??
@@ -151,6 +357,18 @@ export interface CreateLostReportResult {
   searchRadiusKm?: number;
 }
 
+export interface CreateLostReportSightingDto {
+  lat: number;
+  lng: number;
+  notes?: string | null;
+  /** URIs locales (file:// / content://) que el servicio convertirá a `multipart/form-data`. */
+  photoUris: string[];
+}
+
+export interface ResolveLostReportResult {
+  resolvedAt?: string;
+}
+
 function pickIdFromRecord(record: Record<string, unknown> | null): string | undefined {
   if (!record) return undefined;
   return asString(record.id) ?? asString(record.reportId);
@@ -197,7 +415,72 @@ async function createLostReport(
   return normalizeCreateLostReportResponse(response.data);
 }
 
+async function getLostReportDetail(reportId: string): Promise<LostReportDetail> {
+  const response = await httpClient.get<unknown>(
+    `/api/v1/lost-reports/${encodeURIComponent(reportId)}`,
+  );
+  const base = normalizeLostReportDetailBase(response.data);
+  if (!base) {
+    throw new Error('Respuesta inválida al cargar el detalle del reporte');
+  }
+
+  // Si el backend no incluye `sightings` dentro del detalle, intentamos fetch separado.
+  let sightings: LostReportSighting[] = [];
+  try {
+    const sightingsRes = await httpClient.get<unknown>(
+      `/api/v1/lost-reports/${encodeURIComponent(reportId)}/sightings`,
+    );
+    sightings = normalizeSightingsList(sightingsRes.data);
+  } catch (e) {
+    // eslint-disable-next-line no-console
+    console.error('getLostReportDetail: fallo al cargar sightings:', e);
+  }
+
+  return {
+    ...base,
+    sightings,
+  };
+}
+
+async function createSighting(reportId: string, dto: CreateLostReportSightingDto): Promise<void> {
+  const form = new FormData();
+  form.append('lat', String(dto.lat));
+  form.append('lng', String(dto.lng));
+  if (dto.notes != null && String(dto.notes).trim().length > 0) {
+    form.append('notes', String(dto.notes).trim());
+  }
+
+  for (const uri of dto.photoUris) {
+    const filename = uri.split('/').pop() ?? 'sighting.jpg';
+    const ext = filename.includes('.') ? filename.split('.').pop()?.toLowerCase() : undefined;
+    const mimeType = ext ? guessImageMimeType(`.${ext}`) : guessImageMimeType(filename);
+    form.append('photos', {
+      uri,
+      name: filename.includes('.') ? filename : 'sighting.jpg',
+      type: mimeType,
+    } as unknown as Blob);
+  }
+
+  await httpClient.post(`/api/v1/lost-reports/${encodeURIComponent(reportId)}/sightings`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+}
+
+async function resolveLostReport(reportId: string): Promise<ResolveLostReportResult> {
+  const res = await httpClient.patch<unknown>(
+    `/api/v1/lost-reports/${encodeURIComponent(reportId)}/resolve`,
+    {},
+  );
+
+  const record = asRecord(res.data) ?? {};
+  const resolvedAt = asString(record.resolvedAt) ?? asString(record.resolved_at);
+  return { resolvedAt };
+}
+
 export const reportsService = {
   getNearby,
   createLostReport,
+  getLostReportDetail,
+  createSighting,
+  resolveLostReport,
 };
