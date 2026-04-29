@@ -1,17 +1,24 @@
 import React from 'react';
 import { AppState } from 'react-native';
 import { render, waitFor } from '@testing-library/react-native';
+import * as Sentry from '@sentry/react-native';
 import { STORAGE_KEY_PUSH_LAST_EXPO_TOKEN } from '../../config/constants';
 import { notificationsService } from '../../services/notificationsService';
 import { useAuthStore } from '../../stores/authStore';
 import { useNotifications } from '../useNotifications';
 
 const mockRouterPush = jest.fn();
+const mockRouterReplace = jest.fn();
 
 jest.mock('expo-router', () => ({
   router: {
     push: (...args: unknown[]): void => mockRouterPush(...args),
+    replace: (...args: unknown[]): void => mockRouterReplace(...args),
   },
+}));
+
+jest.mock('@sentry/react-native', () => ({
+  captureMessage: jest.fn(),
 }));
 
 jest.mock('react-native-toast-message', () => ({
@@ -134,6 +141,99 @@ describe('useNotifications', () => {
     }
 
     expect(mockRouterPush).toHaveBeenCalledWith('/(app)/reports/rep_99');
+  });
+
+  it('tap en background navega al reporte correcto', async () => {
+    useAuthStore.setState({
+      user: { id: 'u1', name: 'A', email: 'a@test.com' },
+      isAuthenticated: true,
+    });
+
+    const Notifications =
+      jest.requireMock<typeof import('expo-notifications')>('expo-notifications');
+    let responseHandler: ((response: unknown) => void) | undefined;
+    jest.mocked(Notifications.addNotificationResponseReceivedListener).mockImplementation((cb) => {
+      responseHandler = cb as (response: unknown) => void;
+      return { remove: jest.fn() };
+    });
+
+    render(<TestHost />);
+
+    await waitFor(() => {
+      expect(jest.mocked(Notifications.addNotificationResponseReceivedListener)).toHaveBeenCalled();
+    });
+
+    responseHandler?.({
+      notification: {
+        request: {
+          content: {
+            data: { reportId: 'rep_bg' },
+          },
+        },
+      },
+    });
+
+    expect(mockRouterPush).toHaveBeenCalledWith('/(app)/reports/rep_bg');
+  });
+
+  it('tap en app cerrada usa getLastNotificationResponseAsync y navega', async () => {
+    useAuthStore.setState({
+      user: { id: 'u1', name: 'A', email: 'a@test.com' },
+      isAuthenticated: true,
+    });
+
+    const Notifications =
+      jest.requireMock<typeof import('expo-notifications')>('expo-notifications');
+    jest.mocked(Notifications.getLastNotificationResponseAsync).mockResolvedValueOnce({
+      notification: {
+        request: {
+          content: {
+            data: { reportId: 'rep_closed' },
+          },
+        },
+      },
+    } as unknown as Awaited<ReturnType<typeof Notifications.getLastNotificationResponseAsync>>);
+
+    render(<TestHost />);
+
+    await waitFor(() => {
+      expect(jest.mocked(Notifications.getLastNotificationResponseAsync)).toHaveBeenCalled();
+      expect(mockRouterPush).toHaveBeenCalledWith('/(app)/reports/rep_closed');
+    });
+  });
+
+  it('payload inválido redirige a inicio y reporta a Sentry', async () => {
+    useAuthStore.setState({
+      user: { id: 'u1', name: 'A', email: 'a@test.com' },
+      isAuthenticated: true,
+    });
+
+    const Notifications =
+      jest.requireMock<typeof import('expo-notifications')>('expo-notifications');
+    let responseHandler: ((response: unknown) => void) | undefined;
+    jest.mocked(Notifications.addNotificationResponseReceivedListener).mockImplementation((cb) => {
+      responseHandler = cb as (response: unknown) => void;
+      return { remove: jest.fn() };
+    });
+
+    render(<TestHost />);
+
+    await waitFor(() => {
+      expect(jest.mocked(Notifications.addNotificationResponseReceivedListener)).toHaveBeenCalled();
+    });
+
+    responseHandler?.({
+      notification: {
+        request: {
+          content: {
+            data: {},
+          },
+        },
+      },
+    });
+
+    expect(mockRouterReplace).toHaveBeenCalledWith('/(app)');
+    expect(jest.mocked(Sentry.captureMessage)).toHaveBeenCalled();
   });
 
   it('re-sincroniza el token al volver la app a activa', async () => {

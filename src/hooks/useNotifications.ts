@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Sentry from '@sentry/react-native';
 import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { useEffect } from 'react';
@@ -13,6 +14,8 @@ import {
 import { pushNotificationDataSchema } from '../domain/pushNotifications';
 import { notificationsService } from '../services/notificationsService';
 import { useAuthStore } from '../stores/authStore';
+
+const HOME_ROUTE = '/(app)';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -30,11 +33,25 @@ function resolveEasProjectId(): string | undefined {
   );
 }
 
-function navigateToReportIfValid(data: unknown): void {
+function navigateToReportIfValid(data: unknown): boolean {
   const parsed = pushNotificationDataSchema.safeParse(data);
-  if (!parsed.success) return;
-  if (!useAuthStore.getState().isAuthenticated) return;
+  if (!parsed.success) {
+    Sentry.captureMessage('Malformed notification payload: missing/invalid reportId', {
+      level: 'warning',
+      extra: { data },
+    });
+    return false;
+  }
+  if (!useAuthStore.getState().isAuthenticated) return false;
   router.push(`/(app)/reports/${parsed.data.reportId}`);
+  return true;
+}
+
+function handleNotificationTap(data: unknown): void {
+  const ok = navigateToReportIfValid(data);
+  if (!ok && useAuthStore.getState().isAuthenticated) {
+    router.replace(HOME_ROUTE);
+  }
 }
 
 async function syncExpoPushToken(): Promise<void> {
@@ -88,7 +105,7 @@ export function useNotifications(): void {
     });
 
     const responseSub = Notifications.addNotificationResponseReceivedListener((response) => {
-      navigateToReportIfValid(response.notification.request.content.data);
+      handleNotificationTap(response.notification.request.content.data);
     });
 
     const appStateSub = AppState.addEventListener('change', (next) => {
@@ -106,7 +123,7 @@ export function useNotifications(): void {
       await syncExpoPushToken();
       const last = await Notifications.getLastNotificationResponseAsync();
       if (last?.notification) {
-        navigateToReportIfValid(last.notification.request.content.data);
+        handleNotificationTap(last.notification.request.content.data);
       }
     })();
 
