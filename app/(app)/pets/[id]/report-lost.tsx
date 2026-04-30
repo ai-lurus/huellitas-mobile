@@ -41,7 +41,7 @@ import BIRD_DEFAULT from '../../../../assets/pet-defaults/bird.png';
 import RABBIT_DEFAULT from '../../../../assets/pet-defaults/rabbit.png';
 import OTHER_DEFAULT from '../../../../assets/pet-defaults/other.png';
 
-type Step = 'details' | 'location' | 'preview';
+type Step = 'location' | 'details' | 'preview';
 
 function defaultCoverForSpecies(species: string | undefined): number {
   switch (species) {
@@ -82,7 +82,7 @@ export default function ReportLostScreen(): React.ReactElement {
   const alertRadiusKm = useSettingsStore((s) => s.alertRadiusKm);
   const insets = useSafeAreaInsets();
 
-  const [step, setStep] = useState<Step>('details');
+  const [step, setStep] = useState<Step>('location');
   const [pinLocation, setPinLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [showDate, setShowDate] = useState(false);
   const [showTime, setShowTime] = useState(false);
@@ -113,24 +113,24 @@ export default function ReportLostScreen(): React.ReactElement {
   }, [pet?.photos]);
 
   const onBack = useCallback((): void => {
-    if (step === 'details') {
+    if (step === 'location') {
       router.back();
       return;
     }
-    if (step === 'location') {
-      setStep('details');
+    if (step === 'details') {
+      setStep('location');
       return;
     }
-    setStep('location');
+    setStep('details');
   }, [router, step]);
 
   const onDetailsNext = handleSubmit(() => {
-    setStep('location');
+    setStep('preview');
   });
 
   const onLocationConfirm = useCallback((): void => {
     if (pinLocation == null) return;
-    setStep('preview');
+    setStep('details');
   }, [pinLocation]);
 
   const runSubmit: SubmitHandler<ReportLostDetailsForm> = useCallback(
@@ -369,9 +369,9 @@ export default function ReportLostScreen(): React.ReactElement {
             <Pressable
               onPress={onDetailsNext}
               style={styles.primaryBtn}
-              testID="reportLost.details.continue"
+              testID="reportLost.details.preview"
             >
-              <Text style={styles.primaryBtnText}>Continuar</Text>
+              <Text style={styles.primaryBtnText}>Ver vista previa</Text>
             </Pressable>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -448,34 +448,41 @@ export default function ReportLostScreen(): React.ReactElement {
             >
               <Ionicons color={colors.white} name="chevron-back" size={22} />
             </Pressable>
-            <Text style={styles.headerTitle}>Vista previa</Text>
+            <Text style={styles.headerTitle}>Detalles del reporte</Text>
             <View style={styles.headerSpacer} />
           </View>
 
           <View style={styles.warnBox}>
-            <Ionicons color={colors.danger} name="warning" size={22} />
-            <Text style={styles.warnText}>
-              <Text style={styles.warnBold}>Reporte de mascota perdida. </Text>
-              Este reporte se enviará a todos los usuarios cercanos y quedará visible en el mapa.
-            </Text>
+            <View style={styles.warnStrip} />
+            <Ionicons color={colors.danger} name="alert-circle-outline" size={20} />
+            <View style={styles.warnTextWrap}>
+              <Text style={styles.warnTitle}>Reporte de mascota perdida</Text>
+              <Text style={styles.warnText}>
+                Este reporte se enviará a todos los usuarios cercanos y quedará visible en el mapa.
+              </Text>
+            </View>
           </View>
 
           <View style={styles.previewCard}>
-            <View style={styles.previewCardTop}>
-              {photoUri ? (
-                <Image source={{ uri: photoUri }} style={styles.previewThumb} />
-              ) : (
-                <Image
-                  resizeMode="cover"
-                  source={defaultCoverForSpecies(pet.species)}
-                  style={styles.previewThumb}
-                />
-              )}
-              <View style={styles.lostTag}>
-                <Text style={styles.lostTagText}>● PERDIDO</Text>
+            <View style={styles.previewRowTop}>
+              <View style={styles.previewThumbWrap}>
+                {photoUri ? (
+                  <Image source={{ uri: photoUri }} style={styles.previewThumbSmall} />
+                ) : (
+                  <Image
+                    resizeMode="cover"
+                    source={defaultCoverForSpecies(pet.species)}
+                    style={styles.previewThumbSmall}
+                  />
+                )}
+              </View>
+              <View style={styles.previewMeta}>
+                <View style={styles.lostTag}>
+                  <Text style={styles.lostTagText}>● PERDIDO</Text>
+                </View>
+                <Text style={styles.previewCardTitle}>Mascota perdida</Text>
               </View>
             </View>
-            <Text style={styles.previewCardTitle}>Mascota perdida</Text>
             {pinLocation ? (
               <View style={styles.previewRow}>
                 <Ionicons color={colors.textSecondary} name="location-outline" size={18} />
@@ -745,13 +752,23 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     padding: spacing.md,
     borderRadius: radius.lg,
-    borderWidth: 1.5,
-    borderColor: colors.danger,
-    backgroundColor: colors.dangerSoft,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
     marginBottom: spacing.md,
+    overflow: 'hidden',
   },
-  warnText: { ...typography.body, color: colors.textPrimary, flex: 1, lineHeight: 22 },
-  warnBold: { fontWeight: '700' },
+  warnStrip: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    backgroundColor: colors.danger,
+  },
+  warnTextWrap: { flex: 1, gap: 2 },
+  warnTitle: { ...typography.bodyStrong, color: colors.dangerDark },
+  warnText: { ...typography.caption, color: colors.textSecondary, lineHeight: 18 },
   previewCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.xl,
@@ -761,23 +778,35 @@ const styles = StyleSheet.create({
     ...shadows.md,
     marginBottom: spacing.md,
   },
-  previewCardTop: { position: 'relative', marginBottom: spacing.sm },
-  previewThumb: { width: '100%', height: 160, borderRadius: radius.md },
+  previewRowTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  previewThumbWrap: {
+    width: 56,
+    height: 56,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: '#ECEFF5',
+  },
+  previewThumbSmall: { width: '100%', height: '100%' },
+  previewMeta: { flex: 1, minWidth: 0, gap: 6 },
   lostTag: {
-    position: 'absolute',
-    top: spacing.sm,
-    left: spacing.sm,
     backgroundColor: colors.navActive,
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
     borderRadius: radius.sm,
+    alignSelf: 'flex-start',
   },
   lostTagText: { ...typography.caption, color: colors.white, fontWeight: '800' },
   previewCardTitle: {
     ...typography.bodyStrong,
     fontSize: 18,
     color: colors.textPrimary,
-    marginBottom: spacing.sm,
   },
   previewRow: {
     flexDirection: 'row',

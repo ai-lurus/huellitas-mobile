@@ -38,9 +38,10 @@ function formatTimeAgo(isoDate: string): string {
 
 export function ReportCard({ report, onPress }: ReportCardProps): React.ReactElement {
   const isLost = report.reportKind === 'lost';
-  const stripColor = isLost ? '#E11D48' : '#3B82F6';
-  const badgeBg = isLost ? '#FF6B3D' : '#3B82F6';
-  const badgeLabel = isLost ? 'PERDIDO' : 'VISTO';
+  const isSighted = report.reportKind === 'sighted';
+  const stripColor = isLost ? '#E11D48' : isSighted ? '#3B82F6' : '#22C55E';
+  const badgeBg = isLost ? '#FF6B3D' : isSighted ? '#3B82F6' : '#22C55E';
+  const badgeLabel = isLost ? 'PERDIDO' : isSighted ? 'VISTO' : 'RESUELTO';
 
   const metaLine = [speciesLabel(report.petSpecies), report.petBreed].filter(Boolean).join(' • ');
 
