@@ -9,6 +9,7 @@ export interface LostReportMapProps {
   radiusMeters?: number;
   sightings: LostReportSighting[];
   testID?: string;
+  variant?: 'card' | 'fullscreen';
 }
 
 export function LostReportMap({
@@ -16,12 +17,16 @@ export function LostReportMap({
   radiusMeters,
   sightings,
   testID = 'lostReportMap',
+  variant = 'card',
 }: LostReportMapProps): React.JSX.Element {
   const radiusLabel =
     radiusMeters && Number.isFinite(radiusMeters) ? `${Math.round(radiusMeters / 1000)} km` : '—';
 
   return (
-    <View style={styles.root} testID={testID}>
+    <View
+      style={[styles.root, variant === 'fullscreen' ? styles.rootFullscreen : null]}
+      testID={testID}
+    >
       <View style={styles.fallbackCard}>
         <Text style={styles.title}>Mapa no disponible en web</Text>
         <Text style={styles.text}>
@@ -36,6 +41,7 @@ export function LostReportMap({
 
 const styles = StyleSheet.create({
   root: { width: '100%', height: 260 },
+  rootFullscreen: { flex: 1, height: undefined },
   fallbackCard: {
     margin: spacing.md,
     borderRadius: radius.lg,

@@ -10,6 +10,7 @@ export interface LostReportMapProps {
   radiusMeters?: number;
   sightings: LostReportSighting[];
   testID?: string;
+  variant?: 'card' | 'fullscreen';
 }
 
 function toRegion(centerLat: number, centerLng: number, radiusMeters: number): Region {
@@ -32,26 +33,34 @@ export function LostReportMap({
   radiusMeters,
   sightings,
   testID = 'lostReportMap',
+  variant = 'card',
 }: LostReportMapProps): React.JSX.Element {
   const initialRegion = useMemo<Region>(() => {
     return toRegion(center.lat, center.lng, radiusMeters ?? 2000);
   }, [center.lat, center.lng, radiusMeters]);
 
   return (
-    <View style={styles.root} testID={testID}>
+    <View
+      style={[styles.root, variant === 'fullscreen' ? styles.rootFullscreen : null]}
+      testID={testID}
+    >
       <MapView
         style={styles.map}
         initialRegion={initialRegion}
         provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
       >
         <Circle
-          center={center}
+          center={{ latitude: center.lat, longitude: center.lng }}
           radius={radiusMeters ?? 2000}
           strokeColor="rgba(59, 130, 246, 0.8)"
           fillColor="rgba(59, 130, 246, 0.15)"
           strokeWidth={2}
         />
-        <Marker coordinate={center} pinColor={colors.danger} testID="lostReportMap.lossPin" />
+        <Marker
+          coordinate={{ latitude: center.lat, longitude: center.lng }}
+          pinColor={colors.danger}
+          testID="lostReportMap.lossPin"
+        />
         {sightings.map((s) => (
           <Marker
             key={s.id}
@@ -67,5 +76,6 @@ export function LostReportMap({
 
 const styles = StyleSheet.create({
   root: { width: '100%', height: 260 },
+  rootFullscreen: { flex: 1, height: undefined },
   map: { flex: 1 },
 });

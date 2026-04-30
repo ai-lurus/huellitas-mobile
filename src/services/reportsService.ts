@@ -214,6 +214,17 @@ function normalizeLostReportDetailBase(raw: unknown): Omit<LostReportDetail, 'si
   const ownerId =
     asString(record.ownerId) ?? asString(record.reportedBy) ?? asString(record.userId);
   const resolvedAt = asString(record.resolvedAt) ?? asString(record.resolved_at);
+  const createdAt =
+    asString(record.createdAt) ??
+    asString(record.reportedAt) ??
+    asString(record.created_at) ??
+    undefined;
+  const message =
+    asString(record.message) ??
+    asString(record.description) ??
+    asString(record.details) ??
+    asString(record.notes) ??
+    null;
 
   const parsed = lostReportDetailSchema.safeParse({
     id: asString(record.id) ?? asString(record.reportId),
@@ -222,6 +233,8 @@ function normalizeLostReportDetailBase(raw: unknown): Omit<LostReportDetail, 'si
     petSpecies: species.success ? species.data : 'other',
     petBreed,
     petPhotoUrl: petPhotoUrl ?? null,
+    createdAt,
+    message,
     lossLocation,
     lossRadiusMeters,
     resolvedAt: resolvedAt ?? null,
@@ -362,11 +375,19 @@ export interface CreateLostReportSightingDto {
   lng: number;
   notes?: string | null;
   /** URIs locales (file:// / content://) que el servicio convertirá a `multipart/form-data`. */
-  photoUris: string[];
+  photoUris?: string[];
+}
+
+export interface CreateLostReportSightingResult {
+  notifiedUsersCount?: number;
+  searchRadiusKm?: number;
 }
 
 export interface ResolveLostReportResult {
   resolvedAt?: string;
+  notifiedUsersCount?: number;
+  sightingsCount?: number;
+  totalMinutes?: number;
 }
 
 function pickIdFromRecord(record: Record<string, unknown> | null): string | undefined {
@@ -442,7 +463,23 @@ async function getLostReportDetail(reportId: string): Promise<LostReportDetail> 
   };
 }
 
-async function createSighting(reportId: string, dto: CreateLostReportSightingDto): Promise<void> {
+function normalizeCreateSightingResponse(data: unknown): CreateLostReportSightingResult {
+  const root = asRecord(data);
+  if (!root) return {};
+  const nested = asRecord(root.data) ?? asRecord(root.result) ?? root;
+  const notified =
+    asNumber(root.notifiedUsersCount) ??
+    asNumber(root.notifiedCount) ??
+    asNumber(nested.notifiedUsersCount);
+  const searchRadiusKm =
+    asNumber(root.searchRadiusKm) ?? asNumber(nested.searchRadiusKm) ?? asNumber(root.radiusKm);
+  return { notifiedUsersCount: notified, searchRadiusKm };
+}
+
+async function createSighting(
+  reportId: string,
+  dto: CreateLostReportSightingDto,
+): Promise<CreateLostReportSightingResult> {
   const form = new FormData();
   form.append('lat', String(dto.lat));
   form.append('lng', String(dto.lng));
@@ -450,7 +487,7 @@ async function createSighting(reportId: string, dto: CreateLostReportSightingDto
     form.append('notes', String(dto.notes).trim());
   }
 
-  for (const uri of dto.photoUris) {
+  for (const uri of dto.photoUris ?? []) {
     const filename = uri.split('/').pop() ?? 'sighting.jpg';
     const ext = filename.includes('.') ? filename.split('.').pop()?.toLowerCase() : undefined;
     const mimeType = ext ? guessImageMimeType(`.${ext}`) : guessImageMimeType(filename);
@@ -461,9 +498,14 @@ async function createSighting(reportId: string, dto: CreateLostReportSightingDto
     } as unknown as Blob);
   }
 
-  await httpClient.post(`/api/v1/lost-reports/${encodeURIComponent(reportId)}/sightings`, form, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+  const res = await httpClient.post(
+    `/api/v1/lost-reports/${encodeURIComponent(reportId)}/sightings`,
+    form,
+    {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    },
+  );
+  return normalizeCreateSightingResponse(res.data);
 }
 
 async function resolveLostReport(reportId: string): Promise<ResolveLostReportResult> {
@@ -473,8 +515,22 @@ async function resolveLostReport(reportId: string): Promise<ResolveLostReportRes
   );
 
   const record = asRecord(res.data) ?? {};
-  const resolvedAt = asString(record.resolvedAt) ?? asString(record.resolved_at);
-  return { resolvedAt };
+  const nested = asRecord(record.data) ?? asRecord(record.result) ?? record;
+  const resolvedAt =
+    asString(record.resolvedAt) ?? asString(record.resolved_at) ?? asString(nested.resolvedAt);
+  const notifiedUsersCount =
+    asNumber(record.notifiedUsersCount) ??
+    asNumber(record.notifiedCount) ??
+    asNumber(nested.notifiedUsersCount);
+  const sightingsCount =
+    asNumber(record.sightingsCount) ??
+    asNumber(nested.sightingsCount) ??
+    asNumber(record.sightings);
+  const totalMinutes =
+    asNumber(record.totalMinutes) ??
+    asNumber(record.total_minutes) ??
+    asNumber(nested.totalMinutes);
+  return { resolvedAt, notifiedUsersCount, sightingsCount, totalMinutes };
 }
 
 export const reportsService = {

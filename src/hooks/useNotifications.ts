@@ -12,6 +12,7 @@ import {
   STORAGE_KEY_PUSH_PERMISSION_PROMPTED,
 } from '../config/constants';
 import { pushNotificationDataSchema } from '../domain/pushNotifications';
+import { inboxNotificationsService } from '../services/inboxNotificationsService';
 import { notificationsService } from '../services/notificationsService';
 import { useAuthStore } from '../stores/authStore';
 
@@ -52,6 +53,22 @@ function handleNotificationTap(data: unknown): void {
   if (!ok && useAuthStore.getState().isAuthenticated) {
     router.replace(HOME_ROUTE);
   }
+}
+
+async function persistNotificationToInbox(notification: Notifications.Notification): Promise<void> {
+  const title = notification.request.content.title ?? 'Huellitas';
+  const body = notification.request.content.body ?? undefined;
+  const data = notification.request.content.data;
+  const reportIdParsed = pushNotificationDataSchema.safeParse(data);
+
+  await inboxNotificationsService.upsert({
+    id: notification.request.identifier || `${Date.now()}-${Math.floor(Math.random() * 1e9)}`,
+    createdAt: new Date().toISOString(),
+    title,
+    body,
+    reportId: reportIdParsed.success ? reportIdParsed.data.reportId : undefined,
+    isRead: false,
+  });
 }
 
 async function syncExpoPushToken(): Promise<void> {
@@ -96,6 +113,7 @@ export function useNotifications(): void {
     const foregroundSub = Notifications.addNotificationReceivedListener((notification) => {
       const title = notification.request.content.title;
       const body = notification.request.content.body;
+      void persistNotificationToInbox(notification).catch(() => {});
       Toast.show({
         type: 'info',
         text1: title != null && title.length > 0 ? title : 'Huellitas',
@@ -105,6 +123,7 @@ export function useNotifications(): void {
     });
 
     const responseSub = Notifications.addNotificationResponseReceivedListener((response) => {
+      void persistNotificationToInbox(response.notification).catch(() => {});
       handleNotificationTap(response.notification.request.content.data);
     });
 
@@ -128,6 +147,7 @@ export function useNotifications(): void {
       try {
         const last = await Notifications.getLastNotificationResponseAsync();
         if (last?.notification) {
+          void persistNotificationToInbox(last.notification).catch(() => {});
           handleNotificationTap(last.notification.request.content.data);
         }
       } catch (e) {

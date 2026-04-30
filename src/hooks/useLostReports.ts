@@ -12,6 +12,7 @@ import {
   type CreateLostReportDto,
   type CreateLostReportResult,
   type CreateLostReportSightingDto,
+  type CreateLostReportSightingResult,
   type ResolveLostReportResult,
   type NearbyLostReportsParams,
 } from '../services/reportsService';
@@ -63,9 +64,9 @@ export function useCreateLostReportMutation(
 
 export function useCreateSightingMutation(
   reportId: string,
-): UseMutationResult<void, Error, CreateLostReportSightingDto> {
+): UseMutationResult<CreateLostReportSightingResult, Error, CreateLostReportSightingDto> {
   const queryClient = useQueryClient();
-  return useMutation<void, Error, CreateLostReportSightingDto>({
+  return useMutation<CreateLostReportSightingResult, Error, CreateLostReportSightingDto>({
     mutationFn: (dto) => reportsService.createSighting(reportId, dto),
     onSuccess: async () => {
       await Promise.all([

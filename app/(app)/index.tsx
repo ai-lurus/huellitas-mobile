@@ -102,6 +102,7 @@ export default function HomeScreen(): React.JSX.Element {
             accessibilityRole="button"
             style={styles.actionBtn}
             testID="home.notifications"
+            onPress={() => router.push('/(app)/notifications')}
           >
             <Ionicons name="notifications-outline" size={20} color={colors.textPrimary} />
             <View style={styles.dot} />

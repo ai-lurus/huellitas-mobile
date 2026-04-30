@@ -1,12 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as ImagePicker from 'expo-image-picker';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Image,
-  KeyboardAvoidingView,
-  Platform,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -26,6 +24,8 @@ import {
   useCreateSightingMutation,
   useLostReportDetail,
 } from '../../../../src/hooks/useLostReports';
+import { useLocationStore } from '../../../../src/stores/locationStore';
+import { useSettingsStore } from '../../../../src/stores/settingsStore';
 import {
   sightingFormSchema,
   type SightingFormInput,
@@ -80,16 +80,18 @@ export default function ReportSightingScreen(): React.JSX.Element {
 
   const detailQuery = useLostReportDetail(reportId);
   const createSightingMutation = useCreateSightingMutation(reportId);
+  const currentLocation = useLocationStore((s) => s.currentLocation);
+  const alertRadiusKm = useSettingsStore((s) => s.alertRadiusKm);
 
   const [pickerBusy, setPickerBusy] = useState(false);
+  const [step, setStep] = useState<'intro' | 'form'>('intro');
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [submitStats, setSubmitStats] = useState<{ notified?: number; radiusKm?: number } | null>(
+    null,
+  );
 
-  const {
-    control,
-    setValue,
-    handleSubmit,
-    watch,
-    formState: { errors },
-  } = useForm<SightingFormInput>({
+  const { control, setValue, handleSubmit, watch } = useForm<SightingFormInput>({
     resolver: zodResolver(sightingFormSchema),
     defaultValues: {
       photos: [],
@@ -103,6 +105,13 @@ export default function ReportSightingScreen(): React.JSX.Element {
   const selectedLocation = watch('location');
 
   const petLabel = detailQuery.data?.petName?.trim() || 'tu mascota';
+  const petPhotoUrl = detailQuery.data?.petPhotoUrl ?? undefined;
+
+  useEffect(() => {
+    if (!selectedLocation && currentLocation) {
+      setValue('location', { lat: currentLocation.lat, lng: currentLocation.lng });
+    }
+  }, [currentLocation, selectedLocation, setValue]);
 
   const onSelectLocation = useCallback(
     (lat: number, lng: number): void => {
@@ -157,46 +166,61 @@ export default function ReportSightingScreen(): React.JSX.Element {
   }, [addPhotos, pickerBusy, selectedPhotos.length]);
 
   const onBack = useCallback((): void => {
+    if (step === 'form') {
+      setStep('intro');
+      return;
+    }
     router.back();
-  }, [router]);
+  }, [router, step]);
+
+  const openUploadPicker = useCallback((): void => {
+    if (pickerBusy) return;
+    Alert.alert('Subir foto', 'Elige una opción', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Cámara', onPress: (): void => void onPickCamera() },
+      { text: 'Galería', onPress: (): void => void onPickGallery() },
+    ]);
+  }, [onPickCamera, onPickGallery, pickerBusy]);
 
   const submit = handleSubmit(async (values) => {
     if (values.location == null) {
       Alert.alert('Falta la ubicación', 'Selecciona en el mapa dónde se vio la mascota.');
       return;
     }
-    if (values.photos.length === 0) {
-      Alert.alert('Falta la foto', 'Agrega al menos 1 foto del avistamiento.');
-      return;
-    }
 
     try {
-      await createSightingMutation.mutateAsync({
+      const res = await createSightingMutation.mutateAsync({
         lat: values.location.lat,
         lng: values.location.lng,
         notes: values.notes ?? undefined,
         photoUris: values.photos,
       });
-      router.replace(`/(app)/reports/${reportId}`);
+      setSubmitStats({
+        notified: res.notifiedUsersCount,
+        radiusKm: res.searchRadiusKm ?? alertRadiusKm,
+      });
+      setSuccessOpen(true);
     } catch (e) {
       Alert.alert('Error al enviar avistamiento', 'Intenta nuevamente en unos minutos.');
     }
   });
-
-  const petPhotoUrl = detailQuery.data?.petPhotoUrl ?? undefined;
 
   const notesMax = useMemo(
     () => Math.min(MAX_LOST_REPORT_MESSAGE_LENGTH, SIGHTING_NOTES_MAX_LENGTH),
     [],
   );
 
+  const locationLabel = useMemo(() => {
+    const loc = selectedLocation ?? currentLocation;
+    if (!loc) return '—';
+    return `${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}`;
+  }, [currentLocation, selectedLocation]);
+
+  const canSubmit = Boolean(selectedLocation) && !createSightingMutation.isPending;
+
   return (
     <SafeAreaView edges={['top']} style={styles.safe}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={40}
-      >
+      {step === 'intro' ? (
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <View style={styles.headerRow}>
             <Pressable
@@ -208,163 +232,275 @@ export default function ReportSightingScreen(): React.JSX.Element {
             >
               <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
             </Pressable>
-            <Text style={styles.title}>Informar avistamiento</Text>
+            <Text style={styles.title}>Reporte de avistamiento</Text>
             <View style={styles.backBtn} />
           </View>
 
-          <View style={styles.summaryCard}>
-            <View style={styles.thumbWrap}>
-              {petPhotoUrl ? (
-                <Image source={{ uri: petPhotoUrl }} style={styles.thumb} />
-              ) : (
-                <View style={styles.thumbFallback} />
-              )}
-            </View>
-            <View style={styles.summaryText}>
-              <Text style={styles.summaryTitle}>Para: {petLabel}</Text>
-              <Text style={styles.summarySub}>Confirma dónde viste a la mascota</Text>
-            </View>
-          </View>
+          <Text style={styles.introTitle}>¿Viste a esta mascota?</Text>
+          <Text style={styles.introSub}>
+            Si has visto a esta mascota perdida, reporta el avistamiento para ayudar a su dueño a
+            encontrarla.
+          </Text>
 
-          <Text style={styles.sectionLabel}>Fotos del avistamiento</Text>
-          {errors.photos ? <Text style={styles.fieldError}>{errors.photos.message}</Text> : null}
-
-          <View style={styles.photoGrid}>
-            {selectedPhotos.map((uri, idx) => (
-              <View key={`${uri}-${idx}`} style={styles.photoTile}>
-                <Image source={{ uri }} style={styles.photoImg} />
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Eliminar foto"
-                  testID={`reportSighting.photo.remove.${idx}`}
-                  onPress={() => {
-                    const next = selectedPhotos.filter((_, i) => i !== idx);
-                    setValue('photos', next, { shouldValidate: true });
-                  }}
-                  style={styles.photoRemove}
-                >
-                  <Ionicons name="close" size={14} color={colors.white} />
-                </Pressable>
+          <View style={styles.introCard}>
+            <View style={styles.introStrip} />
+            <View style={styles.introCardBody}>
+              <View style={styles.thumbWrap}>
+                {petPhotoUrl ? (
+                  <Image source={{ uri: petPhotoUrl }} style={styles.thumb} />
+                ) : (
+                  <View style={styles.thumbFallback} />
+                )}
+                <View style={styles.lostPill}>
+                  <Text style={styles.lostPillText}>● PERDIDO</Text>
+                </View>
               </View>
-            ))}
-            {selectedPhotos.length < MAX_PHOTOS ? (
-              <Pressable
-                accessibilityRole="button"
-                disabled={pickerBusy}
-                onPress={() => void onPickGallery()}
-                style={[styles.addTile, pickerBusy ? styles.addTileDisabled : null]}
-                testID="reportSighting.photo.add"
-              >
-                <Ionicons name="add" size={20} color={colors.textSecondary} />
-                <Text style={styles.addTileText}>Agregar</Text>
-              </Pressable>
-            ) : null}
+              <View style={styles.summaryText}>
+                <Text style={styles.summaryTitle}>{petLabel}</Text>
+                <Text style={styles.summarySub}>
+                  {detailQuery.data?.petSpecies ?? 'Mascota'}
+                  {detailQuery.data?.petBreed ? ` • ${detailQuery.data.petBreed}` : ''}
+                </Text>
+                <View style={styles.introMetaRow}>
+                  <View style={styles.metaPill}>
+                    <Ionicons name="location-outline" size={12} color={colors.textSecondary} />
+                    <Text style={styles.metaPillText}>—</Text>
+                  </View>
+                  <View style={styles.metaPill}>
+                    <Ionicons name="time-outline" size={12} color={colors.textSecondary} />
+                    <Text style={styles.metaPillText}>—</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
           </View>
 
-          <View style={styles.photoActions}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => setStep('form')}
+            style={styles.primaryBtn}
+            testID="reportSighting.intro.cta"
+          >
+            <Text style={styles.primaryBtnText}>Reportar que la vi</Text>
+          </Pressable>
+
+          <View style={styles.infoBox}>
+            <Text style={styles.infoTitle}>¿Qué información necesita proporcionar?</Text>
+            <Text style={styles.infoLine}>
+              • Ubicación donde viste a la mascota (se usa tu ubicación actual)
+            </Text>
+            <Text style={styles.infoLine}>• Foto del avistamiento (opcional pero muy útil)</Text>
+            <Text style={styles.infoLine}>• Detalles adicionales que puedan ayudar</Text>
+          </View>
+        </ScrollView>
+      ) : (
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+          <View style={styles.headerRow}>
             <Pressable
               accessibilityRole="button"
-              disabled={pickerBusy || selectedPhotos.length >= MAX_PHOTOS}
-              onPress={() => void onPickCamera()}
-              style={styles.secondaryBtn}
-              testID="reportSighting.photo.camera"
+              accessibilityLabel="Volver"
+              onPress={onBack}
+              style={styles.backBtn}
+              testID="reportSighting.back"
             >
-              {pickerBusy ? (
-                <ActivityIndicator color={colors.textSecondary} />
-              ) : (
-                <Ionicons name="camera" size={18} color={colors.textSecondary} />
-              )}
-              <Text style={styles.secondaryBtnText}>Cámara</Text>
+              <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
             </Pressable>
+            <Text style={styles.title}>Reporte de avistamiento</Text>
             <Pressable
               accessibilityRole="button"
-              disabled={pickerBusy || selectedPhotos.length >= MAX_PHOTOS}
-              onPress={() => void onPickGallery()}
-              style={styles.secondaryBtn}
-              testID="reportSighting.photo.gallery"
+              onPress={() => void submit()}
+              disabled={!canSubmit}
+              style={[styles.topSubmit, !canSubmit ? styles.topSubmitDisabled : null]}
+              testID="reportSighting.topSubmit"
             >
-              {pickerBusy ? (
-                <ActivityIndicator color={colors.textSecondary} />
-              ) : (
-                <Ionicons name="images-outline" size={18} color={colors.textSecondary} />
-              )}
-              <Text style={styles.secondaryBtnText}>Galería</Text>
+              <Ionicons name="cloud-upload-outline" size={16} color={colors.white} />
+              <Text style={styles.topSubmitText}>Reportar avistamiento</Text>
             </Pressable>
           </View>
 
-          <Text style={[styles.sectionLabel, { marginTop: spacing.md }]}>Ubicación</Text>
-          {errors.location ? (
-            <Text style={styles.fieldError}>{errors.location.message}</Text>
-          ) : null}
-
-          <View style={styles.mapWrap}>
-            <LocationPicker
-              initialCenter={detailQuery.data ? detailQuery.data.lossLocation : null}
-              onSelect={onSelectLocation}
-              testID="reportSighting.locationPicker"
-            />
+          <View style={styles.bannerCard}>
+            <View style={styles.bannerThumb}>
+              {petPhotoUrl ? (
+                <Image source={{ uri: petPhotoUrl }} style={styles.bannerThumbImg} />
+              ) : (
+                <View style={styles.bannerThumbImg} />
+              )}
+            </View>
+            <View style={styles.bannerText}>
+              <Text style={styles.bannerTitle}>{petLabel}</Text>
+              <Text style={styles.bannerSub}>¿Viste a esta mascota?</Text>
+            </View>
           </View>
 
-          <Text style={[styles.sectionLabel, { marginTop: spacing.md }]}>Notas</Text>
+          <Text style={styles.formLabel}>Ubicación del avistamiento</Text>
+          <View style={styles.locationRow}>
+            <View style={styles.locationLeft}>
+              <Ionicons name="checkmark-circle" size={16} color={colors.success} />
+              <View>
+                <Text style={styles.locationTitle}>Ubicación actual</Text>
+                <Text style={styles.locationSub}>{locationLabel}</Text>
+              </View>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => setLocationModalOpen(true)}
+              testID="reportSighting.location.change"
+            >
+              <Text style={styles.locationChange}>Cambiar</Text>
+            </Pressable>
+          </View>
+
+          <Text style={styles.formLabel}>Foto del avistamiento (opcional)</Text>
+          <Pressable
+            accessibilityRole="button"
+            disabled={pickerBusy}
+            onPress={openUploadPicker}
+            style={styles.uploadCard}
+            testID="reportSighting.photo.upload"
+          >
+            {selectedPhotos[0] ? (
+              <Image source={{ uri: selectedPhotos[0] }} style={styles.uploadPreview} />
+            ) : (
+              <>
+                <View style={styles.uploadIcon}>
+                  <Ionicons name="camera" size={22} color={colors.navActive} />
+                </View>
+                <Text style={styles.uploadTitle}>Subir foto</Text>
+                <Text style={styles.uploadSub}>Desde cámara o galería</Text>
+              </>
+            )}
+          </Pressable>
+
+          <Text style={styles.formLabel}>Detalles adicionales (opcional)</Text>
           <Controller
             name="notes"
             control={control}
             render={({ field: { onChange, value } }) => (
-              <View>
-                <View style={styles.notesWrap}>
-                  <TextInput
-                    placeholder="Ej: tenía un collar rojo y cojeaba"
-                    placeholderTextColor={colors.textMuted}
-                    style={styles.notesInput}
-                    multiline
-                    maxLength={notesMax}
-                    value={value ?? ''}
-                    onChangeText={onChange}
-                    editable={!createSightingMutation.isPending}
-                    testID="reportSighting.notes"
-                  />
-                </View>
+              <View style={styles.notesWrap}>
+                <Ionicons
+                  color={colors.textSecondary}
+                  name="chatbubble-ellipses-outline"
+                  size={18}
+                  style={styles.notesIcon}
+                />
+                <TextInput
+                  placeholder="Ej: La vi corriendo cerca del parque, llevaba collar azul..."
+                  placeholderTextColor={colors.textMuted}
+                  style={styles.notesInput}
+                  multiline
+                  maxLength={notesMax}
+                  value={value ?? ''}
+                  onChangeText={onChange}
+                  editable={!createSightingMutation.isPending}
+                  testID="reportSighting.notes"
+                />
               </View>
             )}
           />
-          {errors.notes ? <Text style={styles.fieldError}>{errors.notes.message}</Text> : null}
+          <Text style={styles.counter}>0/{notesMax} caracteres</Text>
+
+          <View style={styles.warnCard}>
+            <Text style={styles.warnText}>
+              Tu reporte ayudará al dueño a saber que su mascota fue vista en esta área. Proporciona
+              todos los detalles que puedas recordar.
+            </Text>
+          </View>
 
           <Pressable
             accessibilityRole="button"
             onPress={() => void submit()}
-            disabled={
-              createSightingMutation.isPending ||
-              selectedPhotos.length === 0 ||
-              selectedLocation == null
-            }
-            style={[
-              styles.primaryBtn,
-              createSightingMutation.isPending ||
-              selectedPhotos.length === 0 ||
-              selectedLocation == null
-                ? styles.primaryBtnDisabled
-                : null,
-            ]}
+            disabled={!canSubmit}
+            style={[styles.bottomSubmit, !canSubmit ? styles.bottomSubmitDisabled : null]}
             testID="reportSighting.submit"
           >
-            {createSightingMutation.isPending ? (
-              <View style={styles.btnRow}>
-                <ActivityIndicator color={colors.white} />
-                <Text style={styles.primaryBtnText}>Enviando…</Text>
-              </View>
-            ) : (
-              <Text style={styles.primaryBtnText}>Enviar avistamiento</Text>
-            )}
+            <Text style={styles.bottomSubmitText}>
+              {createSightingMutation.isPending ? 'Enviando…' : 'Enviar avistamiento'}
+            </Text>
           </Pressable>
+
+          <Modal visible={locationModalOpen} transparent animationType="fade">
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalSheet}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Cambiar ubicación</Text>
+                  <Pressable accessibilityRole="button" onPress={() => setLocationModalOpen(false)}>
+                    <Ionicons name="close" size={20} color={colors.textPrimary} />
+                  </Pressable>
+                </View>
+                <View style={styles.modalMap}>
+                  <LocationPicker
+                    initialCenter={selectedLocation ?? currentLocation}
+                    onSelect={onSelectLocation}
+                    testID="reportSighting.locationPicker"
+                  />
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setLocationModalOpen(false)}
+                  style={styles.modalDone}
+                >
+                  <Text style={styles.modalDoneText}>Listo</Text>
+                </Pressable>
+              </View>
+            </View>
+          </Modal>
+
+          <Modal visible={successOpen} transparent animationType="fade">
+            <View style={styles.modalOverlay}>
+              <View style={styles.successCard}>
+                <View style={styles.successIcon}>
+                  <Ionicons name="checkmark" size={28} color={colors.white} />
+                </View>
+                <Text style={styles.successTitle}>¡Avistamiento reportado!</Text>
+                <Text style={styles.successSub}>Gracias por ayudar a encontrar a {petLabel}</Text>
+                <View style={styles.statsRow}>
+                  <View style={styles.statCol}>
+                    <Text style={styles.statOrange}>
+                      {submitStats?.notified != null ? submitStats.notified : '—'}
+                    </Text>
+                    <Text style={styles.statLabel}>Usuarios notificados</Text>
+                  </View>
+                  <View style={styles.statCol}>
+                    <Text style={styles.statBlue}>
+                      {submitStats?.radiusKm != null
+                        ? `${submitStats.radiusKm}km`
+                        : `${alertRadiusKm}km`}
+                    </Text>
+                    <Text style={styles.statLabel}>Radio de búsqueda</Text>
+                  </View>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => {
+                    setSuccessOpen(false);
+                    router.replace(`/(app)/reports/${reportId}`);
+                  }}
+                  style={styles.successBtn}
+                  testID="reportSighting.success.ok"
+                >
+                  <Text style={styles.successBtnText}>Entendido</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => {
+                    setSuccessOpen(false);
+                    router.replace('/(app)');
+                  }}
+                  testID="reportSighting.success.home"
+                >
+                  <Text style={styles.linkMuted}>Volver a inicio</Text>
+                </Pressable>
+              </View>
+            </View>
+          </Modal>
         </ScrollView>
-      </KeyboardAvoidingView>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundApp },
-  flex: { flex: 1 },
   content: { padding: spacing.lg, paddingBottom: spacing.xxxl, gap: spacing.md },
   headerRow: {
     flexDirection: 'row',
@@ -382,7 +518,84 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: { ...typography.heading, color: colors.textPrimary, flex: 1, textAlign: 'center' },
+  title: {
+    ...typography.heading,
+    color: colors.textPrimary,
+    flex: 1,
+    textAlign: 'left',
+    marginLeft: spacing.sm,
+  },
+
+  topSubmit: {
+    height: 34,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
+    backgroundColor: colors.primary,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    ...shadows.button,
+  },
+  topSubmitDisabled: { opacity: 0.55 },
+  topSubmitText: { ...typography.caption, color: colors.white, fontWeight: '800' },
+
+  introTitle: { ...typography.heading, color: colors.textPrimary, marginTop: spacing.xs },
+  introSub: { ...typography.caption, color: colors.textSecondary, lineHeight: 18 },
+  introCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+    ...shadows.md,
+  },
+  introStrip: {
+    width: 4,
+    backgroundColor: colors.navActive,
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+  },
+  introCardBody: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    padding: spacing.md,
+    paddingLeft: spacing.md + 4,
+    alignItems: 'center',
+  },
+  lostPill: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    backgroundColor: colors.navActive,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radius.full,
+  },
+  lostPillText: { ...typography.caption, color: colors.white, fontWeight: '900', fontSize: 10 },
+  introMetaRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
+  metaPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(60,60,70,0.06)',
+    borderRadius: radius.full,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  metaPillText: { ...typography.caption, color: colors.textSecondary, fontSize: 11 },
+
+  infoBox: {
+    backgroundColor: 'rgba(94, 114, 228, 0.08)',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(94, 114, 228, 0.25)',
+    padding: spacing.md,
+    gap: spacing.xs,
+  },
+  infoTitle: { ...typography.bodyStrong, color: colors.primary },
+  infoLine: { ...typography.caption, color: colors.textPrimary, lineHeight: 18 },
 
   summaryCard: {
     flexDirection: 'row',
@@ -409,6 +622,68 @@ const styles = StyleSheet.create({
   summaryText: { flex: 1, gap: 2 },
   summaryTitle: { ...typography.bodyStrong, color: colors.textPrimary },
   summarySub: { ...typography.caption, color: colors.textSecondary },
+
+  bannerCard: {
+    flexDirection: 'row',
+    gap: spacing.md,
+    alignItems: 'center',
+    backgroundColor: 'rgba(94, 114, 228, 0.10)',
+    borderRadius: radius.lg,
+    padding: spacing.md,
+  },
+  bannerThumb: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#ECEFF5',
+  },
+  bannerThumbImg: { width: '100%', height: '100%' },
+  bannerText: { gap: 2 },
+  bannerTitle: { ...typography.bodyStrong, color: colors.textPrimary },
+  bannerSub: { ...typography.caption, color: colors.primary },
+
+  formLabel: { ...typography.label, color: colors.textPrimary, marginTop: spacing.sm },
+  locationRow: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  locationLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  locationTitle: { ...typography.bodyStrong, color: colors.textPrimary },
+  locationSub: { ...typography.caption, color: colors.textSecondary },
+  locationChange: { ...typography.caption, color: colors.primary, fontWeight: '800' },
+
+  uploadCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+    borderStyle: 'dashed',
+    padding: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    minHeight: 150,
+  },
+  uploadIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,107,53,0.10)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uploadTitle: { ...typography.bodyStrong, color: colors.textPrimary },
+  uploadSub: { ...typography.caption, color: colors.textSecondary },
+  uploadPreview: { width: '100%', height: 160, borderRadius: radius.lg },
+
+  notesIcon: { marginTop: 2 },
 
   sectionLabel: {
     ...typography.label,
@@ -484,13 +759,38 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
     padding: spacing.md,
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
   notesInput: {
     ...typography.body,
     color: colors.textPrimary,
     minHeight: 120,
     textAlignVertical: 'top',
+    flex: 1,
   },
+  counter: { ...typography.caption, color: colors.textMuted, textAlign: 'left' },
+
+  warnCard: {
+    backgroundColor: colors.dangerSoft,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: 'rgba(229, 57, 53, 0.25)',
+    padding: spacing.md,
+  },
+  warnText: { ...typography.caption, color: colors.dangerDark, lineHeight: 18 },
+
+  bottomSubmit: {
+    marginTop: spacing.lg,
+    minHeight: 54,
+    borderRadius: radius.button,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.button,
+  },
+  bottomSubmitDisabled: { opacity: 0.35 },
+  bottomSubmitText: { ...typography.button, color: colors.white },
 
   primaryBtn: {
     marginTop: spacing.lg,
@@ -504,4 +804,86 @@ const styles = StyleSheet.create({
   primaryBtnDisabled: { opacity: 0.6 },
   primaryBtnText: { ...typography.button, color: colors.white, textAlign: 'center' },
   btnRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  modalSheet: {
+    width: '100%',
+    maxWidth: 520,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  modalTitle: { ...typography.bodyStrong, color: colors.textPrimary },
+  modalMap: {
+    height: 320,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  modalDone: {
+    height: 48,
+    borderRadius: radius.button,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalDoneText: { ...typography.button, color: colors.white },
+
+  successCard: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  successIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.success,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  successTitle: { ...typography.heading, color: colors.textPrimary, textAlign: 'center' },
+  successSub: { ...typography.caption, color: colors.textSecondary, textAlign: 'center' },
+  statsRow: {
+    flexDirection: 'row',
+    width: '100%',
+    backgroundColor: colors.backgroundApp,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    marginTop: spacing.sm,
+    gap: spacing.md,
+  },
+  statCol: { flex: 1, alignItems: 'center' },
+  statOrange: { fontSize: 28, fontWeight: '800', color: colors.navActive },
+  statBlue: { fontSize: 28, fontWeight: '800', color: colors.primary },
+  statLabel: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  successBtn: {
+    width: '100%',
+    height: 48,
+    borderRadius: radius.button,
+    backgroundColor: colors.success,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+  },
+  successBtnText: { ...typography.button, color: colors.white },
+  linkMuted: { ...typography.body, color: colors.textSecondary, marginTop: spacing.sm },
 });

@@ -45,6 +45,12 @@ export const lostReportDetailSchema = z.object({
   petBreed: z.string().trim().min(1).nullable().optional(),
   petPhotoUrl: optionalNonEmptyString.nullable().optional(),
 
+  /** Fecha de creación del reporte (si el backend la expone). */
+  createdAt: optionalNonEmptyString.optional(),
+
+  /** Mensaje del reporte de pérdida (si el backend lo expone). */
+  message: z.string().trim().min(1).nullable().optional(),
+
   lossLocation: coordinatesSchema,
 
   /** Radio para el mapa; si no viene del backend, puede ser `undefined`. */

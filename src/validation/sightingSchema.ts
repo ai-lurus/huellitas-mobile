@@ -3,7 +3,7 @@ import { z } from 'zod';
 export const SIGHTING_NOTES_MAX_LENGTH = 500;
 
 export const sightingFormSchema = z.object({
-  photos: z.array(z.string().min(1)).min(1, 'Agrega al menos 1 foto del avistamiento'),
+  photos: z.array(z.string().min(1)).max(5).optional().default([]),
 
   location: z
     .object({
