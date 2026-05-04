@@ -77,9 +77,18 @@ export default function SettingsScreen({
   const [photoBusy, setPhotoBusy] = useState(false);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const firstRunRef = useRef(true);
+  const isMountedRef = useRef(true);
 
   const canDelete = useMemo(() => deleteText.trim().toUpperCase() === 'DELETE', [deleteText]);
+
+  useEffect((): void | (() => void) => {
+    isMountedRef.current = true;
+    return (): void => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect((): void | (() => void) => {
     if (firstRunRef.current) {
@@ -88,8 +97,9 @@ export default function SettingsScreen({
     }
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (saveIdleTimerRef.current) clearTimeout(saveIdleTimerRef.current);
 
-    setSaveStatus('saving');
+    if (isMountedRef.current) setSaveStatus('saving');
     debounceRef.current = setTimeout(() => {
       void usersService
         .patchSettings({
@@ -99,17 +109,24 @@ export default function SettingsScreen({
           emailAlertsEnabled,
         })
         .then((settings) => {
+          if (!isMountedRef.current) return;
           useSettingsStore.getState().hydrateFromProfile(settings);
           setSaveStatus('saved');
-          setTimeout((): void => setSaveStatus('idle'), 900);
+          if (saveIdleTimerRef.current) clearTimeout(saveIdleTimerRef.current);
+          saveIdleTimerRef.current = setTimeout((): void => {
+            if (!isMountedRef.current) return;
+            setSaveStatus('idle');
+          }, 900);
         })
         .catch(() => {
+          if (!isMountedRef.current) return;
           setSaveStatus('error');
         });
     }, 500);
 
     return (): void => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (saveIdleTimerRef.current) clearTimeout(saveIdleTimerRef.current);
     };
   }, [alertRadiusKm, alertsEnabled, pushNotificationsEnabled, emailAlertsEnabled]);
 
@@ -136,11 +153,13 @@ export default function SettingsScreen({
       if (res.canceled || !res.assets?.[0]?.uri) return;
       const uri = res.assets[0].uri;
       const updated = await usersService.updateProfile({ name: user.name, imageUri: uri });
+      if (!isMountedRef.current) return;
       setUser(updated);
     } catch {
+      if (!isMountedRef.current) return;
       Alert.alert('No se pudo actualizar la foto', 'Intenta de nuevo en unos minutos.');
     } finally {
-      setPhotoBusy(false);
+      if (isMountedRef.current) setPhotoBusy(false);
     }
   }, [user, photoBusy, setUser]);
 

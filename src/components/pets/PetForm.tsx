@@ -200,7 +200,7 @@ export function PetForm({
           {photos.length < 5 ? (
             <Pressable
               testID="petForm.photo.add"
-              onPress={pickPhotos}
+              onPress={() => void pickPhotos()}
               style={[styles.photoAdd, remainingPhotos <= 0 ? styles.disabled : null]}
               accessibilityRole="button"
               accessibilityLabel="Agregar foto"
