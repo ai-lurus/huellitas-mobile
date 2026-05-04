@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
 import SettingsScreen from '../../app/(app)/profile/settings';
+import { notificationsService } from '../services/notificationsService';
 import { usersService } from '../services/usersService';
 import { useAuthStore } from '../stores/authStore';
 import { useSettingsStore } from '../stores/settingsStore';
@@ -53,6 +54,13 @@ jest.mock('../services/usersService', () => ({
     patchSettings: jest.fn(),
     deleteAccount: jest.fn(),
     updateProfile: jest.fn(),
+  },
+}));
+
+jest.mock('../services/notificationsService', () => ({
+  notificationsService: {
+    deletePushToken: jest.fn(() => Promise.resolve()),
+    clearStoredExpoPushToken: jest.fn(() => Promise.resolve()),
   },
 }));
 
@@ -138,6 +146,8 @@ describe('SettingsScreen', () => {
 
     await waitFor(() => {
       expect(mockReplace).toHaveBeenCalledWith('/(auth)/sign-in');
+      expect(notificationsService.deletePushToken).toHaveBeenCalled();
+      expect(notificationsService.clearStoredExpoPushToken).toHaveBeenCalled();
     });
 
     alertSpy.mockRestore();

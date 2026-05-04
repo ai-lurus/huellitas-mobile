@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "app.huellitas.mobile",
+      "bundleIdentifier": "com.huellitas.mobile",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Huellitas needs your location to show nearby lost pets.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Huellitas needs your location to alert you when pets are lost near you."
@@ -22,7 +22,7 @@
     },
     "android": {
       "softwareKeyboardLayoutMode": "resize",
-      "package": "app.huellitas.mobile",
+      "package": "com.huellitas.mobile",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -38,7 +38,21 @@
     "plugins": [
       "expo-font",
       "expo-router",
-      "expo-location",
+      "@react-native-community/datetimepicker",
+      [
+        "@sentry/react-native/expo",
+        {
+          "project": "huellitas-mobile",
+          "organization": "huellitas"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "isAndroidBackgroundLocationEnabled": true,
+          "isIosBackgroundLocationEnabled": true
+        }
+      ],
       [
         "expo-notifications",
         {

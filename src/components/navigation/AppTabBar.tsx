@@ -9,6 +9,7 @@ import { colors, radius, shadows, spacing, typography } from '../../design/token
 
 const TAB_ICON = 22;
 const ALERT_BUTTON_SIZE = 56;
+const TAB_ROUTES = new Set(['index', 'map', 'alerts', 'pets', 'profile']);
 
 export function AppTabBar({
   state,
@@ -23,6 +24,10 @@ export function AppTabBar({
         {state.routes.map((route, index) => {
           // Evita duplicados cuando hay rutas anidadas (p. ej. profile/settings)
           if (route.name.includes('/')) {
+            return null;
+          }
+          // Solo renderiza las tabs principales (evita rutas extra como `notifications`)
+          if (!TAB_ROUTES.has(route.name)) {
             return null;
           }
           const { options } = descriptors[route.key];

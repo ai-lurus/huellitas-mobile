@@ -5,6 +5,7 @@ import { AppTabBar } from '../../src/components/navigation/AppTabBar';
 import { usersService } from '../../src/services/usersService';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useSettingsStore } from '../../src/stores/settingsStore';
+import '../../src/config/i18n';
 
 export default function AppLayout(): React.JSX.Element {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);

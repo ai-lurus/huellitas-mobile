@@ -39,7 +39,7 @@ function getPickerErrorCopy(err: unknown): string {
 export type PetFormSubmitPayload = Omit<PetFormValues, 'photos'> & { photos: string[] };
 
 export interface PetFormProps {
-  defaultValues?: Partial<PetFormValues>;
+  defaultValues?: Partial<PetFormInput>;
   isSubmitting?: boolean;
   submitError?: string | null;
   onSubmit: (data: PetFormSubmitPayload) => void | Promise<void>;

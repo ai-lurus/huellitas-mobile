@@ -21,9 +21,11 @@ import * as ImagePicker from 'expo-image-picker';
 import { colors, radius, shadows, spacing, typography } from '../../../src/design/tokens';
 import { deleteSessionTokenAsync } from '../../../src/services/sessionTokenStorage';
 import { authClient } from '../../../src/services/auth.service';
+import { notificationsService } from '../../../src/services/notificationsService';
 import { usersService } from '../../../src/services/usersService';
 import { useAuthStore } from '../../../src/stores/authStore';
 import { useSettingsStore } from '../../../src/stores/settingsStore';
+import { useAppLanguage } from '../../../src/i18n/useAppLanguage';
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -75,6 +77,7 @@ export default function SettingsScreen({
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [photoBusy, setPhotoBusy] = useState(false);
+  const language = useAppLanguage();
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveIdleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -169,6 +172,8 @@ export default function SettingsScreen({
     } catch {
       // Si Better Auth falla, igualmente limpiamos sesión local.
     }
+    await notificationsService.deletePushToken().catch(() => {});
+    await notificationsService.clearStoredExpoPushToken().catch(() => {});
     await deleteSessionTokenAsync().catch(() => {});
     useAuthStore.getState().clearAuth();
     useSettingsStore.getState().reset();
@@ -284,6 +289,69 @@ export default function SettingsScreen({
         <View style={styles.sectionHeaderRow}>
           <Text style={styles.sectionLabel}>CUENTA</Text>
           <Text style={styles.sectionRightMuted}>Miembro desde enero 2024</Text>
+        </View>
+
+        <Text style={styles.sectionLabel}>IDIOMA</Text>
+        <View style={styles.card}>
+          <View style={styles.row}>
+            <SettingsIconTile backgroundColor="rgba(66, 133, 244, 0.18)">
+              <Ionicons name="language" size={18} color={colors.google} />
+            </SettingsIconTile>
+            <View style={styles.rowLeft}>
+              <Text style={styles.rowTitle}>Idioma</Text>
+              <Text style={styles.rowSubtitle}>
+                {language.isLoading
+                  ? 'Cargando…'
+                  : language.language === 'es'
+                    ? 'Español'
+                    : 'English'}
+              </Text>
+            </View>
+            <View style={styles.langButtons}>
+              <Pressable
+                accessibilityRole="button"
+                testID="settings.lang.es"
+                disabled={language.isLoading}
+                onPress={() => void language.setLanguage('es')}
+                style={[
+                  styles.langChip,
+                  language.language === 'es' ? styles.langChipActive : styles.langChipInactive,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.langChipText,
+                    language.language === 'es'
+                      ? styles.langChipTextActive
+                      : styles.langChipTextInactive,
+                  ]}
+                >
+                  ES
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                testID="settings.lang.en"
+                disabled={language.isLoading}
+                onPress={() => void language.setLanguage('en')}
+                style={[
+                  styles.langChip,
+                  language.language === 'en' ? styles.langChipActive : styles.langChipInactive,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.langChipText,
+                    language.language === 'en'
+                      ? styles.langChipTextActive
+                      : styles.langChipTextInactive,
+                  ]}
+                >
+                  EN
+                </Text>
+              </Pressable>
+            </View>
+          </View>
         </View>
 
         <View style={styles.card}>
@@ -664,6 +732,34 @@ const styles = StyleSheet.create({
   rowLeft: {
     flex: 1,
     gap: spacing.xxs,
+  },
+  langButtons: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    alignItems: 'center',
+  },
+  langChip: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: radius.full,
+    borderWidth: 1,
+  },
+  langChipActive: {
+    backgroundColor: colors.textPrimary,
+    borderColor: colors.textPrimary,
+  },
+  langChipInactive: {
+    backgroundColor: colors.surface,
+    borderColor: colors.border,
+  },
+  langChipText: {
+    ...typography.caption,
+  },
+  langChipTextActive: {
+    color: colors.white,
+  },
+  langChipTextInactive: {
+    color: colors.textPrimary,
   },
   rowTitle: {
     color: colors.textPrimary,
