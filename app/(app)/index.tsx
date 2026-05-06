@@ -5,6 +5,7 @@ import { useRouter, type Href } from 'expo-router';
 
 import { HomeReportCard } from '../../src/components/reports/HomeReportCard';
 import { ReportCardSkeleton } from '../../src/components/reports/ReportCardSkeleton';
+import { DEFAULT_MAP_FALLBACK } from '../../src/config/constants';
 import { colors, radius, spacing, typography } from '../../src/design/tokens';
 import type { LostReport } from '../../src/domain/lostReports';
 import { useLostReports } from '../../src/hooks/useLostReports';
@@ -18,11 +19,15 @@ export default function HomeScreen(): React.JSX.Element {
 
   const [filter, setFilter] = useState<'all' | 'lost' | 'sighted' | 'resolved'>('all');
 
+  const searchCenter = currentLocation ?? DEFAULT_MAP_FALLBACK;
   const reportsQuery = useLostReports({
-    lat: currentLocation?.lat ?? Number.NaN,
-    lng: currentLocation?.lng ?? Number.NaN,
+    lat: searchCenter.lat,
+    lng: searchCenter.lng,
     radius: alertRadiusKm,
   });
+
+  const showReportsLoading =
+    reportsQuery.fetchStatus === 'fetching' && reportsQuery.data === undefined;
 
   const allReports = useMemo(() => reportsQuery.data ?? [], [reportsQuery.data]);
 
@@ -119,7 +124,7 @@ export default function HomeScreen(): React.JSX.Element {
     </View>
   );
 
-  if (reportsQuery.isPending) {
+  if (showReportsLoading) {
     return (
       <View style={styles.screen} testID="home.loading">
         {header}

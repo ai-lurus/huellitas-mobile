@@ -102,6 +102,7 @@ describe('Map tab screen', () => {
       data: baseReports,
       isPending: false,
       isError: false,
+      fetchStatus: 'idle',
     } as never);
   });
 

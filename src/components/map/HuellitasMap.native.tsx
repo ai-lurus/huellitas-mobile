@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import MapView, { PROVIDER_GOOGLE, type Region } from 'react-native-maps';
 
+import { DEFAULT_MAP_FALLBACK } from '../../config/constants';
 import { colors, radius, spacing, typography } from '../../design/tokens';
 import { useLocationStore } from '../../stores/locationStore';
 import { CenterButton } from './CenterButton';
@@ -48,9 +49,9 @@ export function HuellitasMap({
   const [mapError, setMapError] = useState<string | null>(null);
   const hasCenteredInitially = useRef(false);
 
-  const initialRegion = useMemo<Region | undefined>(() => {
-    if (!currentLocation) return undefined;
-    return toRegion(currentLocation.lat, currentLocation.lng);
+  const initialRegion = useMemo<Region>(() => {
+    const loc = currentLocation ?? DEFAULT_MAP_FALLBACK;
+    return toRegion(loc.lat, loc.lng);
   }, [currentLocation]);
 
   useEffect(() => {
