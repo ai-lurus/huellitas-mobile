@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ReportCard } from '../../src/components/reports/ReportCard';
 import { ReportCardSkeleton } from '../../src/components/reports/ReportCardSkeleton';
+import { DEFAULT_MAP_FALLBACK } from '../../src/config/constants';
 import { colors, radius, spacing, typography } from '../../src/design/tokens';
 import type { LostReport } from '../../src/domain/lostReports';
 import { useLostReports } from '../../src/hooks/useLostReports';
@@ -85,11 +86,15 @@ export default function AlertsScreen(): React.ReactElement {
   } | null>(null);
   const filterRef = useRef<View>(null);
 
+  const searchCenter = currentLocation ?? DEFAULT_MAP_FALLBACK;
   const reportsQuery = useLostReports({
-    lat: currentLocation?.lat ?? Number.NaN,
-    lng: currentLocation?.lng ?? Number.NaN,
+    lat: searchCenter.lat,
+    lng: searchCenter.lng,
     radius: alertRadiusKm,
   });
+
+  const showReportsLoading =
+    reportsQuery.fetchStatus === 'fetching' && reportsQuery.data === undefined;
 
   const sorted = useMemo(
     () => [...(reportsQuery.data ?? [])].sort((a, b) => a.distanceMeters - b.distanceMeters),
@@ -97,10 +102,10 @@ export default function AlertsScreen(): React.ReactElement {
   );
 
   const countLabel = useMemo(() => {
-    if (reportsQuery.isPending) return '…';
+    if (showReportsLoading) return '…';
     if (reportsQuery.isError) return '—';
     return String(sorted.length);
-  }, [reportsQuery.isPending, reportsQuery.isError, sorted.length]);
+  }, [showReportsLoading, reportsQuery.isError, sorted.length]);
 
   const openReport = (id: string): void => {
     router.push(`/(app)/reports/${id}` as Href);
@@ -250,7 +255,7 @@ export default function AlertsScreen(): React.ReactElement {
       </Modal>
     ) : null;
 
-  if (reportsQuery.isPending) {
+  if (showReportsLoading) {
     return (
       <View style={styles.screen}>
         {distanceModal}

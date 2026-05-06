@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -47,6 +47,50 @@ export default function EditPetScreen(): React.ReactElement {
     }
   };
 
+  if (petQuery.isPending) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.header}>
+          <Pressable
+            onPress={() => router.back()}
+            style={styles.backBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Volver"
+          >
+            <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
+          </Pressable>
+          <Text style={styles.title}>Editar mascota</Text>
+          <View style={styles.backBtn} />
+        </View>
+        <View style={styles.loading}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!petQuery.data) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.header}>
+          <Pressable
+            onPress={() => router.back()}
+            style={styles.backBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Volver"
+          >
+            <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
+          </Pressable>
+          <Text style={styles.title}>Editar mascota</Text>
+          <View style={styles.backBtn} />
+        </View>
+        <View style={styles.loading}>
+          <Text style={styles.errorText}>No se pudo cargar la mascota.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
@@ -63,6 +107,7 @@ export default function EditPetScreen(): React.ReactElement {
       </View>
 
       <PetForm
+        key={petId}
         defaultValues={defaultValues}
         isSubmitting={updateMutation.isPending}
         submitError={submitError}
@@ -93,4 +138,6 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   title: { color: colors.textPrimary, ...typography.heading },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
+  errorText: { color: colors.textSecondary, ...typography.body, textAlign: 'center' },
 });

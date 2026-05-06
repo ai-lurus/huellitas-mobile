@@ -72,6 +72,7 @@ describe('Alerts screen', () => {
       isPending: false,
       isError: false,
       isRefetching: false,
+      fetchStatus: 'idle',
       refetch: mockRefetch,
     } as never);
   });
@@ -88,6 +89,7 @@ describe('Alerts screen', () => {
       isPending: false,
       isError: false,
       isRefetching: false,
+      fetchStatus: 'idle',
       refetch: mockRefetch,
     } as never);
 
@@ -101,6 +103,7 @@ describe('Alerts screen', () => {
       isPending: true,
       isError: false,
       isRefetching: false,
+      fetchStatus: 'fetching',
       refetch: mockRefetch,
     } as never);
 

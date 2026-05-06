@@ -33,6 +33,7 @@ jest.mock('../services/petsService', () => ({
   petsService: {
     createPet: jest.fn(),
     uploadPetPhoto: jest.fn(),
+    getPet: jest.fn(),
     listPets: jest.fn().mockResolvedValue([]),
     deletePet: jest.fn(),
   },
@@ -42,6 +43,7 @@ const { petsService } = jest.requireMock('../services/petsService') as {
   petsService: {
     createPet: jest.Mock;
     uploadPetPhoto: jest.Mock;
+    getPet: jest.Mock;
     listPets: jest.Mock;
     deletePet: jest.Mock;
   };
@@ -66,6 +68,13 @@ describe('NewPetScreen', () => {
     jest.clearAllMocks();
     ImagePicker.requestMediaLibraryPermissionsAsync.mockResolvedValue({ granted: true });
     ImagePicker.launchImageLibraryAsync.mockResolvedValue({ canceled: true });
+    petsService.getPet.mockResolvedValue({
+      id: 'pet_1',
+      name: 'Max',
+      species: 'dog',
+      sex: 'unknown',
+      photos: ['https://example.com/a.jpg'],
+    });
   });
 
   afterEach(async () => {

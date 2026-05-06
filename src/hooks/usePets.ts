@@ -123,7 +123,7 @@ function useCreatePetMutation() {
       if (photos.length > 0) {
         await Promise.all(photos.slice(0, 5).map((uri) => petsService.uploadPetPhoto(pet.id, uri)));
       }
-      return pet;
+      return petsService.getPet(pet.id);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: PETS_QUERY_KEY });

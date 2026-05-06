@@ -33,6 +33,20 @@ describe('HuellitasMap', () => {
     expect(getByTestId('huellitas-map')).toBeTruthy();
   });
 
+  it('usa región por defecto si aún no hay ubicación en el store', () => {
+    useLocationStore.getState().reset();
+    const { getByTestId } = render(<HuellitasMap />);
+    const map = getByTestId('huellitas-map');
+    expect(map.props.initialRegion).toEqual(
+      expect.objectContaining({
+        latitude: 19.2433,
+        longitude: -103.7247,
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05,
+      }),
+    );
+  });
+
   it('muestra indicador de ubicación de usuario', () => {
     const { getByTestId } = render(<HuellitasMap />);
     const map = getByTestId('huellitas-map');

@@ -7,6 +7,7 @@ import { AlertMarker } from '../../src/components/map/AlertMarker';
 import { HuellitasMap } from '../../src/components/map/HuellitasMap';
 import { MapFilters } from '../../src/components/map/MapFilters';
 import { Skeleton } from '../../src/components/skeleton/Skeleton';
+import { DEFAULT_MAP_FALLBACK } from '../../src/config/constants';
 import type { LostReport, LostReportSpeciesFilter } from '../../src/domain/lostReports';
 import { colors, radius, spacing, typography } from '../../src/design/tokens';
 import { useLostReports } from '../../src/hooks/useLostReports';
@@ -21,11 +22,15 @@ export default function MapScreen(): React.JSX.Element {
   const alertRadiusKm = useSettingsStore((s) => s.alertRadiusKm);
   const [selectedSpecies, setSelectedSpecies] = useState<LostReportSpeciesFilter>('all');
 
+  const searchCenter = currentLocation ?? DEFAULT_MAP_FALLBACK;
   const reportsQuery = useLostReports({
-    lat: currentLocation?.lat ?? Number.NaN,
-    lng: currentLocation?.lng ?? Number.NaN,
+    lat: searchCenter.lat,
+    lng: searchCenter.lng,
     radius: alertRadiusKm,
   });
+
+  const showReportsLoading =
+    reportsQuery.fetchStatus === 'fetching' && reportsQuery.data === undefined;
 
   const filteredReports = useMemo(() => {
     const reports = reportsQuery.data ?? [];
@@ -64,7 +69,7 @@ export default function MapScreen(): React.JSX.Element {
 
       <View style={styles.mapCard}>
         <HuellitasMap containerStyle={styles.mapInner} showCenterButton={false}>
-          {reportsQuery.isPending ? (
+          {showReportsLoading ? (
             <Skeleton style={StyleSheet.absoluteFillObject} borderRadius={18} />
           ) : null}
 
@@ -84,7 +89,7 @@ export default function MapScreen(): React.JSX.Element {
             <AlertMarker key={report.id} onPressCallout={openReport} report={report} />
           ))}
 
-          {reportsQuery.isPending ? (
+          {showReportsLoading ? (
             <View style={styles.overlay} testID="reports.loading">
               <Text style={styles.overlayLabel}>Cargando reportes cercanos...</Text>
             </View>
