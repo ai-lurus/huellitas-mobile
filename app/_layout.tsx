@@ -20,6 +20,7 @@ import { queryClient } from '../src/query/queryClient';
 import { queryPersister } from '../src/query/queryPersister';
 import * as Sentry from '@sentry/react-native';
 import { env } from '../src/config/env';
+import { httpClient } from '../src/network';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -58,6 +59,9 @@ export default function RootLayout(): React.JSX.Element {
     void loadLanguage().then((lng) => {
       void i18n.changeLanguage(lng);
     });
+
+    // Despierta la base de datos Neon (arranque en frío) en segundo plano
+    void httpClient.get('/health').catch(() => {});
   }, []);
 
   return (
