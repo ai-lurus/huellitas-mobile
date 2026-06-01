@@ -11,7 +11,7 @@ import { getSessionTokenAsync, SESSION_TOKEN_KEY } from '../services/sessionToke
  */
 export const httpClient = axios.create({
   baseURL: env.EXPO_PUBLIC_API_URL,
-  timeout: 10000,
+  timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 });
 
