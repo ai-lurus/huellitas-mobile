@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -42,6 +42,7 @@ export interface PetFormProps {
   defaultValues?: Partial<PetFormInput>;
   isSubmitting?: boolean;
   submitError?: string | null;
+  mode?: 'create' | 'edit';
   onSubmit: (data: PetFormSubmitPayload) => void | Promise<void>;
   onCancel: () => void;
 }
@@ -50,6 +51,7 @@ export function PetForm({
   defaultValues,
   isSubmitting,
   submitError,
+  mode = 'create',
   onSubmit,
   onCancel,
 }: PetFormProps): React.ReactElement {
@@ -70,6 +72,7 @@ export function PetForm({
     handleSubmit,
     setValue,
     watch,
+    reset,
     formState: { errors },
   } = useForm<PetFormInput>({
     resolver: zodResolver(petFormSchema),
@@ -86,6 +89,31 @@ export function PetForm({
     },
     mode: 'onSubmit',
   });
+
+  const initialResetDone = useRef(false);
+  useEffect(() => {
+    if (defaultValues && !initialResetDone.current) {
+      initialResetDone.current = true;
+      reset(
+        {
+          name: '',
+          species: 'dog',
+          sex: 'unknown',
+          breed: '',
+          color: '',
+          age: '',
+          notes: '',
+          photos: [],
+          ...defaultValues,
+        },
+        { keepDefaultValues: false },
+      );
+    }
+  }, [defaultValues, reset]);
+
+  const [failedUris, setFailedUris] = useState<Set<string>>(new Set());
+
+  const markFailed = (uri: string): void => setFailedUris((prev) => new Set([...prev, uri]));
 
   const photos = watch('photos') ?? [];
   const remainingPhotos = Math.max(0, 5 - photos.length);
@@ -174,21 +202,61 @@ export function PetForm({
 
         <Text style={styles.sectionLabel}>FOTOS (HASTA 5)</Text>
         <View style={styles.photosRow}>
-          <View style={styles.photoSlot} accessibilityLabel="Foto principal">
-            <Image
-              source={SPECIES_ICON_ASSETS[currentSpecies].default}
-              style={styles.photoSlotSpeciesIcon}
-              resizeMode="contain"
-              accessibilityIgnoresInvertColors
-            />
-          </View>
-
-          {photos.map((uri, idx) => (
-            <View key={`${uri}-${idx}`} style={styles.photoThumbWrap}>
-              <Image source={{ uri }} style={styles.photoThumb} />
+          {photos.length > 0 ? (
+            <View key={`${photos[0]}-0`} style={styles.photoThumbWrap}>
+              {failedUris.has(photos[0]) ? (
+                <View style={[styles.photoThumb, styles.photoThumbMain, styles.photoFallback]}>
+                  <Image
+                    source={SPECIES_ICON_ASSETS[currentSpecies].default}
+                    style={styles.photoSlotSpeciesIcon}
+                    resizeMode="contain"
+                    accessibilityIgnoresInvertColors
+                  />
+                </View>
+              ) : (
+                <Image
+                  source={{ uri: photos[0] }}
+                  style={[styles.photoThumb, styles.photoThumbMain]}
+                  onError={() => markFailed(photos[0])}
+                />
+              )}
               <Pressable
-                testID={`petForm.photo.remove.${idx}`}
-                onPress={() => removePhoto(idx)}
+                testID="petForm.photo.remove.0"
+                onPress={() => removePhoto(0)}
+                style={styles.photoRemove}
+                accessibilityLabel="Eliminar foto"
+              >
+                <Ionicons name="close" size={14} color={colors.white} />
+              </Pressable>
+            </View>
+          ) : (
+            <View style={styles.photoSlot} accessibilityLabel="Foto principal">
+              <Image
+                source={SPECIES_ICON_ASSETS[currentSpecies].default}
+                style={styles.photoSlotSpeciesIcon}
+                resizeMode="contain"
+                accessibilityIgnoresInvertColors
+              />
+            </View>
+          )}
+
+          {photos.slice(1).map((uri, idx) => (
+            <View key={`${uri}-${idx + 1}`} style={styles.photoThumbWrap}>
+              {failedUris.has(uri) ? (
+                <View style={[styles.photoThumb, styles.photoFallback]}>
+                  <Image
+                    source={SPECIES_ICON_ASSETS[currentSpecies].default}
+                    style={styles.photoSlotSpeciesIcon}
+                    resizeMode="contain"
+                    accessibilityIgnoresInvertColors
+                  />
+                </View>
+              ) : (
+                <Image source={{ uri }} style={styles.photoThumb} onError={() => markFailed(uri)} />
+              )}
+              <Pressable
+                testID={`petForm.photo.remove.${idx + 1}`}
+                onPress={() => removePhoto(idx + 1)}
                 style={styles.photoRemove}
                 accessibilityLabel="Eliminar foto"
               >
@@ -383,7 +451,9 @@ export function PetForm({
               <Text style={styles.submitText}>Guardando…</Text>
             </View>
           ) : (
-            <Text style={styles.submitText}>Guardar mascota</Text>
+            <Text style={styles.submitText}>
+              {mode === 'edit' ? 'Guardar cambios' : 'Guardar mascota'}
+            </Text>
           )}
         </Pressable>
 
@@ -565,6 +635,14 @@ const styles = StyleSheet.create({
     height: 64,
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
+  },
+  photoThumbMain: {
+    borderWidth: 2,
+    borderColor: colors.primary,
+  },
+  photoFallback: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   photoRemove: {
     position: 'absolute',

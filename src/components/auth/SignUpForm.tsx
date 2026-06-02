@@ -36,9 +36,22 @@ type SignUpFieldKey = keyof SignUpFields;
 
 type SignUpFieldErrors = Partial<Record<SignUpFieldKey, string>>;
 
+function isNetworkError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const m = err.message.toLowerCase();
+  const code = (err as { code?: string }).code;
+  return (
+    code === 'ERR_NETWORK' ||
+    m.includes('network request failed') ||
+    m.includes('network error') ||
+    m.includes('econnrefused') ||
+    m.includes('failed to fetch')
+  );
+}
+
 function formatSubmitError(err: unknown): string {
-  if (err instanceof Error && err.message) {
-    return err.message;
+  if (isNetworkError(err)) {
+    return 'No pudimos conectarnos. Verifica tu conexión a internet e intenta de nuevo.';
   }
   return 'No se pudo crear la cuenta. Intenta de nuevo.';
 }

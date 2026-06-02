@@ -1,11 +1,12 @@
 import React, { useMemo } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { PetForm, type PetFormSubmitPayload } from '../../../../src/components/pets/PetForm';
-import { colors, spacing, typography } from '../../../../src/design/tokens';
+import { Skeleton } from '../../../../src/components/skeleton/Skeleton';
+import { colors, radius, spacing, typography } from '../../../../src/design/tokens';
 import { usePet, useUpdatePetMutation } from '../../../../src/hooks/usePets';
 
 export default function EditPetScreen(): React.ReactElement {
@@ -62,8 +63,34 @@ export default function EditPetScreen(): React.ReactElement {
           <Text style={styles.title}>Editar mascota</Text>
           <View style={styles.backBtn} />
         </View>
-        <View style={styles.loading}>
-          <ActivityIndicator size="large" color={colors.primary} />
+        <View style={styles.skeletonContent}>
+          <View style={styles.skeletonPhotosRow}>
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} style={styles.skeletonPhoto} borderRadius={radius.lg} />
+            ))}
+          </View>
+          <Skeleton style={styles.skeletonLabel} borderRadius={4} />
+          <Skeleton style={styles.skeletonInput} borderRadius={radius.lg} />
+          <Skeleton style={styles.skeletonLabel} borderRadius={4} />
+          <View style={styles.skeletonSpeciesRow}>
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} style={styles.skeletonSpeciesChip} borderRadius={radius.lg} />
+            ))}
+          </View>
+          <View style={styles.skeletonRow}>
+            <Skeleton
+              style={[styles.skeletonInput, styles.skeletonHalf]}
+              borderRadius={radius.lg}
+            />
+            <Skeleton
+              style={[styles.skeletonInput, styles.skeletonHalf]}
+              borderRadius={radius.lg}
+            />
+          </View>
+          <Skeleton style={styles.skeletonLabel} borderRadius={4} />
+          <Skeleton style={styles.skeletonInput} borderRadius={radius.lg} />
+          <Skeleton style={styles.skeletonTextarea} borderRadius={radius.lg} />
+          <Skeleton style={styles.skeletonButton} borderRadius={radius.button} />
         </View>
       </SafeAreaView>
     );
@@ -108,6 +135,7 @@ export default function EditPetScreen(): React.ReactElement {
 
       <PetForm
         key={petId}
+        mode="edit"
         defaultValues={defaultValues}
         isSubmitting={updateMutation.isPending}
         submitError={submitError}
@@ -140,4 +168,16 @@ const styles = StyleSheet.create({
   title: { color: colors.textPrimary, ...typography.heading },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
   errorText: { color: colors.textSecondary, ...typography.body, textAlign: 'center' },
+
+  skeletonContent: { padding: spacing.lg, gap: spacing.sm },
+  skeletonPhotosRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.xs },
+  skeletonPhoto: { width: 64, height: 64 },
+  skeletonLabel: { width: 120, height: 14 },
+  skeletonInput: { height: 48, width: '100%' },
+  skeletonHalf: { flex: 1, width: undefined },
+  skeletonSpeciesRow: { flexDirection: 'row', gap: spacing.sm },
+  skeletonSpeciesChip: { width: 64, height: 64 },
+  skeletonRow: { flexDirection: 'row', gap: spacing.sm },
+  skeletonTextarea: { height: 120, width: '100%' },
+  skeletonButton: { height: 54, width: '100%', marginTop: spacing.md, borderRadius: radius.button },
 });
