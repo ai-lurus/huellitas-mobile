@@ -24,9 +24,10 @@ export type CreatePetDto = {
 };
 
 export type UpdatePetDto = Partial<CreatePetDto> & {
-  name: string;
-  species: PetSpecies;
-  sex: PetSex;
+  name?: string;
+  species?: PetSpecies;
+  sex?: PetSex;
+  isLost?: boolean;
 };
 
 const uploadPetPhotoResponseSchema = z.object({
@@ -233,6 +234,10 @@ async function updatePet(petId: string, data: UpdatePetDto): Promise<Pet> {
   return petSchema.parse(merged);
 }
 
+async function markFound(petId: string): Promise<Pet> {
+  return updatePet(petId, { isLost: false });
+}
+
 async function deletePet(petId: string): Promise<void> {
   await httpClient.delete(`/api/v1/pets/${petId}`);
 }
@@ -261,5 +266,6 @@ export const petsService = {
   listPets,
   getPet,
   updatePet,
+  markFound,
   deletePet,
 };

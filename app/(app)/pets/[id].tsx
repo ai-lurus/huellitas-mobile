@@ -93,6 +93,7 @@ export default function PetDetailScreen(): React.ReactElement {
         onReportLost={() => router.push(`/(app)/pets/${petId}/report-lost`)}
         onMarkFound={() => router.push(`/(app)/pets/${petId}/found`)}
         onDelete={confirmDelete}
+        isDeleting={deletePetMutation.isPending}
       />
     </SafeAreaView>
   );

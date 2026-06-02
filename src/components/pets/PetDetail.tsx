@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Image,
   Pressable,
   ScrollView,
@@ -77,6 +78,7 @@ export interface PetDetailProps {
   onReportLost: () => void;
   onMarkFound: () => void;
   onDelete: () => void;
+  isDeleting?: boolean;
 }
 
 export function PetDetail({
@@ -86,6 +88,7 @@ export function PetDetail({
   onReportLost,
   onMarkFound,
   onDelete,
+  isDeleting = false,
 }: PetDetailProps): React.ReactElement {
   const { width } = useWindowDimensions();
   const carouselHeight = Math.round(width * 0.62);
@@ -245,13 +248,20 @@ export function PetDetail({
 
         <Pressable
           testID="petDetail.delete"
-          onPress={onDelete}
-          style={styles.deleteAction}
+          onPress={isDeleting ? undefined : onDelete}
+          style={[styles.deleteAction, isDeleting ? styles.deleteActionDisabled : null]}
           accessibilityRole="button"
           accessibilityLabel="Eliminar tarjeta"
+          accessibilityState={{ disabled: isDeleting }}
         >
-          <Text style={styles.deleteActionText}>Eliminar tarjeta</Text>
-          <Ionicons name="trash-outline" size={18} color={colors.danger} />
+          {isDeleting ? (
+            <ActivityIndicator size="small" color={colors.danger} />
+          ) : (
+            <>
+              <Text style={styles.deleteActionText}>Eliminar tarjeta</Text>
+              <Ionicons name="trash-outline" size={18} color={colors.danger} />
+            </>
+          )}
         </Pressable>
       </ScrollView>
     </View>
@@ -423,5 +433,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
   },
+  deleteActionDisabled: { opacity: 0.5 },
   deleteActionText: { color: colors.danger, ...typography.button },
 });

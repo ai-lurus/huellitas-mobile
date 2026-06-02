@@ -94,15 +94,35 @@ export function useUpdatePetMutation(petId: string) {
       const photos = data.photos ?? [];
       const localUris = photos.filter(isLocalPetPhotoUri).slice(0, 5);
       if (localUris.length > 0) {
-        try {
-          await Promise.all(localUris.map((uri) => petsService.uploadPetPhoto(petId, uri)));
-        } catch {
-          throw new Error('No se pudo subir la foto. Por favor intentá de nuevo.');
+        const results = await Promise.allSettled(
+          localUris.map((uri) => petsService.uploadPetPhoto(petId, uri)),
+        );
+        const failed = results.filter((r) => r.status === 'rejected').length;
+        if (failed > 0) {
+          const msg =
+            failed === 1
+              ? 'No se pudo subir 1 foto. Por favor intentá de nuevo.'
+              : `No se pudieron subir ${failed} fotos. Por favor intentá de nuevo.`;
+          throw new Error(msg);
         }
       }
       return petsService.getPet(petId);
     },
     onSettled: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: PETS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: petQueryKey(petId) }),
+      ]);
+    },
+  });
+}
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+export function useMarkFoundMutation(petId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => petsService.markFound(petId),
+    onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: PETS_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: petQueryKey(petId) }),
@@ -130,17 +150,21 @@ function useCreatePetMutation() {
       const pet = await petsService.createPet(dto);
       const photos = data.photos ?? [];
       if (photos.length > 0) {
-        try {
-          await Promise.all(
-            photos.slice(0, 5).map((uri) => petsService.uploadPetPhoto(pet.id, uri)),
-          );
-        } catch {
+        const results = await Promise.allSettled(
+          photos.slice(0, 5).map((uri) => petsService.uploadPetPhoto(pet.id, uri)),
+        );
+        const failed = results.filter((r) => r.status === 'rejected').length;
+        if (failed > 0) {
           try {
             await petsService.deletePet(pet.id);
           } catch {
             // best-effort rollback
           }
-          throw new Error('No se pudo subir la foto. Por favor intentá de nuevo.');
+          const msg =
+            failed === 1
+              ? 'No se pudo subir 1 foto. Por favor intentá de nuevo.'
+              : `No se pudieron subir ${failed} fotos. Por favor intentá de nuevo.`;
+          throw new Error(msg);
         }
       }
       return petsService.getPet(pet.id);
