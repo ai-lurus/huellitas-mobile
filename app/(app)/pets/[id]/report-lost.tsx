@@ -179,11 +179,29 @@ export default function ReportLostScreen(): React.ReactElement {
     router.replace('/(app)/map');
   }, [router]);
 
-  if (petQuery.isPending || !pet) {
+  if (petQuery.isPending) {
     return (
       <SafeAreaView edges={['top']} style={styles.safe}>
         <View style={styles.loadingWrap}>
           <ActivityIndicator color={colors.primary} size="large" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!pet) {
+    return (
+      <SafeAreaView edges={['top']} style={styles.safe}>
+        <View style={styles.loadingWrap}>
+          <Ionicons name="paw-outline" size={48} color={colors.textMuted} />
+          <Text style={styles.errorText}>No pudimos cargar la mascota.</Text>
+          <Pressable
+            onPress={() => router.back()}
+            style={styles.errorBackBtn}
+            accessibilityRole="button"
+          >
+            <Text style={styles.errorBackBtnText}>Volver</Text>
+          </Pressable>
         </View>
       </SafeAreaView>
     );
@@ -594,7 +612,15 @@ export default function ReportLostScreen(): React.ReactElement {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundApp },
   flex: { flex: 1 },
-  loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md },
+  errorText: { color: colors.textSecondary, ...typography.body, textAlign: 'center' },
+  errorBackBtn: {
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.button,
+    backgroundColor: colors.primary,
+  },
+  errorBackBtnText: { color: colors.white, ...typography.bodyStrong },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',

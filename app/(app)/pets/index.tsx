@@ -21,7 +21,8 @@ export default function PetsScreen(): React.ReactElement {
   const pets = petsQuery.data ?? [];
   const count = pets.length;
   const isLoading = petsQuery.isPending;
-  const isEmpty = !isLoading && count === 0;
+  const hasError = petsQuery.isError && count === 0;
+  const isEmpty = !isLoading && !hasError && count === 0;
   const remaining = Math.max(0, MAX_PETS_PER_USER - count);
 
   const onFabPress = useCallback((): void => {
@@ -64,6 +65,19 @@ export default function PetsScreen(): React.ReactElement {
           contentContainerStyle={styles.listContent}
           renderItem={() => <PetCardSkeleton />}
         />
+      ) : hasError ? (
+        <View style={styles.emptyWrap}>
+          <Ionicons name="cloud-offline-outline" size={48} color={colors.textMuted} />
+          <Text style={styles.errorTitle}>No pudimos cargar tus mascotas</Text>
+          <Text style={styles.errorSubtitle}>Revisá tu conexión e intentá de nuevo.</Text>
+          <Pressable
+            onPress={() => void petsQuery.refetch()}
+            style={styles.retryBtn}
+            accessibilityRole="button"
+          >
+            <Text style={styles.retryBtnText}>Reintentar</Text>
+          </Pressable>
+        </View>
       ) : isEmpty ? (
         <View style={styles.emptyWrap}>
           <View style={styles.pawOuter}>
@@ -190,6 +204,26 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
   },
+  errorTitle: {
+    color: colors.textPrimary,
+    ...typography.heading,
+    textAlign: 'center',
+    marginTop: spacing.md,
+  },
+  errorSubtitle: {
+    color: colors.textSecondary,
+    ...typography.body,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+  },
+  retryBtn: {
+    marginTop: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.button,
+    backgroundColor: colors.primary,
+  },
+  retryBtnText: { color: colors.white, ...typography.bodyStrong },
   emptyTitle: { color: colors.textPrimary, ...typography.heading, textAlign: 'center' },
   emptySubtitle: {
     color: colors.textSecondary,
