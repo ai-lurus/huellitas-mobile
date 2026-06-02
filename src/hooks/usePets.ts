@@ -47,6 +47,7 @@ export function usePets(): {
   };
 }
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 function usePetsQuery() {
   return useQuery({
     queryKey: PETS_QUERY_KEY,
@@ -55,6 +56,7 @@ function usePetsQuery() {
   });
 }
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 function useDeletePetMutation() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -65,6 +67,7 @@ function useDeletePetMutation() {
   });
 }
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export function usePet(petId: string) {
   return useQuery({
     queryKey: petQueryKey(petId),
@@ -74,6 +77,7 @@ export function usePet(petId: string) {
   });
 }
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export function useUpdatePetMutation(petId: string) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -90,11 +94,15 @@ export function useUpdatePetMutation(petId: string) {
       const photos = data.photos ?? [];
       const localUris = photos.filter(isLocalPetPhotoUri).slice(0, 5);
       if (localUris.length > 0) {
-        await Promise.all(localUris.map((uri) => petsService.uploadPetPhoto(petId, uri)));
+        try {
+          await Promise.all(localUris.map((uri) => petsService.uploadPetPhoto(petId, uri)));
+        } catch {
+          throw new Error('No se pudo subir la foto. Por favor intentá de nuevo.');
+        }
       }
       return petsService.getPet(petId);
     },
-    onSuccess: async () => {
+    onSettled: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: PETS_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: petQueryKey(petId) }),
@@ -103,6 +111,7 @@ export function useUpdatePetMutation(petId: string) {
   });
 }
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 function useCreatePetMutation() {
   const queryClient = useQueryClient();
 
@@ -121,7 +130,18 @@ function useCreatePetMutation() {
       const pet = await petsService.createPet(dto);
       const photos = data.photos ?? [];
       if (photos.length > 0) {
-        await Promise.all(photos.slice(0, 5).map((uri) => petsService.uploadPetPhoto(pet.id, uri)));
+        try {
+          await Promise.all(
+            photos.slice(0, 5).map((uri) => petsService.uploadPetPhoto(pet.id, uri)),
+          );
+        } catch {
+          try {
+            await petsService.deletePet(pet.id);
+          } catch {
+            // best-effort rollback
+          }
+          throw new Error('No se pudo subir la foto. Por favor intentá de nuevo.');
+        }
       }
       return petsService.getPet(pet.id);
     },

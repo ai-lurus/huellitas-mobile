@@ -1,9 +1,11 @@
 import React from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import type { LostReport } from '../../domain/lostReports';
 import { colors, radius, shadows, spacing, typography } from '../../design/tokens';
+import { SPECIES_ICON_ASSETS } from '../pets/speciesIconAssets';
+import { PetPhoto } from '../common/PetPhoto';
 
 export interface ReportCardProps {
   report: LostReport;
@@ -62,21 +64,12 @@ export function ReportCard({ report, onPress }: ReportCardProps): React.ReactEle
                 <View style={styles.badgeDot} />
                 <Text style={styles.badgeLabel}>{badgeLabel}</Text>
               </View>
-              {report.petPhotoUrl ? (
-                <Image
-                  resizeMode="cover"
-                  source={{ uri: report.petPhotoUrl }}
-                  style={styles.thumb}
-                />
-              ) : report.petSpecies === 'bird' ? (
-                <View style={styles.fallbackThumbBird}>
-                  <MaterialCommunityIcons color="#22C55E" name="bird" size={28} />
-                </View>
-              ) : (
-                <View style={styles.fallbackThumb}>
-                  <Text style={styles.fallbackEmoji}>🐾</Text>
-                </View>
-              )}
+              <PetPhoto
+                uri={report.petPhotoUrl}
+                fallback={SPECIES_ICON_ASSETS[report.petSpecies].selected}
+                style={styles.thumb}
+                resizeMode="cover"
+              />
             </View>
             <View style={styles.content}>
               <Text numberOfLines={1} style={styles.name}>
@@ -162,18 +155,6 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontWeight: '700',
   },
-  fallbackThumb: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fallbackThumbBird: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#E8F5E9',
-  },
-  fallbackEmoji: { fontSize: 22 },
   content: { flex: 1, minWidth: 0 },
   name: { color: colors.textPrimary, ...typography.bodyStrong, fontSize: 17 },
   meta: { color: colors.textSecondary, ...typography.caption, marginTop: 2 },

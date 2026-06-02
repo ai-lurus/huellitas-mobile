@@ -8,6 +8,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import { PetPhoto } from '../common/PetPhoto';
 import { Ionicons } from '@expo/vector-icons';
 
 import { colors, radius, shadows, spacing, typography } from '../../design/tokens';
@@ -125,18 +126,13 @@ export function PetDetail({
         >
           {gallery.map((uri, idx) => (
             <View key={`${uri}-${idx}`} style={{ width, height: carouselHeight }}>
-              {uri ? (
-                <Image source={{ uri }} style={styles.heroImg} />
-              ) : (
-                <View style={styles.heroFallback}>
-                  <Image
-                    source={defaultCoverForSpecies(species)}
-                    style={styles.heroDefaultBg}
-                    resizeMode="cover"
-                    accessibilityLabel="Fondo por defecto"
-                  />
-                </View>
-              )}
+              <PetPhoto
+                uri={uri || null}
+                fallback={defaultCoverForSpecies(species)}
+                style={styles.heroImg}
+                resizeMode="cover"
+                fallbackResizeMode="cover"
+              />
             </View>
           ))}
         </ScrollView>

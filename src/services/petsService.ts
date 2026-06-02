@@ -251,8 +251,8 @@ async function uploadPetPhoto(petId: string, photoUri: string): Promise<string> 
   });
 
   const parsed = uploadPetPhotoResponseSchema.safeParse(res.data);
-  if (parsed.success) return parsed.data.url ?? parsed.data.id ?? '';
-  return '';
+  if (!parsed.success) throw new Error('Respuesta inválida al subir la foto.');
+  return parsed.data.url ?? parsed.data.id ?? '';
 }
 
 export const petsService = {
