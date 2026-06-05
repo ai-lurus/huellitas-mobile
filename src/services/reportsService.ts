@@ -50,6 +50,7 @@ function pickCoordinates(record: Record<string, unknown>): { lat: number; lng: n
 
 function pickPhotoUrl(pet: Record<string, unknown>): string | undefined {
   const direct =
+    asString(pet.petPhotoUrl) ??
     asString(pet.photoUrl) ??
     asString(pet.imageUrl) ??
     asString(pet.coverPhotoUrl) ??
@@ -422,17 +423,15 @@ async function createLostReport(
   petId: string,
   dto: CreateLostReportDto,
 ): Promise<CreateLostReportResult> {
-  const response = await httpClient.post<unknown>(
-    `/api/v1/pets/${encodeURIComponent(petId)}/lost-reports`,
-    {
-      lat: dto.lat,
-      lng: dto.lng,
-      lastSeenAt: dto.lastSeenAt,
-      ...(dto.message != null && String(dto.message).trim().length > 0
-        ? { message: dto.message.trim() }
-        : {}),
-    },
-  );
+  const response = await httpClient.post<unknown>('/api/v1/lost-reports', {
+    petId,
+    lat: dto.lat,
+    lng: dto.lng,
+    lastSeenAt: dto.lastSeenAt,
+    ...(dto.message != null && String(dto.message).trim().length > 0
+      ? { message: dto.message.trim() }
+      : {}),
+  });
   return normalizeCreateLostReportResponse(response.data);
 }
 

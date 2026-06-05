@@ -107,7 +107,13 @@ export function HomeReportCard({
         {report.petPhotoUrl ? (
           <Image source={{ uri: report.petPhotoUrl }} resizeMode="cover" style={styles.image} />
         ) : (
-          <View style={styles.imagePlaceholder} />
+          <View style={styles.imagePlaceholder}>
+            <Ionicons
+              name={report.petSpecies === 'bird' ? 'leaf' : 'paw'}
+              size={48}
+              color="rgba(0,0,0,0.12)"
+            />
+          </View>
         )}
       </View>
 
@@ -185,7 +191,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#ECEFF5',
   },
   image: { width: '100%', height: '100%' },
-  imagePlaceholder: { flex: 1, backgroundColor: '#ECEFF5' },
+  imagePlaceholder: {
+    flex: 1,
+    backgroundColor: '#ECEFF5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   body: { padding: spacing.md, gap: spacing.xs },
 
