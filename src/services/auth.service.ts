@@ -7,6 +7,8 @@ import { Platform } from 'react-native';
 import { env } from '../config/env';
 import { useAuthStore } from '../stores/authStore';
 import type { AuthUser } from './authService';
+import { getSessionTokenAsync } from './sessionTokenStorage';
+import { httpClient } from '../network';
 import { getPostOAuthDestination } from './postOAuthRouting';
 
 /**
@@ -162,13 +164,36 @@ export async function signInWithGoogle(): Promise<GoogleSignInResult> {
 }
 
 export async function syncBetterAuthSessionToAuthStore(): Promise<boolean> {
+  // OAuth flow: Better Auth's expoClient manages cookies in SecureStore
   try {
     const session = await authClient.getSession();
     const user = session.data?.user;
-    if (!user) {
-      return false;
+    if (user) {
+      useAuthStore.getState().setUser(mapSessionUserToAuthUser(user));
+      return true;
     }
-    useAuthStore.getState().setUser(mapSessionUserToAuthUser(user));
+  } catch {
+    // fall through to Bearer token check
+  }
+
+  // Email/password flow: token stored directly in SecureStore, sent as Bearer by httpClient
+  try {
+    const token = await getSessionTokenAsync();
+    if (!token) return false;
+
+    const res = await httpClient.get<unknown>('/users/me');
+    const data = res.data as Record<string, unknown>;
+    const id = typeof data.id === 'string' ? data.id : undefined;
+    const name = typeof data.name === 'string' ? data.name : undefined;
+    const email = typeof data.email === 'string' ? data.email : undefined;
+    if (!id || !name || !email) return false;
+
+    useAuthStore.getState().setUser({
+      id,
+      name,
+      email,
+      image: typeof data.image === 'string' && data.image.length > 0 ? data.image : undefined,
+    });
     return true;
   } catch {
     return false;
