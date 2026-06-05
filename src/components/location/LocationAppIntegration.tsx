@@ -57,7 +57,9 @@ export function LocationAppIntegration(): React.JSX.Element | null {
         const skip = await AsyncStorage.getItem(STORAGE_KEY_LOCATION_BG_PROMPT_DECLINED);
         if (skip !== '1') {
           const r = await requestBackgroundWithExplanation();
-          if (r.declinedExplanationDialog) {
+          // Save skip whenever the user didn't grant: covers "Ahora no",
+          // system-dialog denial, and iOS "When In Use" (keeps bg undetermined).
+          if (!r.granted) {
             await AsyncStorage.setItem(STORAGE_KEY_LOCATION_BG_PROMPT_DECLINED, '1');
           }
         }
