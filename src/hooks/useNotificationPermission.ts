@@ -1,5 +1,5 @@
 import * as Notifications from 'expo-notifications';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Linking } from 'react-native';
 
 import type { OnboardingPermissionStatus } from '../types/onboarding';
@@ -24,6 +24,10 @@ export function useNotificationPermission(): UseNotificationPermissionResult {
     const res = await Notifications.getPermissionsAsync();
     setStatus(mapStatus(res.status));
   }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
 
   const request = useCallback(async () => {
     const res = await Notifications.requestPermissionsAsync();
