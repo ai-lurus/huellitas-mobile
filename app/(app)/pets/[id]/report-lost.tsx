@@ -1,11 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Controller, useForm, type SubmitHandler } from 'react-hook-form';
 import {
   ActivityIndicator,
-  Alert,
   Image,
   KeyboardAvoidingView,
   Modal,
@@ -88,6 +87,16 @@ export default function ReportLostScreen(): React.ReactElement {
   const [showTime, setShowTime] = useState(false);
   const [submitPhase, setSubmitPhase] = useState<'idle' | 'loading' | 'success'>('idle');
   const [submitResult, setSubmitResult] = useState<CreateLostReportResult | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  // Tracks whether the loading modal has finished closing before we show next UI
+  const modalCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  React.useEffect(
+    () => (): void => {
+      if (modalCloseTimer.current) clearTimeout(modalCloseTimer.current);
+    },
+    [],
+  );
 
   const createMutation = useCreateLostReportMutation(petId);
 
@@ -144,8 +153,12 @@ export default function ReportLostScreen(): React.ReactElement {
         lastSeenAt,
         message: trimmed && trimmed.length > 0 ? trimmed : undefined,
       });
-      if (!parsed.success) return;
+      if (!parsed.success) {
+        setSubmitError('Verifica la fecha y hora antes de enviar.');
+        return;
+      }
 
+      setSubmitError(null);
       setSubmitPhase('loading');
       try {
         const result = await createMutation.mutateAsync({
@@ -157,8 +170,13 @@ export default function ReportLostScreen(): React.ReactElement {
         setSubmitResult(result);
         setSubmitPhase('success');
       } catch {
+        // Delay error display until loading modal fade-out completes to avoid
+        // a native conflict between two overlapping iOS overlay animations.
         setSubmitPhase('idle');
-        Alert.alert('Error', 'No se pudo enviar el reporte. Intenta de nuevo.');
+        if (modalCloseTimer.current) clearTimeout(modalCloseTimer.current);
+        modalCloseTimer.current = setTimeout(() => {
+          setSubmitError('No se pudo enviar el reporte. Intenta de nuevo.');
+        }, 300);
       }
     },
     [createMutation, pinLocation],
@@ -472,7 +490,7 @@ export default function ReportLostScreen(): React.ReactElement {
 
           <View style={styles.warnBox}>
             <View style={styles.warnStrip} />
-            <Ionicons color={colors.danger} name="alert-circle-outline" size={20} />
+            <Ionicons color={colors.navActive} name="information-circle-outline" size={20} />
             <View style={styles.warnTextWrap}>
               <Text style={styles.warnTitle}>Reporte de mascota perdida</Text>
               <Text style={styles.warnText}>
@@ -538,9 +556,18 @@ export default function ReportLostScreen(): React.ReactElement {
             <Text style={styles.infoLine}>• Recibirás alertas de posibles avistamientos</Text>
           </View>
 
+          {submitError ? (
+            <View style={styles.submitErrorBox} testID="reportLost.submitError">
+              <Text style={styles.submitErrorText}>{submitError}</Text>
+            </View>
+          ) : null}
+
           <Pressable
             disabled={createMutation.isPending}
-            onPress={handleSubmit(runSubmit)}
+            onPress={(): void => {
+              setSubmitError(null);
+              void handleSubmit(runSubmit)();
+            }}
             style={[styles.dangerBtn, createMutation.isPending ? styles.dangerBtnDisabled : null]}
             testID="reportLost.submit"
           >
@@ -577,12 +604,6 @@ export default function ReportLostScreen(): React.ReactElement {
               cercanos y te contactaremos si hay avistamientos.
             </Text>
             <View style={styles.statsRow}>
-              <View style={styles.statCol}>
-                <Text style={styles.statOrange}>
-                  {submitResult?.notifiedUsersCount != null ? submitResult.notifiedUsersCount : '—'}
-                </Text>
-                <Text style={styles.statLabel}>Usuarios notificados</Text>
-              </View>
               <View style={styles.statCol}>
                 <Text style={styles.statBlue}>
                   {submitResult?.searchRadiusKm != null
@@ -779,8 +800,8 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
+    borderColor: 'rgba(255, 107, 53, 0.25)',
+    backgroundColor: 'rgba(255, 107, 53, 0.06)',
     marginBottom: spacing.md,
     overflow: 'hidden',
   },
@@ -790,11 +811,21 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     width: 4,
-    backgroundColor: colors.danger,
+    backgroundColor: colors.navActive,
   },
   warnTextWrap: { flex: 1, gap: 2 },
-  warnTitle: { ...typography.bodyStrong, color: colors.dangerDark },
+  warnTitle: { ...typography.bodyStrong, color: colors.navActive },
   warnText: { ...typography.caption, color: colors.textSecondary, lineHeight: 18 },
+  submitErrorBox: {
+    backgroundColor: colors.dangerSoft,
+    borderWidth: 1,
+    borderColor: colors.danger,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  submitErrorText: { ...typography.caption, color: colors.dangerDark, textAlign: 'center' },
   previewCard: {
     backgroundColor: colors.surface,
     borderRadius: radius.xl,
@@ -908,7 +939,6 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   statCol: { flex: 1, alignItems: 'center' },
-  statOrange: { fontSize: 28, fontWeight: '800', color: colors.navActive },
   statBlue: { fontSize: 28, fontWeight: '800', color: colors.primary },
   statLabel: {
     ...typography.caption,
