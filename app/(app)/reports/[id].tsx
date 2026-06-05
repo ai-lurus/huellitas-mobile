@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -127,6 +127,7 @@ export default function ReportDetailScreen(): React.JSX.Element {
   const meId = useAuthStore((s) => s.user?.id);
   const meName = useAuthStore((s) => s.user?.name) ?? '—';
   const reportQuery = useLostReportDetail(reportId);
+  const errorAlertShown = useRef(false);
   const currentLocation = useLocationStore((s) => s.currentLocation);
 
   const detail = reportQuery.data;
@@ -188,10 +189,13 @@ export default function ReportDetailScreen(): React.JSX.Element {
   }, [isResolved, reportId, router]);
 
   useEffect(() => {
-    if (!reportQuery.isPending && reportQuery.isError) {
-      Alert.alert('Error', 'No pudimos cargar el detalle del reporte. Intenta nuevamente.');
+    if (!reportQuery.isPending && reportQuery.isError && !errorAlertShown.current) {
+      errorAlertShown.current = true;
+      Alert.alert('Error', 'No pudimos cargar el detalle del reporte. Intenta nuevamente.', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
     }
-  }, [reportQuery.isError, reportQuery.isPending]);
+  }, [reportQuery.isError, reportQuery.isPending, router]);
 
   const sortedSightings = useMemo(() => {
     const list = detail?.sightings ?? [];
