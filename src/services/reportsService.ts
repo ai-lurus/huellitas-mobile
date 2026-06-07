@@ -324,6 +324,7 @@ function normalizeLostReport(raw: unknown, params: NearbyLostReportsParams): Los
 
   const parsed = lostReportSchema.safeParse({
     id: asString(record.id) ?? asString(record.reportId),
+    userId: asString(record.userId) ?? asString(record.user_id) ?? asString(record.ownerId),
     lat: coords.lat,
     lng: coords.lng,
     petName: asString(pet.name) ?? asString(record.petName) ?? 'Mascota',

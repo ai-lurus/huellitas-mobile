@@ -1,9 +1,19 @@
 import { useMemo, useState } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import {
+  ActionSheetIOS,
+  Alert,
+  Image,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, type Href } from 'expo-router';
 
 import { AlertMarker } from '../../src/components/map/AlertMarker';
+import { StrayMarker } from '../../src/components/map/StrayMarker';
 import { HuellitasMap } from '../../src/components/map/HuellitasMap';
 import { MapFilters } from '../../src/components/map/MapFilters';
 import { Skeleton } from '../../src/components/skeleton/Skeleton';
@@ -11,10 +21,32 @@ import { DEFAULT_MAP_FALLBACK } from '../../src/config/constants';
 import type { LostReport, LostReportSpeciesFilter } from '../../src/domain/lostReports';
 import { colors, radius, spacing, typography } from '../../src/design/tokens';
 import { useLostReports } from '../../src/hooks/useLostReports';
+import { useNearbyStrayReports } from '../../src/hooks/useStrayReports';
 import { useLocationStore } from '../../src/stores/locationStore';
 import { useSettingsStore } from '../../src/stores/settingsStore';
 
 import BRAND_LOGO from '../../assets/icon.png';
+
+function showReportActionSheet(onLostPet: () => void, onStray: () => void): void {
+  if (Platform.OS === 'ios') {
+    ActionSheetIOS.showActionSheetWithOptions(
+      {
+        options: ['Cancelar', 'Mascota perdida', 'Vi un animal suelto'],
+        cancelButtonIndex: 0,
+      },
+      (index) => {
+        if (index === 1) onLostPet();
+        if (index === 2) onStray();
+      },
+    );
+  } else {
+    Alert.alert('Reportar', '¿Qué quieres reportar?', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Mascota perdida', onPress: onLostPet },
+      { text: 'Vi un animal suelto', onPress: onStray },
+    ]);
+  }
+}
 
 export default function MapScreen(): React.JSX.Element {
   const router = useRouter();
@@ -24,6 +56,12 @@ export default function MapScreen(): React.JSX.Element {
 
   const searchCenter = currentLocation ?? DEFAULT_MAP_FALLBACK;
   const reportsQuery = useLostReports({
+    lat: searchCenter.lat,
+    lng: searchCenter.lng,
+    radius: alertRadiusKm,
+  });
+
+  const strayQuery = useNearbyStrayReports({
     lat: searchCenter.lat,
     lng: searchCenter.lng,
     radius: alertRadiusKm,
@@ -43,6 +81,17 @@ export default function MapScreen(): React.JSX.Element {
 
   const openReport = (reportId: string): void => {
     router.push(`/(app)/reports/${reportId}` as Href);
+  };
+
+  const openStray = (strayId: string): void => {
+    router.push(`/(app)/stray/${strayId}` as Href);
+  };
+
+  const handleFab = (): void => {
+    showReportActionSheet(
+      () => router.push('/(app)/pets' as Href),
+      () => router.push('/(app)/stray/new' as Href),
+    );
   };
 
   return (
@@ -89,6 +138,10 @@ export default function MapScreen(): React.JSX.Element {
             <AlertMarker key={report.id} onPressCallout={openReport} report={report} />
           ))}
 
+          {(strayQuery.data ?? []).map((stray) => (
+            <StrayMarker key={`stray-${stray.id}`} report={stray} onPressCallout={openStray} />
+          ))}
+
           {showReportsLoading ? (
             <View style={styles.overlay} testID="reports.loading">
               <Text style={styles.overlayLabel}>Cargando reportes cercanos...</Text>
@@ -102,6 +155,10 @@ export default function MapScreen(): React.JSX.Element {
           ) : null}
         </HuellitasMap>
       </View>
+
+      <Pressable onPress={handleFab} style={styles.fab} testID="map.fab">
+        <Ionicons name="add" size={28} color={colors.white} />
+      </Pressable>
 
       <View style={styles.legend}>
         <Text style={[styles.legendItem, { color: '#E11D48' }]}>● Perdido</Text>
@@ -237,5 +294,21 @@ const styles = StyleSheet.create({
   },
   legendItem: {
     ...typography.caption,
+  },
+  fab: {
+    position: 'absolute',
+    bottom: spacing.lg,
+    right: spacing.md,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.navActive,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.navActive,
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
   },
 });

@@ -6,6 +6,7 @@ export const lostReportKindSchema = z.enum(['lost', 'sighted', 'resolved']);
 
 export const lostReportSchema = z.object({
   id: z.string(),
+  userId: z.string().optional(),
   lat: z.number(),
   lng: z.number(),
   petName: z.string(),

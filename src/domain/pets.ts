@@ -28,9 +28,24 @@ export const petSchema = z.object({
   status: petStatusSchema.optional(),
   /** Si la mascota está marcada como perdida (badge PERDIDO en listado). */
   isLost: z.boolean().optional(),
+  /** Token para generar QR de perfil público. */
+  qrToken: z.string().optional(),
 });
 
 export type Pet = z.infer<typeof petSchema>;
+
+export const petPublicSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  species: petSpeciesSchema,
+  breed: z.string().nullable().optional(),
+  color: z.string().nullable().optional(),
+  age: z.number().nullable().optional(),
+  coverPhotoUrl: z.string().nullable().optional(),
+  isLost: z.boolean(),
+});
+
+export type PetPublic = z.infer<typeof petPublicSchema>;
 
 export const petSummarySchema = z.object({
   id: z.string(),

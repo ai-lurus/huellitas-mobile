@@ -78,6 +78,7 @@ export interface PetDetailProps {
   onReportLost: () => void;
   onMarkFound: () => void;
   onDelete: () => void;
+  onQrCode: () => void;
   isDeleting?: boolean;
 }
 
@@ -88,6 +89,7 @@ export function PetDetail({
   onReportLost,
   onMarkFound,
   onDelete,
+  onQrCode,
   isDeleting = false,
 }: PetDetailProps): React.ReactElement {
   const { width } = useWindowDimensions();
@@ -244,6 +246,17 @@ export function PetDetail({
             size={18}
             color={colors.white}
           />
+        </Pressable>
+
+        <Pressable
+          testID="petDetail.qr"
+          onPress={onQrCode}
+          style={styles.qrAction}
+          accessibilityRole="button"
+          accessibilityLabel="Ver código QR"
+        >
+          <Ionicons name="qr-code-outline" size={18} color={colors.primary} />
+          <Text style={styles.qrActionText}>Código QR</Text>
         </Pressable>
 
         <Pressable
@@ -435,4 +448,17 @@ const styles = StyleSheet.create({
   },
   deleteActionDisabled: { opacity: 0.5 },
   deleteActionText: { color: colors.danger, ...typography.button },
+  qrAction: {
+    marginTop: spacing.sm,
+    height: 54,
+    borderRadius: radius.button,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  qrActionText: { color: colors.primary, ...typography.button },
 });

@@ -7,6 +7,7 @@ export const inboxNotificationKindSchema = z.enum([
   'lost',
   'resolved',
   'reminder',
+  'stray_possible_match',
   'system',
 ]);
 

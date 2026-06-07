@@ -34,8 +34,8 @@ export default function PetDetailScreen(): React.ReactElement {
       {
         text: 'Sí, eliminar tarjeta',
         style: 'destructive',
-        onPress: () => {
-          void (async () => {
+        onPress: (): void => {
+          void (async (): Promise<void> => {
             try {
               await deletePetMutation.mutateAsync(petId);
               router.replace('/(app)/pets');
@@ -92,6 +92,7 @@ export default function PetDetailScreen(): React.ReactElement {
         onEdit={() => router.push(`/(app)/pets/${petId}/edit`)}
         onReportLost={() => router.push(`/(app)/pets/${petId}/report-lost`)}
         onMarkFound={() => router.push(`/(app)/pets/${petId}/found`)}
+        onQrCode={() => router.push(`/(app)/pets/${petId}/qr`)}
         onDelete={confirmDelete}
         isDeleting={deletePetMutation.isPending}
       />
