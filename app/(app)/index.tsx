@@ -1,44 +1,72 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, type Href } from 'expo-router';
 
 import { HomeReportCard } from '../../src/components/reports/HomeReportCard';
 import { ReportCardSkeleton } from '../../src/components/reports/ReportCardSkeleton';
+import { PostCard } from '../../src/components/feed/PostCard';
 import { DEFAULT_MAP_FALLBACK } from '../../src/config/constants';
-import { colors, radius, spacing, typography } from '../../src/design/tokens';
+import { colors, radius, shadows, spacing, typography } from '../../src/design/tokens';
 import type { LostReport } from '../../src/domain/lostReports';
+import type { Post } from '../../src/domain/posts';
 import { useLostReports } from '../../src/hooks/useLostReports';
+import { useFeed, useToggleLike } from '../../src/hooks/useFeed';
 import { useLocationStore } from '../../src/stores/locationStore';
 import { useSettingsStore } from '../../src/stores/settingsStore';
+import { useAuthStore } from '../../src/stores/authStore';
+
+type HomeTab = 'comunidad' | 'alertas';
+type AlertFilter = 'all' | 'lost' | 'sighted' | 'resolved';
 
 export default function HomeScreen(): React.JSX.Element {
   const router = useRouter();
   const currentLocation = useLocationStore((s) => s.currentLocation);
   const alertRadiusKm = useSettingsStore((s) => s.alertRadiusKm);
+  const currentUser = useAuthStore((s) => s.user);
 
-  const [filter, setFilter] = useState<'all' | 'lost' | 'sighted' | 'resolved'>('all');
+  const [activeTab, setActiveTab] = useState<HomeTab>('comunidad');
+  const [alertFilter, setAlertFilter] = useState<AlertFilter>('all');
 
   const searchCenter = currentLocation ?? DEFAULT_MAP_FALLBACK;
+
   const reportsQuery = useLostReports({
     lat: searchCenter.lat,
     lng: searchCenter.lng,
     radius: alertRadiusKm,
   });
 
-  const showReportsLoading =
-    reportsQuery.fetchStatus === 'fetching' && reportsQuery.data === undefined;
+  const feedQuery = useFeed({
+    lat: searchCenter.lat,
+    lng: searchCenter.lng,
+    radius: alertRadiusKm,
+    enabled: activeTab === 'comunidad',
+  });
+
+  const { mutate: toggleLike, isPending: isLiking } = useToggleLike();
 
   const allReports = useMemo(() => reportsQuery.data ?? [], [reportsQuery.data]);
-
   const filteredReports = useMemo(() => {
-    if (filter === 'all') return allReports;
-    return allReports.filter((r) => r.reportKind === filter);
-  }, [allReports, filter]);
+    if (alertFilter === 'all') return allReports;
+    return allReports.filter((r) => r.reportKind === alertFilter);
+  }, [allReports, alertFilter]);
 
   const lostCount = useMemo(
     () => allReports.filter((r) => r.reportKind === 'lost').length,
     [allReports],
+  );
+
+  const allPosts = useMemo(
+    () => feedQuery.data?.pages.flatMap((p) => p.posts) ?? [],
+    [feedQuery.data],
   );
 
   const openReport = useCallback(
@@ -48,108 +76,216 @@ export default function HomeScreen(): React.JSX.Element {
     [router],
   );
 
-  const filterChips = (
+  const openPost = useCallback(
+    (id: string): void => {
+      router.push(`/(app)/feed/${id}` as Href);
+    },
+    [router],
+  );
+
+  const handleLike = useCallback(
+    (post: Post): void => {
+      toggleLike({ postId: post.id, liked: post.likedByMe });
+    },
+    [toggleLike],
+  );
+
+  const topBar = (
+    <View style={styles.topBar}>
+      <View style={styles.brandRow}>
+        <View style={styles.logoMark}>
+          <Image
+            accessibilityLabel="Huellitas"
+            source={require('../../assets/icon.png')}
+            style={styles.logoImg}
+            resizeMode="contain"
+          />
+        </View>
+        <Text style={styles.brandText}>Huellitas</Text>
+      </View>
+      <View style={styles.actionsRow}>
+        <Pressable accessibilityRole="button" style={styles.actionBtn} testID="home.search">
+          <Ionicons name="search" size={20} color={colors.textPrimary} />
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          style={styles.actionBtn}
+          testID="home.notifications"
+          onPress={() => router.push('/(app)/notifications')}
+        >
+          <Ionicons name="notifications-outline" size={20} color={colors.textPrimary} />
+          <View style={styles.dot} />
+        </Pressable>
+      </View>
+    </View>
+  );
+
+  const tabBar = (
+    <View style={styles.tabBar} testID="home.tabs">
+      <Pressable
+        style={[styles.tab, activeTab === 'comunidad' && styles.tabActive]}
+        onPress={() => setActiveTab('comunidad')}
+        testID="home.tab.comunidad"
+      >
+        <Text style={[styles.tabLabel, activeTab === 'comunidad' && styles.tabLabelActive]}>
+          Comunidad
+        </Text>
+        {activeTab === 'comunidad' && <View style={styles.tabIndicator} />}
+      </Pressable>
+      <Pressable
+        style={[styles.tab, activeTab === 'alertas' && styles.tabActive]}
+        onPress={() => setActiveTab('alertas')}
+        testID="home.tab.alertas"
+      >
+        <Text style={[styles.tabLabel, activeTab === 'alertas' && styles.tabLabelActive]}>
+          Alertas
+        </Text>
+        {lostCount > 0 && (
+          <View style={styles.alertBadge}>
+            <Text style={styles.alertBadgeText}>{lostCount}</Text>
+          </View>
+        )}
+        {activeTab === 'alertas' && <View style={styles.tabIndicator} />}
+      </Pressable>
+    </View>
+  );
+
+  const alertFilterChips = (
     <View style={styles.chipsRow} testID="home.filters">
       <FilterChip
-        active={filter === 'all'}
+        active={alertFilter === 'all'}
         icon="apps"
         label="Todos"
-        onPress={() => setFilter('all')}
+        onPress={() => setAlertFilter('all')}
         tone="purple"
         testID="home.filter.all"
       />
       <FilterChip
-        active={filter === 'lost'}
+        active={alertFilter === 'lost'}
         icon="alert-circle"
         label="Perdidos"
-        onPress={() => setFilter('lost')}
+        onPress={() => setAlertFilter('lost')}
         tone="lost"
         testID="home.filter.lost"
       />
       <FilterChip
-        active={filter === 'sighted'}
+        active={alertFilter === 'sighted'}
         icon="eye"
         label="Avistados"
-        onPress={() => setFilter('sighted')}
+        onPress={() => setAlertFilter('sighted')}
         tone="sighted"
         testID="home.filter.sighted"
       />
       <FilterChip
-        active={filter === 'resolved'}
+        active={alertFilter === 'resolved'}
         icon="checkmark-circle"
         label="Resueltos"
-        onPress={() => setFilter('resolved')}
+        onPress={() => setAlertFilter('resolved')}
         tone="resolved"
         testID="home.filter.resolved"
       />
     </View>
   );
 
-  const header = (
+  const headerComponent = (
     <View style={styles.headerWrap}>
-      <View style={styles.topBar}>
-        <View style={styles.brandRow}>
-          <View style={styles.logoMark}>
-            <Image
-              accessibilityLabel="Huellitas"
-              source={require('../../assets/icon.png')}
-              style={styles.logoImg}
-              resizeMode="contain"
-            />
+      {topBar}
+      {tabBar}
+      {activeTab === 'alertas' && (
+        <>
+          {alertFilterChips}
+          <View style={styles.subRow} testID="home.subtitle">
+            <Text style={styles.subRed}>{lostCount} mascotas perdidas</Text>
+            <Text style={styles.subMuted}> cerca de ti</Text>
           </View>
-          <Text style={styles.brandText}>Huellitas</Text>
-        </View>
-        <View style={styles.actionsRow}>
-          <Pressable accessibilityRole="button" style={styles.actionBtn} testID="home.search">
-            <Ionicons name="search" size={20} color={colors.textPrimary} />
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            style={styles.actionBtn}
-            testID="home.notifications"
-            onPress={() => router.push('/(app)/notifications')}
-          >
-            <Ionicons name="notifications-outline" size={20} color={colors.textPrimary} />
-            <View style={styles.dot} />
-          </Pressable>
-        </View>
-      </View>
-
-      {filterChips}
-
-      <View style={styles.subRow} testID="home.subtitle">
-        <Text style={styles.subRed}>{lostCount} mascotas perdidas</Text>
-        <Text style={styles.subMuted}> cerca de ti</Text>
-      </View>
+        </>
+      )}
     </View>
   );
 
-  if (showReportsLoading) {
+  if (activeTab === 'alertas') {
+    const showLoading = reportsQuery.fetchStatus === 'fetching' && reportsQuery.data === undefined;
     return (
-      <View style={styles.screen} testID="home.loading">
-        {header}
-        <View style={styles.listPadding}>
-          <ReportCardSkeleton />
-          <ReportCardSkeleton />
-        </View>
+      <View style={styles.screen} testID="home.screen">
+        {showLoading ? (
+          <>
+            {headerComponent}
+            <View style={styles.listPadding}>
+              <ReportCardSkeleton />
+              <ReportCardSkeleton />
+            </View>
+          </>
+        ) : (
+          <FlatList<LostReport>
+            ListHeaderComponent={headerComponent}
+            data={filteredReports}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={styles.listPadding}
+            refreshing={Boolean(reportsQuery.isRefetching)}
+            onRefresh={() => void reportsQuery.refetch()}
+            renderItem={({ item }) => (
+              <HomeReportCard report={item} onPress={() => openReport(item.id)} />
+            )}
+            testID="home.alerts.list"
+          />
+        )}
       </View>
     );
   }
 
+  // Comunidad tab
+  const showFeedLoading = feedQuery.fetchStatus === 'fetching' && feedQuery.data === undefined;
+
   return (
     <View style={styles.screen} testID="home.screen">
-      <FlatList<LostReport>
-        ListHeaderComponent={header}
-        data={filteredReports}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listPadding}
-        refreshing={Boolean(reportsQuery.isRefetching)}
-        onRefresh={() => void reportsQuery.refetch()}
-        renderItem={({ item }) => (
-          <HomeReportCard report={item} onPress={() => openReport(item.id)} />
-        )}
-        testID="home.list"
-      />
+      {showFeedLoading ? (
+        <>
+          {headerComponent}
+          <View style={styles.centered}>
+            <ActivityIndicator color={colors.primary} />
+          </View>
+        </>
+      ) : (
+        <FlatList<Post>
+          ListHeaderComponent={headerComponent}
+          data={allPosts}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.feedPadding}
+          refreshing={Boolean(feedQuery.isRefetching)}
+          onRefresh={() => void feedQuery.refetch()}
+          onEndReached={() => {
+            if (feedQuery.hasNextPage && !feedQuery.isFetchingNextPage) {
+              void feedQuery.fetchNextPage();
+            }
+          }}
+          onEndReachedThreshold={0.3}
+          renderItem={({ item }) => (
+            <PostCard
+              post={item}
+              onPress={() => openPost(item.id)}
+              onLike={() => handleLike(item)}
+              isLiking={isLiking}
+              currentUserId={currentUser?.id}
+            />
+          )}
+          ListEmptyComponent={
+            <Text style={styles.emptyFeed}>
+              Aún no hay publicaciones cerca de ti.{'\n'}¡Sé el primero en compartir!
+            </Text>
+          }
+          testID="home.feed.list"
+        />
+      )}
+
+      {currentUser ? (
+        <Pressable
+          style={styles.fab}
+          onPress={() => router.push('/(app)/feed/new-post' as Href)}
+          testID="home.fab.new-post"
+        >
+          <Ionicons name="add" size={28} color={colors.white} />
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -164,6 +300,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
     gap: spacing.sm,
+    backgroundColor: colors.surface,
   },
   topBar: {
     flexDirection: 'row',
@@ -196,8 +333,54 @@ const styles = StyleSheet.create({
     borderColor: colors.backgroundApp,
   },
 
-  chipsRow: { flexDirection: 'row', gap: spacing.xs, alignItems: 'center' },
+  tabBar: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+    gap: spacing.xxs,
+    position: 'relative',
+  },
+  tabActive: {},
+  tabLabel: {
+    ...typography.label,
+    color: colors.textSecondary,
+  },
+  tabLabelActive: {
+    color: colors.primary,
+  },
+  tabIndicator: {
+    position: 'absolute',
+    bottom: -1,
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: colors.primary,
+    borderRadius: 1,
+  },
+  alertBadge: {
+    backgroundColor: colors.danger,
+    borderRadius: radius.full,
+    minWidth: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  alertBadgeText: {
+    ...typography.caption,
+    color: colors.white,
+    fontWeight: '700',
+    fontSize: 10,
+  },
 
+  chipsRow: { flexDirection: 'row', gap: spacing.xs, alignItems: 'center' },
   subRow: { flexDirection: 'row', alignItems: 'center' },
   subRed: { ...typography.caption, color: colors.danger, fontWeight: '800' },
   subMuted: { ...typography.caption, color: colors.textMuted },
@@ -205,6 +388,37 @@ const styles = StyleSheet.create({
   listPadding: {
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.xxxl,
+  },
+  feedPadding: {
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xxxl + 60,
+  },
+  centered: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xxxl,
+  },
+  emptyFeed: {
+    ...typography.body,
+    color: colors.textMuted,
+    textAlign: 'center',
+    paddingVertical: spacing.xxxl,
+    paddingHorizontal: spacing.xl,
+    lineHeight: 22,
+  },
+
+  fab: {
+    position: 'absolute',
+    bottom: spacing.xl,
+    right: spacing.lg,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.button,
   },
 });
 
