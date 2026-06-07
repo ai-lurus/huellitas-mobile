@@ -14,24 +14,28 @@ import { useRouter, type Href } from 'expo-router';
 
 import { AlertMarker } from '../../src/components/map/AlertMarker';
 import { PlaceMarker } from '../../src/components/map/PlaceMarker';
+import { RoutePolyline } from '../../src/components/map/RoutePolyline';
 import { StrayMarker } from '../../src/components/map/StrayMarker';
 import { HuellitasMap } from '../../src/components/map/HuellitasMap';
 import { MapFilters } from '../../src/components/map/MapFilters';
 import { PlaceBottomSheet } from '../../src/components/places/PlaceBottomSheet';
+import { RouteBottomSheet } from '../../src/components/routes/RouteBottomSheet';
 import { Skeleton } from '../../src/components/skeleton/Skeleton';
 import { DEFAULT_MAP_FALLBACK } from '../../src/config/constants';
 import type { LostReport, LostReportSpeciesFilter } from '../../src/domain/lostReports';
 import type { Place } from '../../src/domain/places';
+import type { Route } from '../../src/domain/routes';
 import { colors, radius, spacing, typography } from '../../src/design/tokens';
 import { useLostReports } from '../../src/hooks/useLostReports';
 import { useNearbyPlaces, useUpvotePlace } from '../../src/hooks/usePlaces';
+import { useNearbyRoutes, useRateRoute } from '../../src/hooks/useRoutes';
 import { useNearbyStrayReports } from '../../src/hooks/useStrayReports';
 import { useLocationStore } from '../../src/stores/locationStore';
 import { useSettingsStore } from '../../src/stores/settingsStore';
 
 import BRAND_LOGO from '../../assets/icon.png';
 
-type MapLayer = 'alerts' | 'places';
+type MapLayer = 'alerts' | 'places' | 'routes';
 
 function showReportActionSheet(onLostPet: () => void, onStray: () => void): void {
   if (Platform.OS === 'ios') {
@@ -61,6 +65,7 @@ export default function MapScreen(): React.JSX.Element {
   const [selectedSpecies, setSelectedSpecies] = useState<LostReportSpeciesFilter>('all');
   const [layer, setLayer] = useState<MapLayer>('alerts');
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
+  const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
 
   const searchCenter = currentLocation ?? DEFAULT_MAP_FALLBACK;
   const reportsQuery = useLostReports({
@@ -83,6 +88,15 @@ export default function MapScreen(): React.JSX.Element {
   });
 
   const upvoteMutation = useUpvotePlace();
+
+  const routesQuery = useNearbyRoutes({
+    lat: searchCenter.lat,
+    lng: searchCenter.lng,
+    radius: alertRadiusKm,
+    enabled: layer === 'routes',
+  });
+
+  const rateRouteMutation = useRateRoute();
 
   const showReportsLoading =
     reportsQuery.fetchStatus === 'fetching' && reportsQuery.data === undefined;
@@ -114,9 +128,23 @@ export default function MapScreen(): React.JSX.Element {
     if (place) setSelectedPlace(place);
   };
 
+  const handleRouteCallout = (routeId: string): void => {
+    const route = (routesQuery.data ?? []).find((r) => r.id === routeId);
+    if (route) setSelectedRoute(route);
+  };
+
+  const openRoute = (routeId: string): void => {
+    setSelectedRoute(null);
+    router.push(`/(app)/routes/${routeId}` as Href);
+  };
+
   const handleFab = (): void => {
     if (layer === 'places') {
       router.push('/(app)/places/new' as Href);
+      return;
+    }
+    if (layer === 'routes') {
+      router.push('/(app)/routes/new' as Href);
       return;
     }
     showReportActionSheet(
@@ -165,6 +193,15 @@ export default function MapScreen(): React.JSX.Element {
             Lugares
           </Text>
         </Pressable>
+        <Pressable
+          style={[styles.layerBtn, layer === 'routes' && styles.layerBtnActive]}
+          onPress={() => setLayer('routes')}
+          testID="map.layer.routes"
+        >
+          <Text style={[styles.layerBtnLabel, layer === 'routes' && styles.layerBtnLabelActive]}>
+            Rutas
+          </Text>
+        </Pressable>
       </View>
 
       {layer === 'alerts' ? (
@@ -198,12 +235,20 @@ export default function MapScreen(): React.JSX.Element {
                 <StrayMarker key={`stray-${stray.id}`} report={stray} onPressCallout={openStray} />
               ))}
             </>
-          ) : (
+          ) : layer === 'places' ? (
             (placesQuery.data ?? []).map((place) => (
               <PlaceMarker
                 key={`place-${place.id}`}
                 place={place}
                 onPressCallout={handlePlaceCallout}
+              />
+            ))
+          ) : (
+            (routesQuery.data ?? []).map((route: Route) => (
+              <RoutePolyline
+                key={`route-${route.id}`}
+                route={route}
+                onPressCallout={handleRouteCallout}
               />
             ))
           )}
@@ -224,7 +269,7 @@ export default function MapScreen(): React.JSX.Element {
 
       <Pressable
         onPress={handleFab}
-        style={[styles.fab, layer === 'places' && styles.fabGreen]}
+        style={[styles.fab, (layer === 'places' || layer === 'routes') && styles.fabGreen]}
         testID="map.fab"
       >
         <Ionicons name="add" size={28} color={colors.white} />
@@ -246,7 +291,6 @@ export default function MapScreen(): React.JSX.Element {
         onViewDetail={openPlace}
         onUpvote={(placeId, currentlyUpvoted) => {
           upvoteMutation.mutate({ placeId, currentlyUpvoted });
-          // optimistic UI: update local state
           if (selectedPlace?.id === placeId) {
             setSelectedPlace({
               ...selectedPlace,
@@ -258,6 +302,15 @@ export default function MapScreen(): React.JSX.Element {
           }
         }}
         isUpvoting={upvoteMutation.isPending}
+      />
+
+      <RouteBottomSheet
+        route={selectedRoute}
+        visible={selectedRoute != null}
+        onClose={() => setSelectedRoute(null)}
+        onViewDetail={openRoute}
+        onRate={(routeId, rating) => rateRouteMutation.mutate({ routeId, rating })}
+        isRating={rateRouteMutation.isPending}
       />
     </View>
   );
