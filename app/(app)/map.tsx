@@ -13,19 +13,25 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter, type Href } from 'expo-router';
 
 import { AlertMarker } from '../../src/components/map/AlertMarker';
+import { PlaceMarker } from '../../src/components/map/PlaceMarker';
 import { StrayMarker } from '../../src/components/map/StrayMarker';
 import { HuellitasMap } from '../../src/components/map/HuellitasMap';
 import { MapFilters } from '../../src/components/map/MapFilters';
+import { PlaceBottomSheet } from '../../src/components/places/PlaceBottomSheet';
 import { Skeleton } from '../../src/components/skeleton/Skeleton';
 import { DEFAULT_MAP_FALLBACK } from '../../src/config/constants';
 import type { LostReport, LostReportSpeciesFilter } from '../../src/domain/lostReports';
+import type { Place } from '../../src/domain/places';
 import { colors, radius, spacing, typography } from '../../src/design/tokens';
 import { useLostReports } from '../../src/hooks/useLostReports';
+import { useNearbyPlaces, useUpvotePlace } from '../../src/hooks/usePlaces';
 import { useNearbyStrayReports } from '../../src/hooks/useStrayReports';
 import { useLocationStore } from '../../src/stores/locationStore';
 import { useSettingsStore } from '../../src/stores/settingsStore';
 
 import BRAND_LOGO from '../../assets/icon.png';
+
+type MapLayer = 'alerts' | 'places';
 
 function showReportActionSheet(onLostPet: () => void, onStray: () => void): void {
   if (Platform.OS === 'ios') {
@@ -53,6 +59,8 @@ export default function MapScreen(): React.JSX.Element {
   const currentLocation = useLocationStore((s) => s.currentLocation);
   const alertRadiusKm = useSettingsStore((s) => s.alertRadiusKm);
   const [selectedSpecies, setSelectedSpecies] = useState<LostReportSpeciesFilter>('all');
+  const [layer, setLayer] = useState<MapLayer>('alerts');
+  const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
 
   const searchCenter = currentLocation ?? DEFAULT_MAP_FALLBACK;
   const reportsQuery = useLostReports({
@@ -66,6 +74,15 @@ export default function MapScreen(): React.JSX.Element {
     lng: searchCenter.lng,
     radius: alertRadiusKm,
   });
+
+  const placesQuery = useNearbyPlaces({
+    lat: searchCenter.lat,
+    lng: searchCenter.lng,
+    radius: alertRadiusKm,
+    enabled: layer === 'places',
+  });
+
+  const upvoteMutation = useUpvotePlace();
 
   const showReportsLoading =
     reportsQuery.fetchStatus === 'fetching' && reportsQuery.data === undefined;
@@ -87,7 +104,21 @@ export default function MapScreen(): React.JSX.Element {
     router.push(`/(app)/stray/${strayId}` as Href);
   };
 
+  const openPlace = (placeId: string): void => {
+    setSelectedPlace(null);
+    router.push(`/(app)/places/${placeId}` as Href);
+  };
+
+  const handlePlaceCallout = (placeId: string): void => {
+    const place = (placesQuery.data ?? []).find((p) => p.id === placeId);
+    if (place) setSelectedPlace(place);
+  };
+
   const handleFab = (): void => {
+    if (layer === 'places') {
+      router.push('/(app)/places/new' as Href);
+      return;
+    }
     showReportActionSheet(
       () => router.push('/(app)/pets' as Href),
       () => router.push('/(app)/stray/new' as Href),
@@ -114,7 +145,31 @@ export default function MapScreen(): React.JSX.Element {
         </View>
       </View>
 
-      <MapFilters onChange={setSelectedSpecies} selected={selectedSpecies} />
+      {/* Layer toggle */}
+      <View style={styles.layerToggle}>
+        <Pressable
+          style={[styles.layerBtn, layer === 'alerts' && styles.layerBtnActive]}
+          onPress={() => setLayer('alerts')}
+          testID="map.layer.alerts"
+        >
+          <Text style={[styles.layerBtnLabel, layer === 'alerts' && styles.layerBtnLabelActive]}>
+            Alertas
+          </Text>
+        </Pressable>
+        <Pressable
+          style={[styles.layerBtn, layer === 'places' && styles.layerBtnActive]}
+          onPress={() => setLayer('places')}
+          testID="map.layer.places"
+        >
+          <Text style={[styles.layerBtnLabel, layer === 'places' && styles.layerBtnLabelActive]}>
+            Lugares
+          </Text>
+        </Pressable>
+      </View>
+
+      {layer === 'alerts' ? (
+        <MapFilters onChange={setSelectedSpecies} selected={selectedSpecies} />
+      ) : null}
 
       <View style={styles.mapCard}>
         <HuellitasMap containerStyle={styles.mapInner} showCenterButton={false}>
@@ -134,13 +189,24 @@ export default function MapScreen(): React.JSX.Element {
             </View>
           </View>
 
-          {filteredReports.map((report: LostReport) => (
-            <AlertMarker key={report.id} onPressCallout={openReport} report={report} />
-          ))}
-
-          {(strayQuery.data ?? []).map((stray) => (
-            <StrayMarker key={`stray-${stray.id}`} report={stray} onPressCallout={openStray} />
-          ))}
+          {layer === 'alerts' ? (
+            <>
+              {filteredReports.map((report: LostReport) => (
+                <AlertMarker key={report.id} onPressCallout={openReport} report={report} />
+              ))}
+              {(strayQuery.data ?? []).map((stray) => (
+                <StrayMarker key={`stray-${stray.id}`} report={stray} onPressCallout={openStray} />
+              ))}
+            </>
+          ) : (
+            (placesQuery.data ?? []).map((place) => (
+              <PlaceMarker
+                key={`place-${place.id}`}
+                place={place}
+                onPressCallout={handlePlaceCallout}
+              />
+            ))
+          )}
 
           {showReportsLoading ? (
             <View style={styles.overlay} testID="reports.loading">
@@ -156,16 +222,43 @@ export default function MapScreen(): React.JSX.Element {
         </HuellitasMap>
       </View>
 
-      <Pressable onPress={handleFab} style={styles.fab} testID="map.fab">
+      <Pressable
+        onPress={handleFab}
+        style={[styles.fab, layer === 'places' && styles.fabGreen]}
+        testID="map.fab"
+      >
         <Ionicons name="add" size={28} color={colors.white} />
       </Pressable>
 
-      <View style={styles.legend}>
-        <Text style={[styles.legendItem, { color: '#E11D48' }]}>● Perdido</Text>
-        <Text style={[styles.legendItem, { color: '#3B82F6' }]}>● Avistado</Text>
-        <Text style={[styles.legendItem, { color: '#22C55E' }]}>● Resuelto</Text>
-        <Text style={[styles.legendItem, { color: '#FB7185' }]}>● Tú</Text>
-      </View>
+      {layer === 'alerts' ? (
+        <View style={styles.legend}>
+          <Text style={[styles.legendItem, { color: '#E11D48' }]}>● Perdido</Text>
+          <Text style={[styles.legendItem, { color: '#3B82F6' }]}>● Avistado</Text>
+          <Text style={[styles.legendItem, { color: '#22C55E' }]}>● Resuelto</Text>
+          <Text style={[styles.legendItem, { color: '#FB7185' }]}>● Tú</Text>
+        </View>
+      ) : null}
+
+      <PlaceBottomSheet
+        place={selectedPlace}
+        visible={selectedPlace != null}
+        onClose={() => setSelectedPlace(null)}
+        onViewDetail={openPlace}
+        onUpvote={(placeId, currentlyUpvoted) => {
+          upvoteMutation.mutate({ placeId, currentlyUpvoted });
+          // optimistic UI: update local state
+          if (selectedPlace?.id === placeId) {
+            setSelectedPlace({
+              ...selectedPlace,
+              hasUpvoted: !currentlyUpvoted,
+              upvoteCount: currentlyUpvoted
+                ? selectedPlace.upvoteCount - 1
+                : selectedPlace.upvoteCount + 1,
+            });
+          }
+        }}
+        isUpvoting={upvoteMutation.isPending}
+      />
     </View>
   );
 }
@@ -210,6 +303,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
   },
+  layerToggle: {
+    flexDirection: 'row',
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.xs,
+    backgroundColor: colors.surface,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 3,
+  },
+  layerBtn: {
+    flex: 1,
+    paddingVertical: 6,
+    borderRadius: radius.full,
+    alignItems: 'center',
+  },
+  layerBtnActive: { backgroundColor: colors.primary },
+  layerBtnLabel: { ...typography.caption, color: colors.textSecondary },
+  layerBtnLabelActive: { color: colors.white, fontWeight: '600' },
   mapCard: {
     marginTop: spacing.xs,
     marginHorizontal: spacing.md,
@@ -311,4 +423,5 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
   },
+  fabGreen: { backgroundColor: colors.success },
 });
