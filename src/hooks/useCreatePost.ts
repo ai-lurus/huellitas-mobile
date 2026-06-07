@@ -11,6 +11,7 @@ export interface CreatePostPayload {
   lat?: number;
   lng?: number;
   locationLabel?: string;
+  groupId?: string;
 }
 
 async function createPostWithPhoto(payload: CreatePostPayload): Promise<Post> {
@@ -20,6 +21,7 @@ async function createPostWithPhoto(payload: CreatePostPayload): Promise<Post> {
     lat: payload.lat,
     lng: payload.lng,
     location_label: payload.locationLabel,
+    group_id: payload.groupId,
   });
 
   if (payload.photoUri) {

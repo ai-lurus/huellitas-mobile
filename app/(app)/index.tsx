@@ -4,6 +4,7 @@ import {
   FlatList,
   Image,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -14,12 +15,14 @@ import { useRouter, type Href } from 'expo-router';
 import { HomeReportCard } from '../../src/components/reports/HomeReportCard';
 import { ReportCardSkeleton } from '../../src/components/reports/ReportCardSkeleton';
 import { PostCard } from '../../src/components/feed/PostCard';
+import { GroupChip } from '../../src/components/groups/GroupChip';
 import { DEFAULT_MAP_FALLBACK } from '../../src/config/constants';
 import { colors, radius, shadows, spacing, typography } from '../../src/design/tokens';
 import type { LostReport } from '../../src/domain/lostReports';
 import type { Post } from '../../src/domain/posts';
 import { useLostReports } from '../../src/hooks/useLostReports';
 import { useFeed, useToggleLike } from '../../src/hooks/useFeed';
+import { useGroups } from '../../src/hooks/useGroups';
 import { useLocationStore } from '../../src/stores/locationStore';
 import { useSettingsStore } from '../../src/stores/settingsStore';
 import { useAuthStore } from '../../src/stores/authStore';
@@ -52,6 +55,13 @@ export default function HomeScreen(): React.JSX.Element {
   });
 
   const { mutate: toggleLike, isPending: isLiking } = useToggleLike();
+
+  const groupsQuery = useGroups({
+    lat: searchCenter.lat,
+    lng: searchCenter.lng,
+    enabled: activeTab === 'comunidad' && Boolean(currentUser),
+  });
+  const myGroups = useMemo(() => groupsQuery.data?.myGroups ?? [], [groupsQuery.data]);
 
   const allReports = useMemo(() => reportsQuery.data ?? [], [reportsQuery.data]);
   const filteredReports = useMemo(() => {
@@ -187,6 +197,31 @@ export default function HomeScreen(): React.JSX.Element {
     </View>
   );
 
+  const groupsChips =
+    myGroups.length > 0 ? (
+      <View style={styles.groupsSection}>
+        <View style={styles.groupsHeader}>
+          <Text style={styles.groupsTitle}>Mis grupos</Text>
+          <Pressable onPress={() => router.push('/(app)/groups' as Href)}>
+            <Text style={styles.groupsSeeAll}>Ver todos</Text>
+          </Pressable>
+        </View>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.groupsScroll}
+        >
+          {myGroups.map((g) => (
+            <GroupChip
+              key={g.id}
+              group={g}
+              onPress={() => router.push(`/(app)/groups/${g.id}` as Href)}
+            />
+          ))}
+        </ScrollView>
+      </View>
+    ) : null;
+
   const headerComponent = (
     <View style={styles.headerWrap}>
       {topBar}
@@ -200,6 +235,7 @@ export default function HomeScreen(): React.JSX.Element {
           </View>
         </>
       )}
+      {activeTab === 'comunidad' && groupsChips}
     </View>
   );
 
@@ -378,6 +414,36 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontWeight: '700',
     fontSize: 10,
+  },
+
+  groupsSection: {
+    marginHorizontal: -spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: spacing.sm,
+  },
+  groupsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  groupsTitle: {
+    ...typography.label,
+    color: colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  groupsSeeAll: {
+    ...typography.caption,
+    color: colors.primary,
+    fontWeight: '700',
+  },
+  groupsScroll: {
+    paddingHorizontal: spacing.md,
+    gap: spacing.xs,
+    paddingBottom: spacing.xs,
   },
 
   chipsRow: { flexDirection: 'row', gap: spacing.xs, alignItems: 'center' },

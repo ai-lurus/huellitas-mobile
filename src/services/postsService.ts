@@ -39,6 +39,7 @@ interface CreatePostInput {
   lat?: number;
   lng?: number;
   location_label?: string;
+  group_id?: string;
 }
 
 async function create(input: CreatePostInput): Promise<Post> {
@@ -47,12 +48,14 @@ async function create(input: CreatePostInput): Promise<Post> {
 }
 
 async function uploadPhoto(postId: string, uri: string): Promise<{ url: string }> {
-  const formData = new FormData();
   const filename = uri.split('/').pop() ?? 'photo.jpg';
   const match = /\.(\w+)$/.exec(filename);
   const type = match ? `image/${match[1]}` : 'image/jpeg';
+  const formData = new FormData();
   formData.append('photo', { uri, name: filename, type } as unknown as Blob);
-  const res = await httpClient.upload(`/api/v1/posts/${postId}/photos`, formData);
+  const res = await httpClient.post<unknown>(`/api/v1/posts/${postId}/photos`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   const data = asRecord(extractData(res));
   return { url: String(data?.['url'] ?? '') };
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CreatePostForm } from '../../../src/components/feed/CreatePostForm';
@@ -11,6 +11,7 @@ import { useAuthStore } from '../../../src/stores/authStore';
 export default function NewPostScreen(): React.JSX.Element {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { groupId } = useLocalSearchParams<{ groupId?: string }>();
   const user = useAuthStore((s) => s.user);
   const { mutate: createPost, isPending } = useCreatePost();
 
@@ -21,11 +22,14 @@ export default function NewPostScreen(): React.JSX.Element {
     lng?: number;
     locationLabel?: string;
   }): void {
-    createPost(data, {
-      onSuccess: () => {
-        router.back();
+    createPost(
+      { ...data, groupId: groupId ?? undefined },
+      {
+        onSuccess: () => {
+          router.back();
+        },
       },
-    });
+    );
   }
 
   return (
