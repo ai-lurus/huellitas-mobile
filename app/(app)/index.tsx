@@ -161,7 +161,12 @@ export default function HomeScreen(): React.JSX.Element {
   );
 
   const alertFilterChips = (
-    <View style={styles.chipsRow} testID="home.filters">
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.chipsRow}
+      testID="home.filters"
+    >
       <FilterChip
         active={alertFilter === 'all'}
         icon="apps"
@@ -194,7 +199,7 @@ export default function HomeScreen(): React.JSX.Element {
         tone="resolved"
         testID="home.filter.resolved"
       />
-    </View>
+    </ScrollView>
   );
 
   const groupsChips =
@@ -380,6 +385,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    marginBottom: spacing.sm,
   },
   tab: {
     flex: 1,
@@ -463,7 +469,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxxl,
   },
   feedPadding: {
-    paddingTop: spacing.sm,
     paddingBottom: spacing.xxxl + 60,
   },
   centered: {
