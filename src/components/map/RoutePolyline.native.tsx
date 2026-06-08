@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Callout, Marker, Polyline } from 'react-native-maps';
 
@@ -8,9 +9,14 @@ import { colors, spacing, typography } from '../../design/tokens';
 interface RoutePolylineProps {
   route: Route;
   onPressCallout: (routeId: string) => void;
+  opacity?: number;
 }
 
-export function RoutePolyline({ route, onPressCallout }: RoutePolylineProps): React.JSX.Element {
+export const RoutePolyline = memo(function RoutePolyline({
+  route,
+  onPressCallout,
+  opacity = 1,
+}: RoutePolylineProps): React.JSX.Element {
   const coordinates = route.waypoints.map((wp) => ({
     latitude: wp.lat,
     longitude: wp.lng,
@@ -29,9 +35,9 @@ export function RoutePolyline({ route, onPressCallout }: RoutePolylineProps): Re
       <Polyline
         coordinates={coordinates}
         strokeColor={color}
-        strokeWidth={4}
+        strokeWidth={opacity === 0 ? 0 : 4}
         lineDashPattern={[0]}
-        tappable
+        tappable={opacity > 0}
         testID={`route-polyline.${route.id}`}
       />
       {startCoord != null ? (
@@ -40,6 +46,8 @@ export function RoutePolyline({ route, onPressCallout }: RoutePolylineProps): Re
           identifier={`route-start-${route.id}`}
           testID={`route-marker.${route.id}`}
           anchor={{ x: 0.5, y: 0.5 }}
+          opacity={opacity}
+          tracksViewChanges={false}
         >
           <View style={[styles.startPin, { borderColor: color }]}>
             <Text style={styles.startIcon}>🐾</Text>
@@ -61,7 +69,7 @@ export function RoutePolyline({ route, onPressCallout }: RoutePolylineProps): Re
       ) : null}
     </>
   );
-}
+});
 
 const styles = StyleSheet.create({
   startPin: {

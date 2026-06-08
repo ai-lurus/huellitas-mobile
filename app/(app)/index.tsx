@@ -28,7 +28,7 @@ import { useSettingsStore } from '../../src/stores/settingsStore';
 import { useAuthStore } from '../../src/stores/authStore';
 
 type HomeTab = 'comunidad' | 'alertas';
-type AlertFilter = 'all' | 'lost' | 'sighted' | 'resolved';
+type AlertFilter = 'all' | 'lost' | 'sighted';
 
 export default function HomeScreen(): React.JSX.Element {
   const router = useRouter();
@@ -196,14 +196,6 @@ export default function HomeScreen(): React.JSX.Element {
         onPress={() => setAlertFilter('sighted')}
         tone="sighted"
         testID="home.filter.sighted"
-      />
-      <FilterChip
-        active={alertFilter === 'resolved'}
-        icon="checkmark-circle"
-        label="Resueltos"
-        onPress={() => setAlertFilter('resolved')}
-        tone="resolved"
-        testID="home.filter.resolved"
       />
     </ScrollView>
   );

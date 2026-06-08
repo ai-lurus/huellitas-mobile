@@ -27,7 +27,7 @@ interface HuellitasMapProps {
 }
 
 const DEFAULT_DELTA = 0.05;
-const MAP_READY_TIMEOUT_MS = 8000;
+const MAP_READY_TIMEOUT_MS = 12000;
 
 function toRegion(lat: number, lng: number): Region {
   return {
@@ -51,6 +51,7 @@ export function HuellitasMap({
   const hasCenteredInitially = useRef(false);
   const [mapInstanceKey, setMapInstanceKey] = useState(0);
   const hasLostFocusRef = useRef(false);
+  const isRemountRef = useRef(false);
 
   // Computed once on mount — never changes, prevents MapView from resetting on location updates
   const [initialRegion] = useState<Region>(() => {
@@ -63,6 +64,7 @@ export function HuellitasMap({
   useFocusEffect(
     useCallback(() => {
       if (hasLostFocusRef.current) {
+        isRemountRef.current = true;
         setMapReady(false);
         setMapError(null);
         hasCenteredInitially.current = false;
@@ -108,6 +110,7 @@ export function HuellitasMap({
         onMapReady={(): void => {
           setMapReady(true);
           setMapError(null);
+          isRemountRef.current = false;
         }}
         provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
         showsUserLocation
@@ -117,7 +120,7 @@ export function HuellitasMap({
         {children}
       </MapView>
 
-      {!mapReady && !mapError ? (
+      {!mapReady && !mapError && !isRemountRef.current ? (
         <View style={styles.loadingOverlay} testID="map.loading">
           <ActivityIndicator color={colors.primary} size="large" />
           <Text style={styles.loadingText}>Cargando mapa...</Text>

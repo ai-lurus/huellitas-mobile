@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Callout, Marker } from 'react-native-maps';
 
@@ -20,9 +21,14 @@ const CATEGORY_COLORS: Record<string, string> = {
 interface PlaceMarkerProps {
   place: Place;
   onPressCallout: (placeId: string) => void;
+  opacity?: number;
 }
 
-export function PlaceMarker({ place, onPressCallout }: PlaceMarkerProps): React.JSX.Element {
+export const PlaceMarker = memo(function PlaceMarker({
+  place,
+  onPressCallout,
+  opacity = 1,
+}: PlaceMarkerProps): React.JSX.Element {
   const icon = CATEGORY_ICONS[place.category] ?? '📍';
   const label = CATEGORY_LABELS[place.category] ?? 'Lugar';
   const color = CATEGORY_COLORS[place.category] ?? '#6B7280';
@@ -32,6 +38,8 @@ export function PlaceMarker({ place, onPressCallout }: PlaceMarkerProps): React.
       coordinate={{ latitude: place.lat, longitude: place.lng }}
       identifier={`place-${place.id}`}
       testID={`place-marker.${place.id}`}
+      opacity={opacity}
+      tracksViewChanges={false}
     >
       <View style={[styles.pin, { backgroundColor: color }]}>
         <Text style={styles.icon}>{icon}</Text>
@@ -51,7 +59,7 @@ export function PlaceMarker({ place, onPressCallout }: PlaceMarkerProps): React.
       </Callout>
     </Marker>
   );
-}
+});
 
 const styles = StyleSheet.create({
   pin: {

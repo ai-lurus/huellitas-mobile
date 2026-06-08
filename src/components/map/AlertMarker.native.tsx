@@ -1,3 +1,4 @@
+import { memo, useCallback, useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
 import { Callout, Marker } from 'react-native-maps';
 
@@ -7,6 +8,8 @@ import { colors, spacing, typography } from '../../design/tokens';
 interface AlertMarkerProps {
   report: LostReport;
   onPressCallout: (reportId: string) => void;
+  opacity?: number;
+  interactive?: boolean;
 }
 
 function speciesEmoji(species: LostReport['petSpecies']): string {
@@ -35,34 +38,49 @@ function formatTimeAgo(iso: string): string {
   return `hace ${days} d`;
 }
 
-export function AlertMarker({ report, onPressCallout }: AlertMarkerProps): React.JSX.Element {
+export const AlertMarker = memo(function AlertMarker({
+  report,
+  onPressCallout,
+  opacity = 1,
+  interactive = true,
+}: AlertMarkerProps): React.JSX.Element {
+  // Start tracking view changes so the native bridge captures the custom view
+  // after it has rendered. Without this, newly mounted markers (e.g. after a
+  // species filter switch) can appear blank/invisible on iOS.
+  const [tracksViewChanges, setTracksViewChanges] = useState(true);
+  const handleLayout = useCallback(() => setTracksViewChanges(false), []);
+
   return (
     <Marker
       coordinate={{ latitude: report.lat, longitude: report.lng }}
       identifier={report.id}
       testID={`marker.${report.id}`}
+      opacity={opacity}
+      tracksViewChanges={tracksViewChanges}
     >
-      <View style={styles.pin}>
+      <View style={styles.pin} onLayout={handleLayout}>
         {report.petPhotoUrl ? (
           <Image source={{ uri: report.petPhotoUrl }} style={styles.photo} />
         ) : (
           <Text style={styles.emoji}>{speciesEmoji(report.petSpecies)}</Text>
         )}
       </View>
-      <Callout
-        onPress={(): void => onPressCallout(report.id)}
-        testID={`marker.callout.${report.id}`}
-      >
-        <View style={styles.callout}>
-          <Text style={styles.name}>{report.petName}</Text>
-          <Text style={styles.meta}>{report.petBreed ?? 'Raza no especificada'}</Text>
-          <Text style={styles.meta}>A {formatDistance(report.distanceMeters)} de ti</Text>
-          <Text style={styles.meta}>{formatTimeAgo(report.createdAt)}</Text>
-        </View>
-      </Callout>
+      {interactive ? (
+        <Callout
+          onPress={(): void => onPressCallout(report.id)}
+          testID={`marker.callout.${report.id}`}
+        >
+          <View style={styles.callout}>
+            <Text style={styles.name}>{report.petName}</Text>
+            <Text style={styles.meta}>{report.petBreed ?? 'Raza no especificada'}</Text>
+            <Text style={styles.meta}>A {formatDistance(report.distanceMeters)} de ti</Text>
+            <Text style={styles.meta}>{formatTimeAgo(report.createdAt)}</Text>
+          </View>
+        </Callout>
+      ) : null}
     </Marker>
   );
-}
+});
 
 const styles = StyleSheet.create({
   pin: {

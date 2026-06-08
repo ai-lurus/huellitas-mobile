@@ -34,7 +34,7 @@ export default function NewPostScreen(): React.JSX.Element {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { paddingBottom: insets.bottom }]}
+      style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <CreatePostForm

@@ -1,18 +1,10 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import {
-  Dimensions,
-  FlatList,
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import React, { useCallback, useMemo } from 'react';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { RadiusDropdown } from '../../src/components/map/RadiusDropdown';
 import { ReportCard } from '../../src/components/reports/ReportCard';
 import { ReportCardSkeleton } from '../../src/components/reports/ReportCardSkeleton';
 import { DEFAULT_MAP_FALLBACK } from '../../src/config/constants';
@@ -22,16 +14,8 @@ import { useLostReports } from '../../src/hooks/useLostReports';
 import { useLocationStore } from '../../src/stores/locationStore';
 import { useSettingsStore } from '../../src/stores/settingsStore';
 
-const SCREEN_W = Dimensions.get('window').width;
 const BACK_BUTTON_BG = '#5E5CE6';
 const HINT_BG = '#C8D0F8';
-
-const RADIUS_OPTIONS: { km: number; label: string }[] = [
-  { km: 2, label: '2 Km' },
-  { km: 4, label: '4 Km' },
-  { km: 6, label: '6 Km' },
-  { km: 10, label: 'más de 8 Km' },
-];
 
 function AlertsHeader({
   onBack,
@@ -77,15 +61,6 @@ export default function AlertsScreen(): React.ReactElement {
   const currentLocation = useLocationStore((s) => s.currentLocation);
   const alertRadiusKm = useSettingsStore((s) => s.alertRadiusKm);
   const setAlertRadius = useSettingsStore((s) => s.setAlertRadius);
-  const [distanceMenuOpen, setDistanceMenuOpen] = useState(false);
-  const [filterAnchor, setFilterAnchor] = useState<{
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-  } | null>(null);
-  const filterRef = useRef<View>(null);
-
   const searchCenter = currentLocation ?? DEFAULT_MAP_FALLBACK;
   const reportsQuery = useLostReports({
     lat: searchCenter.lat,
@@ -119,50 +94,6 @@ export default function AlertsScreen(): React.ReactElement {
     router.replace('/(app)/' as Href);
   }, [router]);
 
-  const measureFilter = useCallback((): void => {
-    filterRef.current?.measureInWindow((x, y, width, height) => {
-      if (width > 0 && height > 0) {
-        setFilterAnchor({ x, y, width, height });
-      }
-    });
-  }, []);
-
-  const onFilterLayout = (): void => {
-    measureFilter();
-  };
-
-  const openDistanceMenu = useCallback((): void => {
-    const measureAndOpen = (): void => {
-      filterRef.current?.measureInWindow((x, y, width, height) => {
-        const w = width > 0 ? width : 140;
-        const h = height > 0 ? height : 40;
-        const fallbackX = SCREEN_W - spacing.md - w;
-        const fallbackY = Math.max(insets.top, spacing.sm) + 88;
-        const hasLayout = width > 0 && height > 0;
-        setFilterAnchor({
-          x: hasLayout ? x : fallbackX,
-          y: hasLayout ? y : fallbackY,
-          width: w,
-          height: h,
-        });
-        setDistanceMenuOpen(true);
-      });
-    };
-    if (Platform.OS === 'web') {
-      requestAnimationFrame(measureAndOpen);
-    } else {
-      measureAndOpen();
-    }
-  }, [insets.top]);
-
-  const toggleDistanceMenu = useCallback((): void => {
-    if (distanceMenuOpen) {
-      setDistanceMenuOpen(false);
-      return;
-    }
-    openDistanceMenu();
-  }, [distanceMenuOpen, openDistanceMenu]);
-
   const headerTopPadding = Math.max(insets.top, spacing.sm);
 
   const listHeader = (
@@ -174,19 +105,12 @@ export default function AlertsScreen(): React.ReactElement {
       />
       <View style={styles.subHeader}>
         <Text style={styles.countLabel}>{countLabel} reportes</Text>
-        <View style={styles.filterAnchor}>
-          <View ref={filterRef} collapsable={false} onLayout={onFilterLayout}>
-            <Pressable
-              onPress={toggleDistanceMenu}
-              style={({ pressed }) => [styles.distChip, pressed && styles.distChipPressed]}
-              testID="alerts.distance.trigger"
-            >
-              <Ionicons color={colors.textSecondary} name="options-outline" size={16} />
-              <Text style={styles.distChipLabel}>Distancia</Text>
-              <Ionicons color={colors.textSecondary} name="chevron-down" size={14} />
-            </Pressable>
-          </View>
-        </View>
+        <RadiusDropdown
+          value={alertRadiusKm}
+          onChange={setAlertRadius}
+          variant="list"
+          testID="alerts.distance.trigger"
+        />
       </View>
       <View style={styles.hintChip} testID="alerts.pull-hint">
         <Text style={styles.hintLabel}>Toca </Text>
@@ -196,69 +120,9 @@ export default function AlertsScreen(): React.ReactElement {
     </View>
   );
 
-  const dropdownRight =
-    filterAnchor != null
-      ? Math.max(spacing.md, SCREEN_W - filterAnchor.x - filterAnchor.width)
-      : spacing.md;
-
-  const distanceModal =
-    distanceMenuOpen && filterAnchor != null ? (
-      <Modal
-        animationType="fade"
-        onRequestClose={() => setDistanceMenuOpen(false)}
-        transparent
-        visible={true}
-      >
-        <View style={styles.modalRoot}>
-          <Pressable
-            accessibilityLabel="Cerrar menú"
-            onPress={() => setDistanceMenuOpen(false)}
-            style={styles.menuOverlay}
-            testID="alerts.distance.overlay"
-          />
-          <View
-            style={[
-              styles.dropdown,
-              {
-                top: filterAnchor.y + filterAnchor.height + 6,
-                right: dropdownRight,
-              },
-            ]}
-            testID="alerts.distance.menu"
-          >
-            <Text style={styles.dropdownCaption}>Radio</Text>
-            {RADIUS_OPTIONS.map((opt) => {
-              const selected = alertRadiusKm === opt.km;
-              return (
-                <Pressable
-                  key={opt.km}
-                  onPress={() => {
-                    setAlertRadius(opt.km);
-                    setDistanceMenuOpen(false);
-                  }}
-                  style={[styles.dropdownRow, selected ? styles.dropdownRowActive : null]}
-                  testID={`alerts.distance.option.${opt.km}`}
-                >
-                  <Text
-                    style={[
-                      styles.dropdownRowLabel,
-                      selected ? styles.dropdownRowLabelActive : null,
-                    ]}
-                  >
-                    {opt.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-      </Modal>
-    ) : null;
-
   if (showReportsLoading) {
     return (
       <View style={styles.screen}>
-        {distanceModal}
         {listHeader}
         <View style={styles.containerGrow} testID="alerts.skeleton">
           <ReportCardSkeleton />
@@ -272,7 +136,6 @@ export default function AlertsScreen(): React.ReactElement {
   if (reportsQuery.isError) {
     return (
       <View style={styles.screen}>
-        {distanceModal}
         {listHeader}
         <View style={styles.centerBlock} testID="alerts.error">
           <Text style={styles.errorText}>No pudimos cargar alertas cerca de ti.</Text>
@@ -291,7 +154,6 @@ export default function AlertsScreen(): React.ReactElement {
   if (sorted.length === 0) {
     return (
       <View style={styles.screen}>
-        {distanceModal}
         {listHeader}
         <View style={styles.centerBlock} testID="alerts.empty">
           <Text style={styles.emptyText}>No hay reportes en este radio.</Text>
@@ -303,7 +165,6 @@ export default function AlertsScreen(): React.ReactElement {
 
   return (
     <View style={styles.screen}>
-      {distanceModal}
       <FlatList<LostReport>
         ListHeaderComponent={listHeader}
         contentContainerStyle={styles.listContent}
@@ -367,27 +228,6 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.textSecondary,
   },
-  filterAnchor: {
-    position: 'relative',
-    zIndex: 120,
-  },
-  distChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.surface,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 8,
-  },
-  distChipPressed: { opacity: 0.9 },
-  distChipLabel: {
-    ...typography.caption,
-    color: colors.textPrimary,
-    fontWeight: '600',
-  },
   hintChip: {
     alignSelf: 'center',
     flexDirection: 'row',
@@ -402,49 +242,6 @@ const styles = StyleSheet.create({
   hintLabel: {
     ...typography.caption,
     color: colors.textPrimary,
-  },
-  modalRoot: {
-    flex: 1,
-  },
-  menuOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(15, 23, 42, 0.22)',
-  },
-  dropdown: {
-    position: 'absolute',
-    minWidth: 200,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.xs,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  dropdownCaption: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    paddingHorizontal: spacing.sm,
-    paddingBottom: 4,
-  },
-  dropdownRow: {
-    borderRadius: radius.md,
-    paddingVertical: 10,
-    paddingHorizontal: spacing.sm,
-  },
-  dropdownRowActive: {
-    backgroundColor: '#ECEFF5',
-  },
-  dropdownRowLabel: {
-    ...typography.body,
-    color: colors.textPrimary,
-  },
-  dropdownRowLabelActive: {
-    fontWeight: '600',
   },
   containerGrow: {
     flex: 1,

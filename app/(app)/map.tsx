@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   ActionSheetIOS,
   Alert,
@@ -18,11 +18,17 @@ import { RoutePolyline } from '../../src/components/map/RoutePolyline';
 import { StrayMarker } from '../../src/components/map/StrayMarker';
 import { HuellitasMap } from '../../src/components/map/HuellitasMap';
 import { MapFilters } from '../../src/components/map/MapFilters';
+import { RadiusCircle } from '../../src/components/map/RadiusCircle';
+import { RadiusDropdown } from '../../src/components/map/RadiusDropdown';
 import { PlaceBottomSheet } from '../../src/components/places/PlaceBottomSheet';
 import { RouteBottomSheet } from '../../src/components/routes/RouteBottomSheet';
 import { Skeleton } from '../../src/components/skeleton/Skeleton';
 import { DEFAULT_MAP_FALLBACK } from '../../src/config/constants';
-import type { LostReport, LostReportSpeciesFilter } from '../../src/domain/lostReports';
+import type {
+  LostReport,
+  LostReportSpeciesFilter,
+  MapReportTypeFilter,
+} from '../../src/domain/lostReports';
 import type { Place } from '../../src/domain/places';
 import type { Route } from '../../src/domain/routes';
 import { colors, radius, spacing, typography } from '../../src/design/tokens';
@@ -35,7 +41,7 @@ import { useSettingsStore } from '../../src/stores/settingsStore';
 
 import BRAND_LOGO from '../../assets/icon.png';
 
-type MapLayer = 'alerts' | 'places' | 'routes';
+type MapLayer = 'alerts' | 'lugares';
 
 function showReportActionSheet(onLostPet: () => void, onStray: () => void): void {
   if (Platform.OS === 'ios') {
@@ -62,7 +68,9 @@ export default function MapScreen(): React.JSX.Element {
   const router = useRouter();
   const currentLocation = useLocationStore((s) => s.currentLocation);
   const alertRadiusKm = useSettingsStore((s) => s.alertRadiusKm);
+  const setAlertRadius = useSettingsStore((s) => s.setAlertRadius);
   const [selectedSpecies, setSelectedSpecies] = useState<LostReportSpeciesFilter>('all');
+  const [selectedReportType, setSelectedReportType] = useState<MapReportTypeFilter>('all');
   const [layer, setLayer] = useState<MapLayer>('alerts');
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
@@ -84,7 +92,7 @@ export default function MapScreen(): React.JSX.Element {
     lat: searchCenter.lat,
     lng: searchCenter.lng,
     radius: alertRadiusKm,
-    enabled: layer === 'places',
+    enabled: layer === 'lugares',
   });
 
   const upvoteMutation = useUpvotePlace();
@@ -93,65 +101,95 @@ export default function MapScreen(): React.JSX.Element {
     lat: searchCenter.lat,
     lng: searchCenter.lng,
     radius: alertRadiusKm,
-    enabled: layer === 'routes',
+    enabled: layer === 'lugares',
   });
 
   const rateRouteMutation = useRateRoute();
 
-  const showReportsLoading =
-    reportsQuery.fetchStatus === 'fetching' && reportsQuery.data === undefined;
+  // Solo mostrar loading en la carga inicial — no al cambiar el radio (evita que el skeleton tape el mapa)
+  const hasLoadedOnce = useRef(false);
+  if (reportsQuery.data !== undefined) hasLoadedOnce.current = true;
+  const showReportsLoading = reportsQuery.fetchStatus === 'fetching' && !hasLoadedOnce.current;
 
-  const filteredReports = useMemo(() => {
-    const reports = reportsQuery.data ?? [];
-    if (selectedSpecies === 'all') return reports;
-    if (selectedSpecies === 'dog' || selectedSpecies === 'cat') {
-      return reports.filter((r) => r.petSpecies === selectedSpecies);
-    }
-    return reports.filter((r) => r.petSpecies !== 'dog' && r.petSpecies !== 'cat');
-  }, [reportsQuery.data, selectedSpecies]);
+  const isSpeciesVisible = useCallback(
+    (petSpecies: LostReport['petSpecies']): boolean => {
+      if (selectedSpecies === 'all') return true;
+      if (selectedSpecies === 'other') return petSpecies !== 'dog' && petSpecies !== 'cat';
+      return petSpecies === selectedSpecies;
+    },
+    [selectedSpecies],
+  );
 
-  const openReport = (reportId: string): void => {
-    router.push(`/(app)/reports/${reportId}` as Href);
-  };
+  const openReport = useCallback(
+    (reportId: string): void => {
+      router.push(`/(app)/reports/${reportId}` as Href);
+    },
+    [router],
+  );
 
-  const openStray = (strayId: string): void => {
-    router.push(`/(app)/stray/${strayId}` as Href);
-  };
+  const openStray = useCallback(
+    (strayId: string): void => {
+      router.push(`/(app)/stray/${strayId}` as Href);
+    },
+    [router],
+  );
 
-  const openPlace = (placeId: string): void => {
-    setSelectedPlace(null);
-    router.push(`/(app)/places/${placeId}` as Href);
-  };
+  const openPlace = useCallback(
+    (placeId: string): void => {
+      setSelectedPlace(null);
+      router.push(`/(app)/places/${placeId}` as Href);
+    },
+    [router],
+  );
 
-  const handlePlaceCallout = (placeId: string): void => {
-    const place = (placesQuery.data ?? []).find((p) => p.id === placeId);
-    if (place) setSelectedPlace(place);
-  };
+  const handlePlaceCallout = useCallback(
+    (placeId: string): void => {
+      const place = (placesQuery.data ?? []).find((p) => p.id === placeId);
+      if (place) setSelectedPlace(place);
+    },
+    [placesQuery.data],
+  );
 
-  const handleRouteCallout = (routeId: string): void => {
-    const route = (routesQuery.data ?? []).find((r) => r.id === routeId);
-    if (route) setSelectedRoute(route);
-  };
+  const handleRouteCallout = useCallback(
+    (routeId: string): void => {
+      const route = (routesQuery.data ?? []).find((r) => r.id === routeId);
+      if (route) setSelectedRoute(route);
+    },
+    [routesQuery.data],
+  );
 
-  const openRoute = (routeId: string): void => {
-    setSelectedRoute(null);
-    router.push(`/(app)/routes/${routeId}` as Href);
-  };
+  const openRoute = useCallback(
+    (routeId: string): void => {
+      setSelectedRoute(null);
+      router.push(`/(app)/routes/${routeId}` as Href);
+    },
+    [router],
+  );
 
-  const handleFab = (): void => {
-    if (layer === 'places') {
-      router.push('/(app)/places/new' as Href);
-      return;
-    }
-    if (layer === 'routes') {
-      router.push('/(app)/routes/new' as Href);
+  const handleFab = useCallback((): void => {
+    if (layer === 'lugares') {
+      if (Platform.OS === 'ios') {
+        ActionSheetIOS.showActionSheetWithOptions(
+          { options: ['Cancelar', 'Agregar lugar', 'Agregar paseo'], cancelButtonIndex: 0 },
+          (index) => {
+            if (index === 1) router.push('/(app)/places/new' as Href);
+            if (index === 2) router.push('/(app)/routes/new' as Href);
+          },
+        );
+      } else {
+        Alert.alert('Agregar', '¿Qué querés agregar?', [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Lugar', onPress: () => router.push('/(app)/places/new' as Href) },
+          { text: 'Paseo', onPress: () => router.push('/(app)/routes/new' as Href) },
+        ]);
+      }
       return;
     }
     showReportActionSheet(
       () => router.push('/(app)/pets' as Href),
       () => router.push('/(app)/stray/new' as Href),
     );
-  };
+  }, [layer, router]);
 
   return (
     <View style={styles.screen}>
@@ -185,32 +223,28 @@ export default function MapScreen(): React.JSX.Element {
           </Text>
         </Pressable>
         <Pressable
-          style={[styles.layerBtn, layer === 'places' && styles.layerBtnActive]}
-          onPress={() => setLayer('places')}
-          testID="map.layer.places"
+          style={[styles.layerBtn, layer === 'lugares' && styles.layerBtnActive]}
+          onPress={() => setLayer('lugares')}
+          testID="map.layer.lugares"
         >
-          <Text style={[styles.layerBtnLabel, layer === 'places' && styles.layerBtnLabelActive]}>
+          <Text style={[styles.layerBtnLabel, layer === 'lugares' && styles.layerBtnLabelActive]}>
             Lugares
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.layerBtn, layer === 'routes' && styles.layerBtnActive]}
-          onPress={() => setLayer('routes')}
-          testID="map.layer.routes"
-        >
-          <Text style={[styles.layerBtnLabel, layer === 'routes' && styles.layerBtnLabelActive]}>
-            Rutas
           </Text>
         </Pressable>
       </View>
 
       {layer === 'alerts' ? (
-        <MapFilters onChange={setSelectedSpecies} selected={selectedSpecies} />
+        <MapFilters
+          onChange={setSelectedSpecies}
+          selected={selectedSpecies}
+          selectedType={selectedReportType}
+          onChangeType={setSelectedReportType}
+        />
       ) : null}
 
       <View style={styles.mapCard}>
         <HuellitasMap containerStyle={styles.mapInner} showCenterButton={false}>
-          {showReportsLoading ? (
+          {showReportsLoading && layer === 'alerts' ? (
             <Skeleton style={StyleSheet.absoluteFillObject} borderRadius={18} />
           ) : null}
 
@@ -219,49 +253,64 @@ export default function MapScreen(): React.JSX.Element {
               <Ionicons color={colors.textSecondary} name="location" size={12} />
               <Text style={styles.smallChipLabel}>Colima, Colima</Text>
             </View>
-            <View style={styles.smallChip}>
-              <Ionicons color={colors.textSecondary} name="radio-outline" size={12} />
-              <Text style={styles.smallChipLabel}>Radio de búsqueda</Text>
-              <Ionicons color={colors.textSecondary} name="chevron-down" size={12} />
-            </View>
+            <RadiusDropdown
+              value={alertRadiusKm}
+              onChange={setAlertRadius}
+              variant="map"
+              testID="map.radius.trigger"
+            />
           </View>
 
           {layer === 'alerts' ? (
-            <>
-              {filteredReports.map((report: LostReport) => (
-                <AlertMarker key={report.id} onPressCallout={openReport} report={report} />
-              ))}
-              {(strayQuery.data ?? []).map((stray) => (
-                <StrayMarker key={`stray-${stray.id}`} report={stray} onPressCallout={openStray} />
-              ))}
-            </>
-          ) : layer === 'places' ? (
-            (placesQuery.data ?? []).map((place) => (
-              <PlaceMarker
-                key={`place-${place.id}`}
-                place={place}
-                onPressCallout={handlePlaceCallout}
-              />
-            ))
-          ) : (
-            (routesQuery.data ?? []).map((route: Route) => (
-              <RoutePolyline
-                key={`route-${route.id}`}
-                route={route}
-                onPressCallout={handleRouteCallout}
-              />
-            ))
-          )}
-
-          {showReportsLoading ? (
-            <View style={styles.overlay} testID="reports.loading">
-              <Text style={styles.overlayLabel}>Cargando reportes cercanos...</Text>
-            </View>
+            <RadiusCircle center={searchCenter} radiusKm={alertRadiusKm} />
           ) : null}
 
-          {reportsQuery.isError ? (
-            <View style={styles.overlayError} testID="reports.error">
-              <Text style={styles.overlayErrorLabel}>No pudimos cargar reportes cercanos.</Text>
+          {(reportsQuery.data ?? []).map((report: LostReport) => {
+            const typeVisible = selectedReportType === 'all' || selectedReportType === 'lost';
+            const visible =
+              layer === 'alerts' && typeVisible && isSpeciesVisible(report.petSpecies);
+            return (
+              <AlertMarker
+                key={report.id}
+                report={report}
+                onPressCallout={openReport}
+                opacity={visible ? 1 : 0}
+                interactive={visible}
+              />
+            );
+          })}
+          {(strayQuery.data ?? []).map((stray) => {
+            const typeVisible = selectedReportType === 'all' || selectedReportType === 'stray';
+            const visible = layer === 'alerts' && typeVisible;
+            return (
+              <StrayMarker
+                key={`stray-${stray.id}`}
+                report={stray}
+                onPressCallout={openStray}
+                opacity={visible ? 1 : 0}
+              />
+            );
+          })}
+          {(placesQuery.data ?? []).map((place) => (
+            <PlaceMarker
+              key={`place-${place.id}`}
+              place={place}
+              onPressCallout={handlePlaceCallout}
+              opacity={layer === 'lugares' ? 1 : 0}
+            />
+          ))}
+          {(routesQuery.data ?? []).map((route: Route) => (
+            <RoutePolyline
+              key={`route-${route.id}`}
+              route={route}
+              onPressCallout={handleRouteCallout}
+              opacity={layer === 'lugares' ? 1 : 0}
+            />
+          ))}
+
+          {showReportsLoading && layer === 'alerts' ? (
+            <View style={styles.overlay} testID="reports.loading">
+              <Text style={styles.overlayLabel}>Cargando reportes cercanos...</Text>
             </View>
           ) : null}
         </HuellitasMap>
@@ -269,20 +318,11 @@ export default function MapScreen(): React.JSX.Element {
 
       <Pressable
         onPress={handleFab}
-        style={[styles.fab, (layer === 'places' || layer === 'routes') && styles.fabGreen]}
+        style={[styles.fab, layer === 'lugares' && styles.fabGreen]}
         testID="map.fab"
       >
         <Ionicons name="add" size={28} color={colors.white} />
       </Pressable>
-
-      {layer === 'alerts' ? (
-        <View style={styles.legend}>
-          <Text style={[styles.legendItem, { color: '#E11D48' }]}>● Perdido</Text>
-          <Text style={[styles.legendItem, { color: '#3B82F6' }]}>● Avistado</Text>
-          <Text style={[styles.legendItem, { color: '#22C55E' }]}>● Resuelto</Text>
-          <Text style={[styles.legendItem, { color: '#FB7185' }]}>● Tú</Text>
-        </View>
-      ) : null}
 
       <PlaceBottomSheet
         place={selectedPlace}
@@ -426,23 +466,6 @@ const styles = StyleSheet.create({
   overlayLabel: {
     ...typography.caption,
     color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  overlayError: {
-    position: 'absolute',
-    left: spacing.sm,
-    right: spacing.sm,
-    bottom: spacing.sm,
-    backgroundColor: colors.dangerSoft,
-    borderWidth: 1,
-    borderColor: colors.danger,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  overlayErrorLabel: {
-    ...typography.caption,
-    color: colors.dangerDark,
     textAlign: 'center',
   },
   legend: {

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Callout, Marker } from 'react-native-maps';
 
@@ -7,6 +8,7 @@ import { colors, spacing, typography } from '../../design/tokens';
 interface StrayMarkerProps {
   report: StrayReport;
   onPressCallout: (strayId: string) => void;
+  opacity?: number;
 }
 
 const SPECIES_LABELS: Record<string, string> = {
@@ -17,7 +19,11 @@ const SPECIES_LABELS: Record<string, string> = {
   other: 'Animal',
 };
 
-export function StrayMarker({ report, onPressCallout }: StrayMarkerProps): React.JSX.Element {
+export const StrayMarker = memo(function StrayMarker({
+  report,
+  onPressCallout,
+  opacity = 1,
+}: StrayMarkerProps): React.JSX.Element {
   const label = SPECIES_LABELS[report.species] ?? 'Animal';
 
   return (
@@ -25,6 +31,8 @@ export function StrayMarker({ report, onPressCallout }: StrayMarkerProps): React
       coordinate={{ latitude: report.lat, longitude: report.lng }}
       identifier={`stray-${report.id}`}
       testID={`stray-marker.${report.id}`}
+      opacity={opacity}
+      tracksViewChanges={false}
     >
       <View style={styles.pin}>
         <Text style={styles.icon}>?</Text>
@@ -43,7 +51,7 @@ export function StrayMarker({ report, onPressCallout }: StrayMarkerProps): React
       </Callout>
     </Marker>
   );
-}
+});
 
 const styles = StyleSheet.create({
   pin: {

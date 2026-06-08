@@ -12,6 +12,7 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({
     push: mockPush,
   }),
+  useFocusEffect: (cb: () => void) => cb(),
 }));
 
 jest.mock('@expo/vector-icons', () => ({
@@ -39,10 +40,12 @@ jest.mock('react-native-maps', () => {
   const Marker = ({
     children,
     testID,
+    opacity,
   }: {
     children?: React.ReactNode;
     testID?: string;
-  }): React.JSX.Element => React.createElement(View, { testID }, children);
+    opacity?: number;
+  }): React.JSX.Element => React.createElement(View, { testID, opacity }, children);
   const Callout = ({
     children,
     onPress,
@@ -53,17 +56,44 @@ jest.mock('react-native-maps', () => {
     testID?: string;
   }): React.JSX.Element => React.createElement(Pressable, { onPress, testID }, children);
 
+  const Circle = ({ testID }: { testID?: string }): React.JSX.Element =>
+    React.createElement(View, { testID });
+  const Polyline = ({ testID }: { testID?: string }): React.JSX.Element =>
+    React.createElement(View, { testID });
+
   return {
     __esModule: true,
     default: Map,
     Marker,
     Callout,
+    Circle,
+    Polyline,
     PROVIDER_GOOGLE: 'google',
   };
 });
 
 jest.mock('../hooks/useLostReports', () => ({
   useLostReports: jest.fn(),
+}));
+
+jest.mock('../hooks/usePlaces', () => ({
+  useNearbyPlaces: () => ({ data: [], isPending: false, isError: false }),
+  useUpvotePlace: () => ({ mutate: jest.fn(), isPending: false }),
+}));
+
+jest.mock('../hooks/useRoutes', () => ({
+  useNearbyRoutes: () => ({ data: [], isPending: false, isError: false }),
+  useRateRoute: () => ({ mutate: jest.fn(), isPending: false }),
+}));
+
+jest.mock('../hooks/useStrayReports', () => ({
+  useNearbyStrayReports: () => ({ data: [], isPending: false, isError: false }),
+}));
+
+jest.mock('../stores/settingsStore', () => ({
+  useSettingsStore: (
+    selector: (s: { alertRadiusKm: number; setAlertRadius: () => void }) => unknown,
+  ) => selector({ alertRadiusKm: 5, setAlertRadius: jest.fn() }),
 }));
 
 const baseReports: LostReport[] = [
@@ -112,11 +142,19 @@ describe('Map tab screen', () => {
     expect(getByTestId('marker.r2')).toBeTruthy();
   });
 
-  it('filtra markers por especie sin refetch', () => {
-    const { getByTestId, queryByTestId } = render(<MapScreen />);
+  it('filtra markers por especie via opacity sin desmontar', () => {
+    const { getByTestId } = render(<MapScreen />);
     fireEvent.press(getByTestId('map.filter.dog'));
-    expect(getByTestId('marker.r1')).toBeTruthy();
-    expect(queryByTestId('marker.r2')).toBeNull();
+    expect(getByTestId('marker.r1').props.opacity).toBe(1);
+    expect(getByTestId('marker.r2').props.opacity).toBe(0);
+  });
+
+  it('al cambiar de perros a gatos muestra solo gatos', () => {
+    const { getByTestId } = render(<MapScreen />);
+    fireEvent.press(getByTestId('map.filter.dog'));
+    fireEvent.press(getByTestId('map.filter.cat'));
+    expect(getByTestId('marker.r1').props.opacity).toBe(0);
+    expect(getByTestId('marker.r2').props.opacity).toBe(1);
   });
 
   it('tap en callout navega al detalle del reporte', () => {

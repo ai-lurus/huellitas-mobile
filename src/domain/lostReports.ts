@@ -26,3 +26,5 @@ export const lostReportSchema = z.object({
 export type LostReport = z.infer<typeof lostReportSchema>;
 
 export type LostReportSpeciesFilter = 'all' | 'dog' | 'cat' | 'other';
+
+export type MapReportTypeFilter = 'all' | 'lost' | 'stray';

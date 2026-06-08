@@ -97,7 +97,7 @@ export default function PostDetailScreen(): React.JSX.Element {
 
   const ListHeader = (
     <View>
-      <View style={styles.postHeader}>
+      <View style={[styles.postHeader, { paddingTop: insets.top + spacing.md }]}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
         </Pressable>
@@ -193,7 +193,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    padding: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
     backgroundColor: colors.surface,
   },
   backBtn: {
