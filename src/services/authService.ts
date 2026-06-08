@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { getSignInPath, getSignUpPath } from '../config/authEndpoints';
 import { httpClient } from '../network';
 import { setSessionTokenAsync } from './sessionTokenStorage';
+import { logger } from '../utils/logger';
 
 function toFriendlyAuthError(err: unknown): Error {
   if (isAxiosError(err)) {
@@ -90,20 +91,31 @@ async function signIn(
   user: AuthUser;
   isFirstLogin: boolean;
 }> {
+  const path = getSignInPath();
+  logger.info(`[auth] sign-in → POST ${path} (${email})`);
   try {
-    const res = await httpClient.post(getSignInPath(), { email, password });
+    const res = await httpClient.post(path, { email, password });
+    logger.info(`[auth] sign-in ← ${res.status}`);
     const parsed = authSessionSchema.parse(res.data);
 
     if (parsed.token) {
       await setSessionTokenAsync(parsed.token);
     }
 
+    logger.info(`[auth] sign-in ok userId=${parsed.user.id}`);
     return {
       user: parsed.user,
       isFirstLogin: parsed.isFirstLogin ?? false,
     };
   } catch (err: unknown) {
-    throw toFriendlyAuthError(err);
+    const friendly = toFriendlyAuthError(err);
+    logger.error(
+      '[auth] sign-in error:',
+      isAxiosError(err)
+        ? `HTTP ${err.response?.status ?? 'network'} — ${err.message}`
+        : friendly.message,
+    );
+    throw friendly;
   }
 }
 
@@ -115,8 +127,11 @@ async function signUp(
   user: AuthUser;
   isFirstLogin: boolean;
 }> {
+  const path = getSignUpPath();
+  logger.info(`[auth] sign-up → POST ${path} (${email})`);
   try {
-    const res = await httpClient.post(getSignUpPath(), { name, email, password });
+    const res = await httpClient.post(path, { name, email, password });
+    logger.info(`[auth] sign-up ← ${res.status}`);
     const parsed = authSessionSchema.parse(res.data);
 
     if (!parsed.token) {
@@ -126,12 +141,20 @@ async function signUp(
     }
     await setSessionTokenAsync(parsed.token);
 
+    logger.info(`[auth] sign-up ok userId=${parsed.user.id}`);
     return {
       user: parsed.user,
       isFirstLogin: parsed.isFirstLogin ?? true,
     };
   } catch (err: unknown) {
-    throw toFriendlyAuthError(err);
+    const friendly = toFriendlyAuthError(err);
+    logger.error(
+      '[auth] sign-up error:',
+      isAxiosError(err)
+        ? `HTTP ${err.response?.status ?? 'network'} — ${err.message}`
+        : friendly.message,
+    );
+    throw friendly;
   }
 }
 

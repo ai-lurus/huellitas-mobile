@@ -50,6 +50,7 @@ function pickCoordinates(record: Record<string, unknown>): { lat: number; lng: n
 
 function pickPhotoUrl(pet: Record<string, unknown>): string | undefined {
   const direct =
+    asString(pet.petPhotoUrl) ??
     asString(pet.photoUrl) ??
     asString(pet.imageUrl) ??
     asString(pet.coverPhotoUrl) ??
@@ -107,7 +108,14 @@ function extractPhotoUrls(record: Record<string, unknown>): string[] {
     }
   }
 
-  for (const k of ['photoUrl', 'imageUrl', 'coverPhotoUrl', 'coverImageUrl', 'avatarUrl']) {
+  for (const k of [
+    'photo',
+    'photoUrl',
+    'imageUrl',
+    'coverPhotoUrl',
+    'coverImageUrl',
+    'avatarUrl',
+  ]) {
     push(asString(record[k]));
   }
 
@@ -137,13 +145,22 @@ function normalizeSighting(raw: unknown): LostReportSighting | null {
 
   const id = asString(record.id) ?? asString(record.sightingId);
   const createdAt =
-    asString(record.createdAt) ?? asString(record.created_at) ?? asString(record.timestamp);
+    asString(record.createdAt) ??
+    asString(record.created_at) ??
+    asString(record.timestamp) ??
+    asString(record.seenAt);
   if (!id || !createdAt) return null;
 
-  const user =
-    normalizeUserSummary(
-      record.user ?? record.author ?? record.reportedBy ?? record.by ?? record,
-    ) ?? null;
+  const userRaw =
+    record.user ?? record.author ?? record.reportedBy ?? record.by ?? record.reporter ?? record;
+  let user = normalizeUserSummary(userRaw) ?? null;
+
+  if (!user) {
+    const reporterRec = asRecord(record.reporter ?? record.user);
+    const uid = asString(reporterRec?.id) ?? asString(reporterRec?.userId);
+    if (uid) user = { id: uid, name: 'Usuario' };
+  }
+
   if (!user) return null;
 
   const nestedCoordsRecord = asRecord(record.location ?? record.coords ?? record.coordinate);
@@ -151,7 +168,11 @@ function normalizeSighting(raw: unknown): LostReportSighting | null {
     pickCoordinates(record) ?? (nestedCoordsRecord ? pickCoordinates(nestedCoordsRecord) : null);
   if (!coords) return null;
 
-  const notes = asString(record.notes) ?? asString(record.note) ?? asString(record.description);
+  const notes =
+    asString(record.notes) ??
+    asString(record.note) ??
+    asString(record.description) ??
+    asString(record.message);
   const photoUrls = extractPhotoUrls(record);
 
   const parsed = lostReportSightingSchema.safeParse({
@@ -303,6 +324,7 @@ function normalizeLostReport(raw: unknown, params: NearbyLostReportsParams): Los
 
   const parsed = lostReportSchema.safeParse({
     id: asString(record.id) ?? asString(record.reportId),
+    userId: asString(record.userId) ?? asString(record.user_id) ?? asString(record.ownerId),
     lat: coords.lat,
     lng: coords.lng,
     petName: asString(pet.name) ?? asString(record.petName) ?? 'Mascota',
@@ -422,17 +444,15 @@ async function createLostReport(
   petId: string,
   dto: CreateLostReportDto,
 ): Promise<CreateLostReportResult> {
-  const response = await httpClient.post<unknown>(
-    `/api/v1/pets/${encodeURIComponent(petId)}/lost-reports`,
-    {
-      lat: dto.lat,
-      lng: dto.lng,
-      lastSeenAt: dto.lastSeenAt,
-      ...(dto.message != null && String(dto.message).trim().length > 0
-        ? { message: dto.message.trim() }
-        : {}),
-    },
-  );
+  const response = await httpClient.post<unknown>('/api/v1/lost-reports', {
+    petId,
+    lat: dto.lat,
+    lng: dto.lng,
+    lastSeenAt: dto.lastSeenAt,
+    ...(dto.message != null && String(dto.message).trim().length > 0
+      ? { message: dto.message.trim() }
+      : {}),
+  });
   return normalizeCreateLostReportResponse(response.data);
 }
 
@@ -440,21 +460,30 @@ async function getLostReportDetail(reportId: string): Promise<LostReportDetail> 
   const response = await httpClient.get<unknown>(
     `/api/v1/lost-reports/${encodeURIComponent(reportId)}`,
   );
-  const base = normalizeLostReportDetailBase(response.data);
+
+  // Unwrap { success: true, data: {...} } envelope from the API
+  const body = response.data;
+  const bodyRec = asRecord(body);
+  const rawDetail = (bodyRec && asRecord(bodyRec.data)) ?? body;
+
+  const base = normalizeLostReportDetailBase(rawDetail);
   if (!base) {
     throw new Error('Respuesta inválida al cargar el detalle del reporte');
   }
 
-  // Si el backend no incluye `sightings` dentro del detalle, intentamos fetch separado.
-  let sightings: LostReportSighting[] = [];
-  try {
-    const sightingsRes = await httpClient.get<unknown>(
-      `/api/v1/lost-reports/${encodeURIComponent(reportId)}/sightings`,
-    );
-    sightings = normalizeSightingsList(sightingsRes.data);
-  } catch (e) {
-    // eslint-disable-next-line no-console
-    console.error('getLostReportDetail: fallo al cargar sightings:', e);
+  // Use sightings embedded in the detail response when available
+  let sightings: LostReportSighting[] = normalizeSightingsList(rawDetail);
+
+  if (sightings.length === 0) {
+    try {
+      const sightingsRes = await httpClient.get<unknown>(
+        `/api/v1/lost-reports/${encodeURIComponent(reportId)}/sightings`,
+      );
+      sightings = normalizeSightingsList(sightingsRes.data);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.error('getLostReportDetail: fallo al cargar sightings:', e);
+    }
   }
 
   return {

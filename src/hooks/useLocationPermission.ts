@@ -1,5 +1,5 @@
 import * as Location from 'expo-location';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Linking } from 'react-native';
 
 import type { OnboardingPermissionStatus } from '../types/onboarding';
@@ -46,6 +46,10 @@ export function useLocationPermission(): UseLocationPermissionResult {
     setForegroundStatus(mapStatus(fg.status));
     setBackgroundStatus(mapStatus(bg.status));
   }, []);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
 
   const requestForeground = useCallback(async () => {
     const res = await Location.requestForegroundPermissionsAsync();

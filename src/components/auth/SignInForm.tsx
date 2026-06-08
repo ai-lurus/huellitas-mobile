@@ -16,9 +16,25 @@ import { authService } from '../../services/authService';
 import { useAuthStore } from '../../stores/authStore';
 
 const AUTH_ERROR_COPY = 'Correo o contraseña incorrectos. Verifica tus datos e intenta de nuevo.';
+const NETWORK_ERROR_COPY =
+  'No pudimos conectarnos. Verifica tu conexión a internet e intenta de nuevo.';
 import BRAND_LOGO from '../../../assets/icon.png';
 
+function isNetworkError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  const m = err.message.toLowerCase();
+  const code = (err as { code?: string }).code;
+  return (
+    code === 'ERR_NETWORK' ||
+    m.includes('network request failed') ||
+    m.includes('network error') ||
+    m.includes('econnrefused') ||
+    m.includes('failed to fetch')
+  );
+}
+
 function formatSubmitError(err: unknown): string {
+  if (isNetworkError(err)) return NETWORK_ERROR_COPY;
   if (err instanceof Error && err.message) {
     const m = err.message.toLowerCase();
     if (
@@ -29,7 +45,6 @@ function formatSubmitError(err: unknown): string {
     ) {
       return AUTH_ERROR_COPY;
     }
-    return err.message;
   }
   return AUTH_ERROR_COPY;
 }

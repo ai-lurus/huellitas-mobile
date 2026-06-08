@@ -6,6 +6,7 @@ export const lostReportKindSchema = z.enum(['lost', 'sighted', 'resolved']);
 
 export const lostReportSchema = z.object({
   id: z.string(),
+  userId: z.string().optional(),
   lat: z.number(),
   lng: z.number(),
   petName: z.string(),
@@ -25,3 +26,5 @@ export const lostReportSchema = z.object({
 export type LostReport = z.infer<typeof lostReportSchema>;
 
 export type LostReportSpeciesFilter = 'all' | 'dog' | 'cat' | 'other';
+
+export type MapReportTypeFilter = 'all' | 'lost' | 'stray';

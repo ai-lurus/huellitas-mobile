@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
+  ActivityIndicator,
   Image,
   Pressable,
   ScrollView,
@@ -8,6 +9,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import { PetPhoto } from '../common/PetPhoto';
 import { Ionicons } from '@expo/vector-icons';
 
 import { colors, radius, shadows, spacing, typography } from '../../design/tokens';
@@ -76,6 +78,8 @@ export interface PetDetailProps {
   onReportLost: () => void;
   onMarkFound: () => void;
   onDelete: () => void;
+  onQrCode: () => void;
+  isDeleting?: boolean;
 }
 
 export function PetDetail({
@@ -85,6 +89,8 @@ export function PetDetail({
   onReportLost,
   onMarkFound,
   onDelete,
+  onQrCode,
+  isDeleting = false,
 }: PetDetailProps): React.ReactElement {
   const { width } = useWindowDimensions();
   const carouselHeight = Math.round(width * 0.62);
@@ -125,18 +131,13 @@ export function PetDetail({
         >
           {gallery.map((uri, idx) => (
             <View key={`${uri}-${idx}`} style={{ width, height: carouselHeight }}>
-              {uri ? (
-                <Image source={{ uri }} style={styles.heroImg} />
-              ) : (
-                <View style={styles.heroFallback}>
-                  <Image
-                    source={defaultCoverForSpecies(species)}
-                    style={styles.heroDefaultBg}
-                    resizeMode="cover"
-                    accessibilityLabel="Fondo por defecto"
-                  />
-                </View>
-              )}
+              <PetPhoto
+                uri={uri || null}
+                fallback={defaultCoverForSpecies(species)}
+                style={styles.heroImg}
+                resizeMode="cover"
+                fallbackResizeMode="cover"
+              />
             </View>
           ))}
         </ScrollView>
@@ -248,14 +249,32 @@ export function PetDetail({
         </Pressable>
 
         <Pressable
+          testID="petDetail.qr"
+          onPress={onQrCode}
+          style={styles.qrAction}
+          accessibilityRole="button"
+          accessibilityLabel="Ver código QR"
+        >
+          <Ionicons name="qr-code-outline" size={18} color={colors.primary} />
+          <Text style={styles.qrActionText}>Código QR</Text>
+        </Pressable>
+
+        <Pressable
           testID="petDetail.delete"
-          onPress={onDelete}
-          style={styles.deleteAction}
+          onPress={isDeleting ? undefined : onDelete}
+          style={[styles.deleteAction, isDeleting ? styles.deleteActionDisabled : null]}
           accessibilityRole="button"
           accessibilityLabel="Eliminar tarjeta"
+          accessibilityState={{ disabled: isDeleting }}
         >
-          <Text style={styles.deleteActionText}>Eliminar tarjeta</Text>
-          <Ionicons name="trash-outline" size={18} color={colors.danger} />
+          {isDeleting ? (
+            <ActivityIndicator size="small" color={colors.danger} />
+          ) : (
+            <>
+              <Text style={styles.deleteActionText}>Eliminar tarjeta</Text>
+              <Ionicons name="trash-outline" size={18} color={colors.danger} />
+            </>
+          )}
         </Pressable>
       </ScrollView>
     </View>
@@ -427,5 +446,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
   },
+  deleteActionDisabled: { opacity: 0.5 },
   deleteActionText: { color: colors.danger, ...typography.button },
+  qrAction: {
+    marginTop: spacing.sm,
+    height: 54,
+    borderRadius: radius.button,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  qrActionText: { color: colors.primary, ...typography.button },
 });

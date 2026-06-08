@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -10,6 +10,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 import MapView, { PROVIDER_GOOGLE, type Region } from 'react-native-maps';
+import { useFocusEffect } from 'expo-router';
 
 import { DEFAULT_MAP_FALLBACK } from '../../config/constants';
 import { colors, radius, spacing, typography } from '../../design/tokens';
@@ -26,7 +27,7 @@ interface HuellitasMapProps {
 }
 
 const DEFAULT_DELTA = 0.05;
-const MAP_READY_TIMEOUT_MS = 8000;
+const MAP_READY_TIMEOUT_MS = 12000;
 
 function toRegion(lat: number, lng: number): Region {
   return {
@@ -48,11 +49,32 @@ export function HuellitasMap({
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const hasCenteredInitially = useRef(false);
+  const [mapInstanceKey, setMapInstanceKey] = useState(0);
+  const hasLostFocusRef = useRef(false);
+  const isRemountRef = useRef(false);
 
-  const initialRegion = useMemo<Region>(() => {
+  // Computed once on mount — never changes, prevents MapView from resetting on location updates
+  const [initialRegion] = useState<Region>(() => {
     const loc = currentLocation ?? DEFAULT_MAP_FALLBACK;
     return toRegion(loc.lat, loc.lng);
-  }, [currentLocation]);
+  });
+
+  // Remount MapView when returning to this screen after navigating away,
+  // because react-native-screens detaches the native view and map tiles don't reload
+  useFocusEffect(
+    useCallback(() => {
+      if (hasLostFocusRef.current) {
+        isRemountRef.current = true;
+        setMapReady(false);
+        setMapError(null);
+        hasCenteredInitially.current = false;
+        setMapInstanceKey((k) => k + 1);
+      }
+      return (): void => {
+        hasLostFocusRef.current = true;
+      };
+    }, []),
+  );
 
   useEffect(() => {
     if (mapReady || mapError) return;
@@ -83,10 +105,12 @@ export function HuellitasMap({
   return (
     <View style={[styles.container, containerStyle]}>
       <MapView
+        key={mapInstanceKey}
         initialRegion={initialRegion}
         onMapReady={(): void => {
           setMapReady(true);
           setMapError(null);
+          isRemountRef.current = false;
         }}
         provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
         showsUserLocation
@@ -96,7 +120,7 @@ export function HuellitasMap({
         {children}
       </MapView>
 
-      {!mapReady && !mapError ? (
+      {!mapReady && !mapError && !isRemountRef.current ? (
         <View style={styles.loadingOverlay} testID="map.loading">
           <ActivityIndicator color={colors.primary} size="large" />
           <Text style={styles.loadingText}>Cargando mapa...</Text>

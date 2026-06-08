@@ -1,38 +1,48 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import type { LostReportSpeciesFilter } from '../../domain/lostReports';
+import type { LostReportSpeciesFilter, MapReportTypeFilter } from '../../domain/lostReports';
 import { colors, radius, spacing, typography } from '../../design/tokens';
 
 interface MapFiltersProps {
   selected: LostReportSpeciesFilter;
   onChange: (next: LostReportSpeciesFilter) => void;
+  selectedType: MapReportTypeFilter;
+  onChangeType: (next: MapReportTypeFilter) => void;
 }
 
-const FILTERS: Array<{ key: LostReportSpeciesFilter; label: string; dotColor: string }> = [
+const SPECIES_FILTERS: Array<{ key: LostReportSpeciesFilter; label: string; dotColor: string }> = [
   { key: 'all', label: 'Todos', dotColor: '#5E72E4' },
-  { key: 'dog', label: 'Perdidos', dotColor: '#FF6B35' },
-  { key: 'cat', label: 'Avistados', dotColor: '#3B82F6' },
-  { key: 'other', label: 'Resueltos', dotColor: '#22C55E' },
+  { key: 'dog', label: 'Perros', dotColor: '#FF6B35' },
+  { key: 'cat', label: 'Gatos', dotColor: '#3B82F6' },
+  { key: 'other', label: 'Otros', dotColor: '#22C55E' },
 ];
 
-export function MapFilters({ selected, onChange }: MapFiltersProps): React.JSX.Element {
+const TYPE_FILTERS: Array<{ key: MapReportTypeFilter; label: string }> = [
+  { key: 'all', label: 'Todos' },
+  { key: 'lost', label: 'Buscando' },
+  { key: 'stray', label: 'Vistos' },
+];
+
+export function MapFilters({
+  selected,
+  onChange,
+  selectedType,
+  onChangeType,
+}: MapFiltersProps): React.JSX.Element {
   return (
     <View style={styles.container} testID="map.filters">
       <View style={styles.row}>
-        {FILTERS.map((filter) => {
-          const isSelected = filter.key === selected;
+        {TYPE_FILTERS.map((filter) => {
+          const isSelected = filter.key === selectedType;
           return (
             <Pressable
               key={filter.key}
               accessibilityRole="button"
               accessibilityState={{ selected: isSelected }}
-              onPress={(): void => onChange(filter.key)}
-              style={[styles.chip, isSelected && styles.chipSelected]}
-              testID={`map.filter.${filter.key}`}
+              onPress={(): void => onChangeType(filter.key)}
+              style={[styles.chip, isSelected && styles.chipTypeSelected]}
+              testID={`map.filter.type.${filter.key}`}
             >
-              {filter.key === 'all' ? null : (
-                <View style={[styles.dot, { backgroundColor: filter.dotColor }]} />
-              )}
               <Text style={[styles.chipLabel, isSelected && styles.chipLabelSelected]}>
                 {filter.label}
               </Text>
@@ -40,6 +50,31 @@ export function MapFilters({ selected, onChange }: MapFiltersProps): React.JSX.E
           );
         })}
       </View>
+
+      {selectedType !== 'stray' ? (
+        <View style={[styles.row, styles.rowSecondary]}>
+          {SPECIES_FILTERS.map((filter) => {
+            const isSelected = filter.key === selected;
+            return (
+              <Pressable
+                key={filter.key}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isSelected }}
+                onPress={(): void => onChange(filter.key)}
+                style={[styles.chip, isSelected && styles.chipSpeciesSelected]}
+                testID={`map.filter.${filter.key}`}
+              >
+                {filter.key === 'all' ? null : (
+                  <View style={[styles.dot, { backgroundColor: filter.dotColor }]} />
+                )}
+                <Text style={[styles.chipLabel, isSelected && styles.chipLabelSelected]}>
+                  {filter.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -54,6 +89,9 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     flexWrap: 'wrap',
   },
+  rowSecondary: {
+    marginTop: spacing.xs,
+  },
   chip: {
     backgroundColor: colors.surface,
     borderRadius: radius.full,
@@ -65,7 +103,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
-  chipSelected: {
+  chipTypeSelected: {
+    borderColor: colors.navActive,
+    backgroundColor: colors.navActive,
+  },
+  chipSpeciesSelected: {
     borderColor: colors.primary,
     backgroundColor: colors.primary,
   },

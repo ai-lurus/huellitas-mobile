@@ -1,7 +1,7 @@
 export const MAX_PETS_PER_USER = 3;
 export const MAX_PHOTOS_PER_PET = 5;
 /** Coincide con la opción por defecto del desplegable de radio en Alertas. */
-export const DEFAULT_ALERT_RADIUS_KM = 4;
+export const DEFAULT_ALERT_RADIUS_KM = 5;
 /** Centro del mapa y búsqueda de reportes si aún no hay GPS (Colima, MX; alineado con la UI del mapa). */
 export const DEFAULT_MAP_FALLBACK = { lat: 19.2433, lng: -103.7247 } as const;
 export const MAX_ALERTS_PER_DAY = 3;

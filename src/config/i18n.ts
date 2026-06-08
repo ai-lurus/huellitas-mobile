@@ -13,6 +13,7 @@ void i18n.use(initReactI18next).init({
     en: { translation: en },
   },
   interpolation: { escapeValue: false },
+  compatibilityJSON: 'v3',
 });
 
 export default i18n;

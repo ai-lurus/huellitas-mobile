@@ -4,6 +4,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, shadows, spacing, typography } from '../../design/tokens';
 import type { PetSpecies, PetSummary } from '../../domain/pets';
 import { SPECIES_ICON_ASSETS, SPECIES_LABELS } from './speciesIconAssets';
+import { PetPhoto } from '../common/PetPhoto';
 
 import LOST_BADGE from '../../../assets/badges/badge-perdido.png';
 import FOUND_BADGE from '../../../assets/badges/badge-encontrado.png';
@@ -61,18 +62,12 @@ export function PetCard({ pet, onPress }: PetCardProps): React.ReactElement {
     >
       <View style={styles.row}>
         <View style={[styles.avatarOuter, { backgroundColor: tint.bg, borderColor }]}>
-          <View style={styles.avatarInner}>
-            {photo ? (
-              <Image source={{ uri: photo }} style={styles.photo} resizeMode="cover" />
-            ) : (
-              <Image
-                source={SPECIES_ICON_ASSETS[pet.species].selected}
-                style={styles.fallbackIcon}
-                resizeMode="contain"
-                accessibilityIgnoresInvertColors
-              />
-            )}
-          </View>
+          <PetPhoto
+            uri={photo}
+            fallback={SPECIES_ICON_ASSETS[pet.species].selected}
+            style={styles.avatarInner}
+            resizeMode="cover"
+          />
         </View>
 
         <View style={styles.textCol}>
