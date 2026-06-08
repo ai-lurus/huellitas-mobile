@@ -6,9 +6,11 @@ function asRecord(v: unknown): Record<string, unknown> | null {
   return typeof v === 'object' && v !== null ? (v as Record<string, unknown>) : null;
 }
 
+// Unwraps axios response → API body ({ success, data: payload }) → payload
 function extractData(res: unknown): unknown {
-  const r = asRecord(res);
-  return r?.['data'] ?? r;
+  const body = asRecord(res)?.['data'] ?? res;
+  const r = asRecord(body);
+  return r?.['data'] ?? body;
 }
 
 async function getFeed(params: {

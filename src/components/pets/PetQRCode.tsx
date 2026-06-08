@@ -9,6 +9,8 @@ interface PetQRCodeProps {
   petName: string;
   qrToken: string | undefined;
   isLoading: boolean;
+  isError?: boolean;
+  onRetry?: () => void;
   onRotate: () => void;
   isRotating: boolean;
 }
@@ -23,6 +25,8 @@ export function PetQRCode({
   petName,
   qrToken,
   isLoading,
+  isError,
+  onRetry,
   onRotate,
   isRotating,
 }: PetQRCodeProps): React.JSX.Element {
@@ -55,8 +59,18 @@ export function PetQRCode({
       </Text>
 
       <View style={styles.qrBox}>
-        {isLoading || qrUrl == null ? (
+        {isLoading ? (
           <ActivityIndicator color={colors.accent} size="large" />
+        ) : isError || qrUrl == null ? (
+          <View style={styles.errorBox}>
+            <Text style={styles.errorIcon}>⚠️</Text>
+            <Text style={styles.errorText}>No se pudo cargar el QR</Text>
+            {onRetry ? (
+              <Pressable onPress={onRetry} style={styles.retryBtn} testID="qr.retry">
+                <Text style={styles.retryLabel}>Reintentar</Text>
+              </Pressable>
+            ) : null}
+          </View>
         ) : (
           <QRCode
             value={qrUrl}
@@ -146,4 +160,13 @@ const styles = StyleSheet.create({
   btnDisabled: { opacity: 0.5 },
   btnLabel: { ...typography.button, color: colors.white },
   btnSecondaryLabel: { ...typography.button, color: colors.textSecondary },
+  errorBox: {
+    alignItems: 'center',
+    gap: spacing.xs,
+    padding: spacing.md,
+  },
+  errorIcon: { fontSize: 32 },
+  errorText: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
+  retryBtn: { marginTop: spacing.xs },
+  retryLabel: { ...typography.label, color: colors.primary },
 });

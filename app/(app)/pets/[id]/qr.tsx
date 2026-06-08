@@ -30,6 +30,8 @@ export default function PetQrScreen(): React.JSX.Element {
         petName={petQuery.data?.name ?? 'tu mascota'}
         qrToken={qrQuery.data}
         isLoading={qrQuery.isLoading}
+        isError={qrQuery.isError}
+        onRetry={() => void qrQuery.refetch()}
         onRotate={() => rotateMutation.mutate()}
         isRotating={rotateMutation.isPending}
       />
