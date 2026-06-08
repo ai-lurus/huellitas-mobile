@@ -464,7 +464,6 @@ const styles = StyleSheet.create({
   subMuted: { ...typography.caption, color: colors.textMuted },
 
   listPadding: {
-    paddingHorizontal: spacing.md,
     paddingBottom: spacing.xxxl,
   },
   feedPadding: {

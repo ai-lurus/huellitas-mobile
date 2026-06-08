@@ -181,6 +181,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     overflow: 'hidden',
     ...shadows.md,
+    marginHorizontal: spacing.md,
     marginBottom: spacing.md,
   },
   pressed: { opacity: 0.92 },
