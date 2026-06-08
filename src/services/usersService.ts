@@ -82,7 +82,15 @@ async function getMe(): Promise<MeProfile> {
   };
 }
 
-function normalizeActiveReport(raw: unknown) {
+function normalizeActiveReport(raw: unknown): {
+  id: string;
+  petName: string;
+  petSpecies: ReturnType<typeof petSpeciesSchema.parse>;
+  petBreed: string | null;
+  petPhotoUrl: string | null;
+  reportKind: 'lost' | 'sighted' | undefined;
+  createdAt: string | undefined;
+} | null {
   const record = asRecord(raw);
   if (!record) return null;
 
@@ -150,7 +158,7 @@ async function getUserPublicProfile(userId: string): Promise<PublicUserProfile> 
     imageUrl: asString(root.imageUrl) ?? asString(root.image) ?? asString(root.avatarUrl) ?? null,
     createdAt: asString(root.createdAt) ?? asString(root.joinedAt) ?? undefined,
     joinedAt: asString(root.joinedAt) ?? asString(root.createdAt) ?? undefined,
-    email: (() => {
+    email: ((): string | undefined => {
       const email = asString(root.email);
       if (!email) return undefined;
       return userSchema.shape.email.safeParse(email).success ? email : undefined;

@@ -72,8 +72,8 @@ export default function GroupDetailScreen(): React.JSX.Element {
     <View>
       <GroupHeader
         group={group}
-        onJoin={!group.isMember ? () => joinGroup(id) : undefined}
-        onLeave={group.isMember ? () => leaveGroup(id) : undefined}
+        onJoin={!group.isMember ? (): void => joinGroup(id) : undefined}
+        onLeave={group.isMember ? (): void => leaveGroup(id) : undefined}
         isLoading={isJoining || isLeaving}
       />
       <View style={styles.feedHeader}>

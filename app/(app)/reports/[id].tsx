@@ -192,7 +192,7 @@ export default function ReportDetailScreen(): React.JSX.Element {
     if (!reportQuery.isPending && reportQuery.isError && !errorAlertShown.current) {
       errorAlertShown.current = true;
       Alert.alert('Error', 'No pudimos cargar el detalle del reporte. Intenta nuevamente.', [
-        { text: 'OK', onPress: () => router.back() },
+        { text: 'OK', onPress: (): void => router.back() },
       ]);
     }
   }, [reportQuery.isError, reportQuery.isPending, router]);

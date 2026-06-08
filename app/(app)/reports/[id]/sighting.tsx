@@ -101,7 +101,7 @@ export default function ReportSightingScreen(): React.JSX.Element {
     mode: 'onSubmit',
   });
 
-  const selectedPhotos = watch('photos') ?? [];
+  const selectedPhotos = useMemo(() => watch('photos') ?? [], [watch]);
   const selectedLocation = watch('location');
 
   const petLabel = detailQuery.data?.petName?.trim() || 'tu mascota';

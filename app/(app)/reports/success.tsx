@@ -20,7 +20,7 @@ export default function ReportSuccessScreen(): React.JSX.Element {
     const t = setTimeout(() => {
       router.replace('/(app)/pets');
     }, 3200);
-    return () => clearTimeout(t);
+    return (): void => clearTimeout(t);
   }, [router]);
 
   return (

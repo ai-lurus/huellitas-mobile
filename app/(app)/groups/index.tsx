@@ -70,7 +70,7 @@ export default function GroupsScreen(): React.JSX.Element {
             <GroupCard
               group={item.group}
               onPress={() => openGroup(item.group.id)}
-              onJoin={!item.group.isMember ? () => joinGroup(item.group.id) : undefined}
+              onJoin={!item.group.isMember ? (): void => joinGroup(item.group.id) : undefined}
               isJoining={isJoining && joiningId === item.group.id}
             />
           );

@@ -15,7 +15,7 @@ export default function ReportSuccessWebScreen(): React.JSX.Element {
     const t = setTimeout(() => {
       router.replace('/(app)/pets');
     }, 2500);
-    return () => clearTimeout(t);
+    return (): void => clearTimeout(t);
   }, [router]);
 
   return (

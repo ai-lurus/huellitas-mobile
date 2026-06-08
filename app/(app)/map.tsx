@@ -179,8 +179,8 @@ export default function MapScreen(): React.JSX.Element {
       } else {
         Alert.alert('Agregar', '¿Qué querés agregar?', [
           { text: 'Cancelar', style: 'cancel' },
-          { text: 'Lugar', onPress: () => router.push('/(app)/places/new' as Href) },
-          { text: 'Paseo', onPress: () => router.push('/(app)/routes/new' as Href) },
+          { text: 'Lugar', onPress: (): void => router.push('/(app)/places/new' as Href) },
+          { text: 'Paseo', onPress: (): void => router.push('/(app)/routes/new' as Href) },
         ]);
       }
       return;
