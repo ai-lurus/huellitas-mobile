@@ -430,7 +430,6 @@ const styles = StyleSheet.create({
   },
 
   groupsSection: {
-    marginHorizontal: -spacing.md,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     paddingTop: spacing.sm,
