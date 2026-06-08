@@ -39,7 +39,13 @@ export default function HomeScreen(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<HomeTab>('comunidad');
   const [alertFilter, setAlertFilter] = useState<AlertFilter>('all');
 
-  const searchCenter = currentLocation ?? DEFAULT_MAP_FALLBACK;
+  const raw = currentLocation ?? DEFAULT_MAP_FALLBACK;
+  // Round to 3 decimal places (~110m precision) so GPS micro-updates
+  // don't create new query keys and trigger unnecessary re-fetches.
+  const searchCenter = {
+    lat: Math.round(raw.lat * 1000) / 1000,
+    lng: Math.round(raw.lng * 1000) / 1000,
+  };
 
   const reportsQuery = useLostReports({
     lat: searchCenter.lat,
