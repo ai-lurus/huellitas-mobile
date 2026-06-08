@@ -1,6 +1,7 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { StrayForm } from '../../../src/components/stray/StrayForm';
 import { colors, spacing, typography } from '../../../src/design/tokens';
@@ -15,7 +16,7 @@ export default function NewStrayReportScreen(): React.JSX.Element {
   const createMutation = useCreateStrayReport();
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView edges={['top']} style={styles.screen}>
       <View style={styles.header}>
         <Text style={styles.title}>Vi un animal suelto</Text>
         <Text style={styles.subtitle}>
@@ -32,10 +33,16 @@ export default function NewStrayReportScreen(): React.JSX.Element {
             onSuccess: (report) => {
               router.replace(`/(app)/stray/${report.id}`);
             },
+            onError: () => {
+              Alert.alert(
+                'Error al reportar',
+                'No se pudo guardar el reporte. Verificá tu conexión e intentá de nuevo.',
+              );
+            },
           });
         }}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -45,7 +52,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundApp,
   },
   header: {
-    paddingTop: spacing.xxxl,
+    paddingTop: spacing.md,
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
     gap: spacing.xs,
