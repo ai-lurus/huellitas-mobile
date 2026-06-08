@@ -224,16 +224,16 @@ export default function HomeScreen(): React.JSX.Element {
 
   const headerComponent = (
     <View style={styles.headerWrap}>
-      {topBar}
+      <View style={styles.topBarPadded}>{topBar}</View>
       {tabBar}
       {activeTab === 'alertas' && (
-        <>
+        <View style={styles.alertsSubHeader}>
           {alertFilterChips}
           <View style={styles.subRow} testID="home.subtitle">
             <Text style={styles.subRed}>{lostCount} mascotas perdidas</Text>
             <Text style={styles.subMuted}> cerca de ti</Text>
           </View>
-        </>
+        </View>
       )}
       {activeTab === 'comunidad' && groupsChips}
     </View>
@@ -332,16 +332,23 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundApp,
   },
   headerWrap: {
+    backgroundColor: colors.surface,
+  },
+  topBarPadded: {
     paddingTop: spacing.xxxl + spacing.xs,
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.sm,
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  alertsSubHeader: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
+    gap: spacing.xs,
   },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   logoMark: {
