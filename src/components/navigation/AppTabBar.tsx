@@ -1,14 +1,16 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 
 import { colors, radius, shadows, spacing, typography } from '../../design/tokens';
+import { BREAKPOINT_TABLET } from '../../design/breakpoints';
 
 const TAB_ICON = 22;
 const ALERT_BUTTON_SIZE = 56;
+const FLOATING_MARGIN = 16;
 const TAB_ROUTES = new Set(['index', 'map', 'alerts', 'pets', 'profile']);
 
 export function AppTabBar({
@@ -17,9 +19,20 @@ export function AppTabBar({
   navigation,
 }: BottomTabBarProps): React.ReactElement {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const isFloating = width >= BREAKPOINT_TABLET;
 
   return (
-    <View style={[styles.wrap, { paddingBottom: Math.max(insets.bottom, spacing.sm) }]}>
+    <View
+      testID="appTabBar.wrap"
+      style={[
+        styles.wrap,
+        isFloating ? styles.wrapFloating : styles.wrapFullBar,
+        isFloating
+          ? { marginBottom: Math.max(insets.bottom, FLOATING_MARGIN) }
+          : { paddingBottom: Math.max(insets.bottom, spacing.sm) },
+      ]}
+    >
       <View style={styles.row}>
         {state.routes.map((route, index) => {
           // Evita duplicados cuando hay rutas anidadas (p. ej. profile/settings)
@@ -36,7 +49,7 @@ export function AppTabBar({
               ? String(options.title)
               : route.name;
           const isFocused = state.index === index;
-          const color = isFocused ? colors.navActive : colors.textSecondary;
+          const color = isFocused ? colors.primary : colors.textSecondary;
 
           const onPress = (): void => {
             const event = navigation.emit({
@@ -62,14 +75,7 @@ export function AppTabBar({
                 >
                   <Ionicons name="notifications" size={26} color={colors.white} />
                 </Pressable>
-                <Text
-                  style={[
-                    styles.tabLabel,
-                    { color: isFocused ? colors.navActive : colors.textSecondary },
-                  ]}
-                >
-                  {label}
-                </Text>
+                <Text style={styles.alertLabel}>{label}</Text>
               </View>
             );
           }
@@ -126,11 +132,18 @@ export function AppTabBar({
 const styles = StyleSheet.create({
   wrap: {
     backgroundColor: colors.surface,
-    borderTopLeftRadius: radius.xl,
-    borderTopRightRadius: radius.xl,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
     ...shadows.md,
+  },
+  wrapFullBar: {
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+  },
+  wrapFloating: {
+    marginHorizontal: FLOATING_MARGIN,
+    borderRadius: radius.full,
+    borderTopWidth: 0,
   },
   row: {
     flexDirection: 'row',
@@ -158,15 +171,21 @@ const styles = StyleSheet.create({
     marginTop: -28,
     paddingBottom: spacing.xxs,
   },
+  alertLabel: {
+    ...typography.caption,
+    fontWeight: '600',
+    fontSize: 11,
+    color: colors.danger,
+  },
   alertFab: {
     width: ALERT_BUTTON_SIZE,
     height: ALERT_BUTTON_SIZE,
     borderRadius: ALERT_BUTTON_SIZE / 2,
-    backgroundColor: colors.navActive,
+    backgroundColor: colors.danger,
     alignItems: 'center',
     justifyContent: 'center',
     ...shadows.md,
-    shadowColor: colors.navActive,
+    shadowColor: colors.danger,
     shadowOpacity: 0.35,
     shadowRadius: 10,
     elevation: 6,
