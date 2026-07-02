@@ -19,9 +19,9 @@ jest.mock('expo-router', () => ({
   }),
 }));
 
-jest.mock('../services/authService');
+jest.mock('../services/emailAuthService');
 
-jest.mock('../services/auth.service', () => ({
+jest.mock('../services/googleAuthService', () => ({
   runGoogleSignInFlow: jest.fn(),
 }));
 
@@ -31,11 +31,11 @@ jest.mock('../stores/authStore', () => ({
   },
 }));
 
-const { authService } = jest.requireMock('../services/authService') as {
+const { authService } = jest.requireMock('../services/emailAuthService') as {
   authService: { signIn: jest.Mock };
 };
 
-const { runGoogleSignInFlow } = jest.requireMock('../services/auth.service') as {
+const { runGoogleSignInFlow } = jest.requireMock('../services/googleAuthService') as {
   runGoogleSignInFlow: jest.Mock;
 };
 

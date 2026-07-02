@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { AuthUser } from './authService';
+import type { AuthUser } from '../types/auth';
 import { httpClient } from '../network';
 import type { OnboardingProfileUpdatePayload } from '../types/onboarding';
 import { publicUserProfileSchema, type PublicUserProfile } from '../domain/userProfile';

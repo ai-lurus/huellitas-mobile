@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { z } from 'zod';
 
 import { colors, control, radius, shadows, spacing, typography } from '../../design/tokens';
-import { authService } from '../../services/authService';
+import { authService } from '../../services/emailAuthService';
 import { useAuthStore } from '../../stores/authStore';
 
 const AUTH_ERROR_COPY = 'Correo o contraseña incorrectos. Verifica tus datos e intenta de nuevo.';

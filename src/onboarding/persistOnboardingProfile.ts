@@ -1,4 +1,4 @@
-import type { AuthUser } from '../services/authService';
+import type { AuthUser } from '../types/auth';
 import { usersService } from '../services/usersService';
 
 export interface PersistOnboardingProfileParams {

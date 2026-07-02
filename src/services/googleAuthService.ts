@@ -6,7 +6,7 @@ import { Platform } from 'react-native';
 
 import { env } from '../config/env';
 import { useAuthStore } from '../stores/authStore';
-import type { AuthUser } from './authService';
+import type { AuthUser } from '../types/auth';
 import { getSessionTokenAsync } from './sessionTokenStorage';
 import { httpClient } from '../network';
 import { getPostOAuthDestination } from './postOAuthRouting';

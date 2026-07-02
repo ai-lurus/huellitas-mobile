@@ -17,7 +17,7 @@ jest.mock('expo-router', () => ({
   }),
 }));
 
-jest.mock('../services/authService');
+jest.mock('../services/emailAuthService');
 
 jest.mock('../stores/authStore', () => ({
   useAuthStore: {
@@ -25,7 +25,7 @@ jest.mock('../stores/authStore', () => ({
   },
 }));
 
-const { authService } = jest.requireMock('../services/authService') as {
+const { authService } = jest.requireMock('../services/emailAuthService') as {
   authService: { signUp: jest.Mock };
 };
 

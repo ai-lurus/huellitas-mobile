@@ -6,7 +6,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors, spacing } from '../../src/design/tokens';
 import { SignInForm } from '../../src/components/auth/SignInForm';
 import { useKeyboardHeight } from '../../src/hooks/useKeyboardHeight';
-import { runGoogleSignInFlow } from '../../src/services/auth.service';
+import { runGoogleSignInFlow } from '../../src/services/googleAuthService';
 
 export default function SignInScreen(): React.JSX.Element {
   const router = useRouter();

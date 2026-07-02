@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { Redirect } from 'expo-router';
 
-import { syncBetterAuthSessionToAuthStore } from '../src/services/auth.service';
+import { syncBetterAuthSessionToAuthStore } from '../src/services/googleAuthService';
 import { colors } from '../src/design/tokens';
 
 type AuthState = 'loading' | 'authenticated' | 'unauthenticated';

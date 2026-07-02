@@ -12,7 +12,7 @@ import { OfflineBanner } from '../src/components/offline/OfflineBanner';
 import { HuellitasToast } from '../src/components/toasts/HuellitasToast';
 import { SentryUserSync } from '../src/components/analytics/SentryUserSync';
 import { colors } from '../src/design/tokens';
-import { authClient } from '../src/services/auth.service';
+import { authClient } from '../src/services/googleAuthService';
 import i18n from '../src/config/i18n';
 import { loadLanguage } from '../src/i18n/languagePreference';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';

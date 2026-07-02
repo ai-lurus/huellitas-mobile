@@ -28,7 +28,7 @@ httpClient.interceptors.request.use(async (config: InternalAxiosRequestConfig) =
 
   // Better Auth puede requerir cookie en algunos flujos (según servidor/origen).
   try {
-    const { getBetterAuthCookieHeader } = await import('../services/auth.service');
+    const { getBetterAuthCookieHeader } = await import('../services/googleAuthService');
     const cookie = getBetterAuthCookieHeader();
     if (cookie) {
       config.headers['Cookie'] = cookie;

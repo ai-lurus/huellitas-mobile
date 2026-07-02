@@ -20,7 +20,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { colors, radius, shadows, spacing, typography } from '../../../src/design/tokens';
 import { deleteSessionTokenAsync } from '../../../src/services/sessionTokenStorage';
-import { authClient } from '../../../src/services/auth.service';
+import { authClient } from '../../../src/services/googleAuthService';
 import { notificationsService } from '../../../src/services/notificationsService';
 import { usersService } from '../../../src/services/usersService';
 import { useAuthStore } from '../../../src/stores/authStore';

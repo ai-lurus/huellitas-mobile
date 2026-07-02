@@ -5,6 +5,7 @@ import { getSignInPath, getSignUpPath } from '../config/authEndpoints';
 import { httpClient } from '../network';
 import { setSessionTokenAsync } from './sessionTokenStorage';
 import { logger } from '../utils/logger';
+import type { AuthUser } from '../types/auth';
 
 function toFriendlyAuthError(err: unknown): Error {
   if (isAxiosError(err)) {
@@ -81,8 +82,6 @@ const authSessionSchema = z.object({
   /** Si el API lo envía, controla navegación a onboarding vs home. */
   isFirstLogin: z.boolean().optional(),
 });
-
-export type AuthUser = z.infer<typeof userSchema>;
 
 async function signIn(
   email: string,

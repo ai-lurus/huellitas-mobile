@@ -2,13 +2,13 @@ import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 
 import { SignInForm } from './SignInForm';
-import { authService } from '../../services/authService';
+import { authService } from '../../services/emailAuthService';
 
 jest.mock('@expo/vector-icons', () => ({
   Ionicons: (): null => null,
 }));
 
-jest.mock('../../services/authService');
+jest.mock('../../services/emailAuthService');
 
 jest.mock('../../stores/authStore', () => ({
   useAuthStore: {

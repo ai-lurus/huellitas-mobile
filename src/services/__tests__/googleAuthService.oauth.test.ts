@@ -1,4 +1,4 @@
-import { formatOAuthErrorMessage } from '../auth.service';
+import { formatOAuthErrorMessage } from '../googleAuthService';
 
 jest.mock('better-auth/react', () => ({
   createAuthClient: jest.fn(() => ({
@@ -35,7 +35,7 @@ jest.mock('../postOAuthRouting', () => ({
   getPostOAuthDestination: jest.fn().mockResolvedValue('app'),
 }));
 
-describe('auth.service OAuth helpers', () => {
+describe('googleAuthService OAuth helpers', () => {
   it('formatOAuthErrorMessage devuelve mensaje genérico para errores desconocidos', () => {
     expect(formatOAuthErrorMessage(null)).toMatch(/Google/);
   });

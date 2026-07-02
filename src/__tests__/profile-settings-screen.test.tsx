@@ -68,7 +68,7 @@ jest.mock('../services/sessionTokenStorage', () => ({
   deleteSessionTokenAsync: jest.fn(() => Promise.resolve()),
 }));
 
-jest.mock('../services/auth.service', () => ({
+jest.mock('../services/googleAuthService', () => ({
   authClient: { signOut: jest.fn(() => Promise.resolve()) },
 }));
 

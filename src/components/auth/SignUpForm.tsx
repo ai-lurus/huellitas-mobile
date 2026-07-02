@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { z } from 'zod';
 
 import { colors, control, radius, shadows, spacing, typography } from '../../design/tokens';
-import { authService } from '../../services/authService';
+import { authService } from '../../services/emailAuthService';
 import { useAuthStore } from '../../stores/authStore';
 
 export const signUpSchema = z
@@ -52,6 +52,9 @@ function isNetworkError(err: unknown): boolean {
 function formatSubmitError(err: unknown): string {
   if (isNetworkError(err)) {
     return 'No pudimos conectarnos. Verifica tu conexión a internet e intenta de nuevo.';
+  }
+  if (err instanceof Error && err.message) {
+    return err.message;
   }
   return 'No se pudo crear la cuenta. Intenta de nuevo.';
 }
