@@ -19,6 +19,7 @@ import { CenterButton } from './CenterButton';
 
 interface HuellitasMapProps {
   children?: React.ReactNode;
+  overlay?: React.ReactNode;
   showCenterButton?: boolean;
   containerStyle?: StyleProp<ViewStyle>;
   mapRefOverride?: React.MutableRefObject<{
@@ -40,6 +41,7 @@ function toRegion(lat: number, lng: number): Region {
 
 export function HuellitasMap({
   children,
+  overlay,
   mapRefOverride,
   showCenterButton = true,
   containerStyle,
@@ -114,11 +116,13 @@ export function HuellitasMap({
         }}
         provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
         showsUserLocation
-        style={styles.map}
+        style={StyleSheet.absoluteFillObject}
         testID="huellitas-map"
       >
         {children}
       </MapView>
+
+      {overlay}
 
       {!mapReady && !mapError && !isRemountRef.current ? (
         <View style={styles.loadingOverlay} testID="map.loading">
@@ -146,9 +150,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.backgroundApp,
-  },
-  map: {
-    flex: 1,
   },
   loadingOverlay: {
     position: 'absolute',

@@ -5,6 +5,7 @@ import { CenterButton } from './CenterButton';
 
 interface HuellitasMapProps {
   children?: React.ReactNode;
+  overlay?: React.ReactNode;
   showCenterButton?: boolean;
   containerStyle?: StyleProp<ViewStyle>;
   mapRefOverride?: React.MutableRefObject<{
@@ -19,6 +20,7 @@ interface HuellitasMapProps {
 
 export function HuellitasMap({
   children,
+  overlay,
   showCenterButton = true,
   containerStyle,
 }: HuellitasMapProps): React.JSX.Element {
@@ -31,6 +33,7 @@ export function HuellitasMap({
         </Text>
       </View>
       {children}
+      {overlay}
       {showCenterButton ? <CenterButton onPress={(): void => {}} /> : null}
     </View>
   );

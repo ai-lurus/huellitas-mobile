@@ -243,24 +243,34 @@ export default function MapScreen(): React.JSX.Element {
       ) : null}
 
       <View style={styles.mapCard}>
-        <HuellitasMap containerStyle={styles.mapInner} showCenterButton={false}>
-          {showReportsLoading && layer === 'alerts' ? (
-            <Skeleton style={StyleSheet.absoluteFillObject} borderRadius={18} />
-          ) : null}
-
-          <View style={styles.mapChips}>
-            <View style={styles.smallChip}>
-              <Ionicons color={colors.textSecondary} name="location" size={12} />
-              <Text style={styles.smallChipLabel}>Colima, Colima</Text>
-            </View>
-            <RadiusDropdown
-              value={alertRadiusKm}
-              onChange={setAlertRadius}
-              variant="map"
-              testID="map.radius.trigger"
-            />
-          </View>
-
+        <HuellitasMap
+          containerStyle={styles.mapInner}
+          showCenterButton={false}
+          overlay={
+            <>
+              {showReportsLoading && layer === 'alerts' ? (
+                <Skeleton style={StyleSheet.absoluteFillObject} borderRadius={18} />
+              ) : null}
+              <View style={styles.mapChips} pointerEvents="box-none">
+                <View style={styles.smallChip}>
+                  <Ionicons color={colors.textSecondary} name="location" size={12} />
+                  <Text style={styles.smallChipLabel}>Colima, Colima</Text>
+                </View>
+                <RadiusDropdown
+                  value={alertRadiusKm}
+                  onChange={setAlertRadius}
+                  variant="map"
+                  testID="map.radius.trigger"
+                />
+              </View>
+              {showReportsLoading && layer === 'alerts' ? (
+                <View style={styles.overlay} testID="reports.loading">
+                  <Text style={styles.overlayLabel}>Cargando reportes cercanos...</Text>
+                </View>
+              ) : null}
+            </>
+          }
+        >
           {layer === 'alerts' ? (
             <RadiusCircle center={searchCenter} radiusKm={alertRadiusKm} />
           ) : null}
@@ -307,12 +317,6 @@ export default function MapScreen(): React.JSX.Element {
               opacity={layer === 'lugares' ? 1 : 0}
             />
           ))}
-
-          {showReportsLoading && layer === 'alerts' ? (
-            <View style={styles.overlay} testID="reports.loading">
-              <Text style={styles.overlayLabel}>Cargando reportes cercanos...</Text>
-            </View>
-          ) : null}
         </HuellitasMap>
       </View>
 
