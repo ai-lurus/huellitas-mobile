@@ -15,6 +15,7 @@ import { colors } from '../src/design/tokens';
 import { authClient } from '../src/services/googleAuthService';
 import i18n from '../src/config/i18n';
 import { loadLanguage } from '../src/i18n/languagePreference';
+import { useAppFonts } from '../src/hooks/useAppFonts';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { queryClient } from '../src/query/queryClient';
 import { queryPersister } from '../src/query/queryPersister';
@@ -54,6 +55,8 @@ function AuthDeepLinkSync(): null {
 }
 
 export default function RootLayout(): React.JSX.Element {
+  const fontsLoaded = useAppFonts();
+
   useEffect(() => {
     // Carga el idioma guardado (best-effort) al iniciar la app.
     void loadLanguage().then((lng) => {
@@ -63,6 +66,10 @@ export default function RootLayout(): React.JSX.Element {
     // Despierta la base de datos Neon (arranque en frío) en segundo plano
     void httpClient.get('/health').catch(() => {});
   }, []);
+
+  if (!fontsLoaded) {
+    return <View style={{ flex: 1, backgroundColor: colors.background }} />;
+  }
 
   return (
     <SafeAreaProvider>
