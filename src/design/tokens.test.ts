@@ -1,4 +1,4 @@
-import { colors } from './tokens';
+import { colors, typography } from './tokens';
 
 describe('design tokens — colors', () => {
   it('uses the PLAKA brand colors for primary/surface/accent/danger', () => {
@@ -31,5 +31,17 @@ describe('design tokens — colors', () => {
     expect(colors.google).toBe('#4285F4');
     expect(colors.white).toBe('#FFFFFF');
     expect(colors.black).toBe('#000000');
+  });
+});
+
+describe('design tokens — typography', () => {
+  it('maps title/heading to Montserrat and body styles to Inter', () => {
+    expect(typography.title.fontFamily).toBe('Montserrat_700Bold');
+    expect(typography.heading.fontFamily).toBe('Montserrat_700Bold');
+    expect(typography.body.fontFamily).toBe('Inter_400Regular');
+    expect(typography.bodyStrong.fontFamily).toBe('Inter_700Bold');
+    expect(typography.label.fontFamily).toBe('Inter_700Bold');
+    expect(typography.button.fontFamily).toBe('Inter_700Bold');
+    expect(typography.caption.fontFamily).toBe('Inter_400Regular');
   });
 });

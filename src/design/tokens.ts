@@ -51,13 +51,41 @@ export const radius = {
 } as const;
 
 export const typography = {
-  title: { fontSize: 26, fontWeight: '700' as TextStyle['fontWeight'] },
-  heading: { fontSize: 20, fontWeight: '700' as TextStyle['fontWeight'] },
-  body: { fontSize: 14, fontWeight: '400' as TextStyle['fontWeight'] },
-  bodyStrong: { fontSize: 14, fontWeight: '700' as TextStyle['fontWeight'] },
-  label: { fontSize: 13, fontWeight: '700' as TextStyle['fontWeight'] },
-  button: { fontSize: 16, fontWeight: '700' as TextStyle['fontWeight'] },
-  caption: { fontSize: 12, fontWeight: '400' as TextStyle['fontWeight'] },
+  title: {
+    fontSize: 26,
+    fontWeight: '700' as TextStyle['fontWeight'],
+    fontFamily: 'Montserrat_700Bold',
+  },
+  heading: {
+    fontSize: 20,
+    fontWeight: '700' as TextStyle['fontWeight'],
+    fontFamily: 'Montserrat_700Bold',
+  },
+  body: {
+    fontSize: 14,
+    fontWeight: '400' as TextStyle['fontWeight'],
+    fontFamily: 'Inter_400Regular',
+  },
+  bodyStrong: {
+    fontSize: 14,
+    fontWeight: '700' as TextStyle['fontWeight'],
+    fontFamily: 'Inter_700Bold',
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: '700' as TextStyle['fontWeight'],
+    fontFamily: 'Inter_700Bold',
+  },
+  button: {
+    fontSize: 16,
+    fontWeight: '700' as TextStyle['fontWeight'],
+    fontFamily: 'Inter_700Bold',
+  },
+  caption: {
+    fontSize: 12,
+    fontWeight: '400' as TextStyle['fontWeight'],
+    fontFamily: 'Inter_400Regular',
+  },
 } as const;
 
 export const control = {
