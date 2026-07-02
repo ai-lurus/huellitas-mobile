@@ -12,7 +12,7 @@
 
 - Spec: `docs/superpowers/specs/2026-07-02-plaka-design-system-design.md`.
 - Only touch: `src/design/tokens.ts`, `src/design/breakpoints.ts` (new), `src/hooks/useAppFonts.ts` (new), `app/_layout.tsx`, `src/components/navigation/AppTabBar.tsx`, `app.json`, `app/(app)/index.tsx`, `package.json`, plus their test files. No other consuming file is edited.
-- Color/typography token **key names** in `tokens.ts` do not change, only values — every other file keeps working unmodified.
+- Existing color/typography token **key names** in `tokens.ts` are never renamed or removed, and their meaning to existing consumers doesn't change — every other file keeps working unmodified. Task 1 adds one new key, `primaryDark` (not previously present), for pressed states; that addition is intentional and approved (see the spec's color table) and does not conflict with this constraint.
 - `colors.accent` and `colors.success` (and `successIcon`) must resolve to `#00785B` (legible darkened mint), **not** raw `#00F0B5` — raw mint is not assigned to any exported token in this plan, per the contrast finding in the spec.
 - `colors.danger` stays raw coral `#FF4B4B`; `colors.dangerDark` (existing key) is `#C62828` for text use.
 - Footer floating breakpoint is exactly `400` (pt), defined once in `src/design/breakpoints.ts` as `BREAKPOINT_TABLET`.
@@ -31,7 +31,7 @@
 
 **Interfaces:**
 
-- Produces: `colors.primary`, `colors.primaryDark`, `colors.accent`, `colors.danger`, `colors.dangerDark`, `colors.dangerSoft`, `colors.dangerIcon`, `colors.success`, `colors.successIcon`, `colors.textPrimary`, `colors.textSecondary`, `colors.textMuted`, `colors.border`, `colors.background`, `colors.backgroundApp`, `colors.surface`, `colors.navActive`, `colors.google`, `colors.iconMuted`, `colors.infoBorder`, `colors.infoBackground`, `colors.white`, `colors.black` — all pre-existing key names, new values. No key is added or removed.
+- Produces: `colors.primary`, `colors.accent`, `colors.danger`, `colors.dangerDark`, `colors.dangerSoft`, `colors.dangerIcon`, `colors.success`, `colors.successIcon`, `colors.textPrimary`, `colors.textSecondary`, `colors.textMuted`, `colors.border`, `colors.background`, `colors.backgroundApp`, `colors.surface`, `colors.navActive`, `colors.google`, `colors.iconMuted`, `colors.infoBorder`, `colors.infoBackground`, `colors.white`, `colors.black` — all pre-existing key names, new values only. Plus one new key, `colors.primaryDark` (`#083E4D`), added intentionally for pressed states per the spec.
 
 - [ ] **Step 1: Write the failing test**
 
