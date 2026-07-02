@@ -111,13 +111,13 @@ export default function HomeScreen(): React.JSX.Element {
       <View style={styles.brandRow}>
         <View style={styles.logoMark}>
           <Image
-            accessibilityLabel="Huellitas"
+            accessibilityLabel="PLAKA"
             source={require('../../assets/icon.png')}
             style={styles.logoImg}
             resizeMode="contain"
           />
         </View>
-        <Text style={styles.brandText}>Huellitas</Text>
+        <Text style={styles.brandText}>PLAKA</Text>
       </View>
       <View style={styles.actionsRow}>
         <Pressable accessibilityRole="button" style={styles.actionBtn} testID="home.search">
