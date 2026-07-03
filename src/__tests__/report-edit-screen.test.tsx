@@ -1,5 +1,6 @@
 import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { useAuthStore } from '../stores/authStore';
 
 jest.mock('@expo/vector-icons', () => ({
   Ionicons: (): null => null,
@@ -101,5 +102,21 @@ describe('Editar reporte de mascota perdida', () => {
     const { getByTestId, queryByTestId } = render(<ReportEditScreen />);
     await waitFor(() => expect(getByTestId('report.edit.blocked')).toBeTruthy());
     expect(queryByTestId('radar.wizard.lost.continue')).toBeNull();
+  });
+
+  it('modo invitado: redirige hacia atrás al entrar (defensivo)', async () => {
+    useAuthStore.setState({ isGuest: true });
+    mockedUseLostReportDetail.mockReturnValue({
+      data: makeDetail(),
+      isPending: false,
+      isError: false,
+    } as never);
+    mockedUseUpdateLostReportMutation.mockReturnValue({ mutateAsync: jest.fn() } as never);
+
+    render(<ReportEditScreen />);
+
+    await waitFor(() => expect(mockBack).toHaveBeenCalled());
+
+    useAuthStore.setState({ isGuest: false });
   });
 });

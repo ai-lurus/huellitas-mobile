@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -14,11 +14,20 @@ import {
   useLostReportDetail,
   useUpdateLostReportMutation,
 } from '../../../../src/hooks/useLostReports';
+import { useAuthStore } from '../../../../src/stores/authStore';
 
 export default function ReportEditScreen(): React.JSX.Element {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const reportId = id ?? '';
+
+  const isGuest = useAuthStore((s) => s.isGuest);
+
+  useEffect((): void => {
+    if (isGuest) {
+      router.back();
+    }
+  }, [isGuest, router]);
 
   const reportQuery = useLostReportDetail(reportId);
   const updateMutation = useUpdateLostReportMutation(reportId);
