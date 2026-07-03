@@ -10,9 +10,9 @@ import { BREAKPOINT_TABLET } from '../../design/breakpoints';
 import { PlakaIcon } from '../icons/PlakaIcon';
 
 const TAB_ICON = 22;
-const ALERT_BUTTON_SIZE = 56;
 const FLOATING_MARGIN = 16;
-const TAB_ROUTES = new Set(['index', 'map', 'alerts', 'pets', 'profile']);
+// Orden y set de tabs del PRD: Inicio/Mascotas/Radar/Servicios/Perfil.
+const TAB_ROUTES = new Set(['index', 'pets', 'map', 'services', 'profile']);
 
 export function AppTabBar({
   state,
@@ -63,24 +63,6 @@ export function AppTabBar({
             }
           };
 
-          if (route.name === 'alerts') {
-            return (
-              <View key={route.key} style={styles.alertSlot}>
-                <Pressable
-                  testID="tab.alert"
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: isFocused }}
-                  accessibilityLabel={label}
-                  onPress={onPress}
-                  style={styles.alertFab}
-                >
-                  <PlakaIcon name="extraviado" size={26} color={colors.white} />
-                </Pressable>
-                <Text style={styles.alertLabel}>{label}</Text>
-              </View>
-            );
-          }
-
           let icon: React.ReactNode = (
             <Ionicons name="ellipse-outline" size={TAB_ICON} color={color} />
           );
@@ -92,6 +74,14 @@ export function AppTabBar({
             icon = <PlakaIcon name="radar" size={TAB_ICON} color={color} />;
           } else if (route.name === 'pets') {
             icon = <PlakaIcon name="carnet-id" size={TAB_ICON} color={color} />;
+          } else if (route.name === 'services') {
+            icon = (
+              <Ionicons
+                name={isFocused ? 'storefront' : 'storefront-outline'}
+                size={TAB_ICON}
+                color={color}
+              />
+            );
           } else if (route.name === 'profile') {
             icon = <PlakaIcon name="contacto" size={TAB_ICON} color={color} />;
           }
@@ -152,31 +142,5 @@ const styles = StyleSheet.create({
     ...typography.caption,
     fontWeight: '600',
     fontSize: 11,
-  },
-  alertSlot: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    marginTop: -28,
-    paddingBottom: spacing.xxs,
-  },
-  alertLabel: {
-    ...typography.caption,
-    fontWeight: '600',
-    fontSize: 11,
-    color: colors.danger,
-  },
-  alertFab: {
-    width: ALERT_BUTTON_SIZE,
-    height: ALERT_BUTTON_SIZE,
-    borderRadius: ALERT_BUTTON_SIZE / 2,
-    backgroundColor: colors.danger,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...shadows.md,
-    shadowColor: colors.danger,
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    elevation: 6,
   },
 });

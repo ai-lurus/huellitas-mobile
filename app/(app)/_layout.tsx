@@ -2,6 +2,7 @@ import { Tabs } from 'expo-router';
 import { useEffect } from 'react';
 
 import { AppTabBar } from '../../src/components/navigation/AppTabBar';
+import { usePendingRadarReportSync } from '../../src/hooks/usePendingRadarReportSync';
 import { usersService } from '../../src/services/usersService';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useSettingsStore } from '../../src/stores/settingsStore';
@@ -9,6 +10,8 @@ import '../../src/config/i18n';
 
 export default function AppLayout(): React.JSX.Element {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+
+  usePendingRadarReportSync();
 
   useEffect((): void | (() => void) => {
     if (!isAuthenticated) return;
@@ -30,9 +33,9 @@ export default function AppLayout(): React.JSX.Element {
   return (
     <Tabs tabBar={(props) => <AppTabBar {...props} />} screenOptions={{ headerShown: false }}>
       <Tabs.Screen name="index" options={{ title: 'Inicio' }} />
-      <Tabs.Screen name="map" options={{ title: 'Mapa' }} />
-      <Tabs.Screen name="alerts" options={{ title: 'Alerta' }} />
       <Tabs.Screen name="pets" options={{ title: 'Mascotas' }} />
+      <Tabs.Screen name="map" options={{ title: 'Radar' }} />
+      <Tabs.Screen name="services" options={{ title: 'Servicios' }} />
       <Tabs.Screen name="profile" options={{ title: 'Perfil' }} />
     </Tabs>
   );

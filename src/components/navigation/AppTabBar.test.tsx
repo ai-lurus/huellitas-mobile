@@ -22,16 +22,16 @@ const mockUseWindowDimensions = useWindowDimensions as jest.Mock;
 
 const TITLES: Record<string, string> = {
   index: 'Inicio',
-  map: 'Radar',
-  alerts: 'Reportar',
   pets: 'Mascotas',
-  profile: 'Comunidad',
+  map: 'Radar',
+  services: 'Servicios',
+  profile: 'Perfil',
 };
 
 function buildProps(
   overrides: Partial<{ routeNames: string[]; index: number }> = {},
 ): BottomTabBarProps & { navigation: { emit: jest.Mock; navigate: jest.Mock } } {
-  const routeNames = overrides.routeNames ?? ['index', 'map', 'alerts', 'pets', 'profile'];
+  const routeNames = overrides.routeNames ?? ['index', 'pets', 'map', 'services', 'profile'];
   const routes = routeNames.map((name) => ({ key: name, name }));
   const descriptors = Object.fromEntries(
     routes.map((route) => [route.key, { options: { title: TITLES[route.name] } }]),
@@ -77,22 +77,14 @@ describe('AppTabBar', () => {
     expect(flat.borderRadius).toBeDefined();
   });
 
-  it('keeps the alert FAB coral regardless of focus state', () => {
-    const focused = render(<AppTabBar {...buildProps({ index: 2 })} />);
-    expect(StyleSheet.flatten(focused.getByTestId('tab.alert').props.style).backgroundColor).toBe(
-      colors.danger,
-    );
-    focused.unmount();
+  it('renders the 5 PRD tabs in order: Inicio, Mascotas, Radar, Servicios, Perfil', () => {
+    const { getByTestId } = render(<AppTabBar {...buildProps()} />);
 
-    const unfocused = render(<AppTabBar {...buildProps({ index: 0 })} />);
-    expect(StyleSheet.flatten(unfocused.getByTestId('tab.alert').props.style).backgroundColor).toBe(
-      colors.danger,
-    );
-  });
-
-  it('renders the alert label in coral', () => {
-    const { getByText } = render(<AppTabBar {...buildProps()} />);
-    expect(StyleSheet.flatten(getByText('Reportar').props.style).color).toBe(colors.danger);
+    expect(getByTestId('tab.index')).toBeTruthy();
+    expect(getByTestId('tab.pets')).toBeTruthy();
+    expect(getByTestId('tab.map')).toBeTruthy();
+    expect(getByTestId('tab.services')).toBeTruthy();
+    expect(getByTestId('tab.profile')).toBeTruthy();
   });
 
   it('colors the focused tab with primary and other tabs with textSecondary', () => {
@@ -110,6 +102,15 @@ describe('AppTabBar', () => {
     expect(UNSAFE_getByProps({ name: 'carnet-id' })).toBeTruthy();
   });
 
+  it('renders a storefront Ionicon for the services tab', () => {
+    const focused = render(<AppTabBar {...buildProps({ index: 3 })} />);
+    expect(focused.UNSAFE_getByProps({ name: 'storefront' })).toBeTruthy();
+    focused.unmount();
+
+    const unfocused = render(<AppTabBar {...buildProps({ index: 0 })} />);
+    expect(unfocused.UNSAFE_getByProps({ name: 'storefront-outline' })).toBeTruthy();
+  });
+
   it('swaps the Inicio Ionicon between filled and outline based on focus', () => {
     const focused = render(<AppTabBar {...buildProps({ index: 0 })} />);
     expect(focused.UNSAFE_getByProps({ name: 'home' })).toBeTruthy();
@@ -117,12 +118,6 @@ describe('AppTabBar', () => {
 
     const unfocused = render(<AppTabBar {...buildProps({ index: 1 })} />);
     expect(unfocused.UNSAFE_getByProps({ name: 'home-outline' })).toBeTruthy();
-  });
-
-  it('renders the extraviado icon in white on the alert FAB', () => {
-    const { UNSAFE_getByProps } = render(<AppTabBar {...buildProps()} />);
-
-    expect(UNSAFE_getByProps({ name: 'extraviado', color: colors.white })).toBeTruthy();
   });
 
   it('does not render nested routes', () => {
@@ -135,10 +130,11 @@ describe('AppTabBar', () => {
 
   it('does not render routes outside the main tab set', () => {
     const { queryByTestId } = render(
-      <AppTabBar {...buildProps({ routeNames: ['index', 'notifications'] })} />,
+      <AppTabBar {...buildProps({ routeNames: ['index', 'notifications', 'alerts'] })} />,
     );
 
     expect(queryByTestId('tab.notifications')).toBeNull();
+    expect(queryByTestId('tab.alerts')).toBeNull();
   });
 
   it('navigates to a pressed, unfocused tab', () => {
