@@ -36,6 +36,7 @@ import type { Place } from '../../src/domain/places';
 import type { Route } from '../../src/domain/routes';
 import { colors, radius, spacing, typography } from '../../src/design/tokens';
 import { useLostReports } from '../../src/hooks/useLostReports';
+import { useGuestGate } from '../../src/hooks/useGuestGate';
 import { useNearbyPlaces, useUpvotePlace } from '../../src/hooks/usePlaces';
 import { useNearbyRoutes, useRateRoute } from '../../src/hooks/useRoutes';
 import { useNearbyStrayReports } from '../../src/hooks/useStrayReports';
@@ -83,6 +84,8 @@ export default function MapScreen(): React.JSX.Element {
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
   const hasActiveFilters =
     selectedSpecies !== 'all' || selectedReportType !== 'all' || dateRange !== 'all';
+
+  const { requireAuth, GuestGateModal } = useGuestGate();
 
   const searchCenter = currentLocation ?? DEFAULT_MAP_FALLBACK;
   const reportsQuery = useLostReports({
@@ -400,7 +403,7 @@ export default function MapScreen(): React.JSX.Element {
       />
 
       <Pressable
-        onPress={handleFab}
+        onPress={() => requireAuth(handleFab)}
         style={[styles.fab, layer === 'lugares' && styles.fabGreen]}
         testID="map.fab"
       >
@@ -435,6 +438,8 @@ export default function MapScreen(): React.JSX.Element {
         onRate={(routeId, rating) => rateRouteMutation.mutate({ routeId, rating })}
         isRating={rateRouteMutation.isPending}
       />
+
+      <GuestGateModal />
     </View>
   );
 }

@@ -5,6 +5,7 @@ import MapScreen from '../../app/(app)/map';
 import type { LostReport } from '../domain/lostReports';
 import { useLostReports } from '../hooks/useLostReports';
 import { useLocationStore } from '../stores/locationStore';
+import { useAuthStore } from '../stores/authStore';
 
 const mockPush = jest.fn();
 
@@ -178,5 +179,16 @@ describe('Map tab screen', () => {
     const { getByTestId } = render(<MapScreen />);
     fireEvent.press(getByTestId('marker.callout.r1'));
     expect(mockPush).toHaveBeenCalledWith('/(app)/reports/r1');
+  });
+
+  it('modo invitado: el FAB abre el modal de login en vez de la hoja de reporte', () => {
+    useAuthStore.setState({ isGuest: true });
+
+    const { getByTestId } = render(<MapScreen />);
+    fireEvent.press(getByTestId('map.fab'));
+
+    expect(getByTestId('authRequiredModal.signIn')).toBeTruthy();
+
+    useAuthStore.setState({ isGuest: false });
   });
 });
