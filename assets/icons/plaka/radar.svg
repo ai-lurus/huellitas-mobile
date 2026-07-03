@@ -1,0 +1,7 @@
+<svg width="34" height="34" viewBox="0 0 34 34" xmlns="http://www.w3.org/2000/svg">
+  <g transform="scale(1,-1) translate(0,-34)">
+    <circle cx="17" cy="17" r="12" stroke="currentColor" stroke-linecap="butt" stroke-width="2.2" fill="none" fill-rule="evenodd"/>
+    <circle cx="17" cy="17" r="7.5" stroke="currentColor" stroke-linecap="butt" stroke-width="2.2" fill="none" fill-rule="evenodd"/>
+    <circle cx="17" cy="17" r="2.4" fill="currentColor" fill-rule="evenodd"/>
+  </g>
+</svg>

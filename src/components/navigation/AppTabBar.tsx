@@ -3,10 +3,11 @@ import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-na
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import FontAwesome5 from '@expo/vector-icons/FontAwesome5';
 
 import { colors, radius, shadows, spacing, typography } from '../../design/tokens';
 import { BREAKPOINT_TABLET } from '../../design/breakpoints';
+
+import { PlakaIcon } from '../icons/PlakaIcon';
 
 const TAB_ICON = 22;
 const ALERT_BUTTON_SIZE = 56;
@@ -73,7 +74,7 @@ export function AppTabBar({
                   onPress={onPress}
                   style={styles.alertFab}
                 >
-                  <Ionicons name="notifications" size={26} color={colors.white} />
+                  <PlakaIcon name="extraviado" size={26} color={colors.white} />
                 </Pressable>
                 <Text style={styles.alertLabel}>{label}</Text>
               </View>
@@ -88,23 +89,11 @@ export function AppTabBar({
               <Ionicons name={isFocused ? 'home' : 'home-outline'} size={TAB_ICON} color={color} />
             );
           } else if (route.name === 'map') {
-            icon = (
-              <Ionicons
-                name={isFocused ? 'location' : 'location-outline'}
-                size={TAB_ICON}
-                color={color}
-              />
-            );
+            icon = <PlakaIcon name="radar" size={TAB_ICON} color={color} />;
           } else if (route.name === 'pets') {
-            icon = <FontAwesome5 name="bone" size={20} color={color} />;
+            icon = <PlakaIcon name="carnet-id" size={TAB_ICON} color={color} />;
           } else if (route.name === 'profile') {
-            icon = (
-              <Ionicons
-                name={isFocused ? 'person' : 'person-outline'}
-                size={TAB_ICON}
-                color={color}
-              />
-            );
+            icon = <PlakaIcon name="contacto" size={TAB_ICON} color={color} />;
           }
 
           return (

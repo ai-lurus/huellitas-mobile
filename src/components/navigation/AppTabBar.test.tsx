@@ -5,11 +5,10 @@ jest.mock('@expo/vector-icons', () => ({
     jest.requireActual('react').createElement('Ionicons', props),
 }));
 
-jest.mock(
-  '@expo/vector-icons/FontAwesome5',
-  () => (props: Record<string, unknown>) =>
-    jest.requireActual('react').createElement('FontAwesome5', props),
-);
+jest.mock('../icons/PlakaIcon', () => ({
+  PlakaIcon: (props: Record<string, unknown>) =>
+    jest.requireActual('react').createElement('PlakaIcon', props),
+}));
 
 import React from 'react';
 import { StyleSheet, useWindowDimensions } from 'react-native';
@@ -103,13 +102,27 @@ describe('AppTabBar', () => {
     expect(StyleSheet.flatten(getByText('Mascotas').props.style).color).toBe(colors.textSecondary);
   });
 
-  it('shows filled/outline icons based on focus state', () => {
+  it('renders PlakaIcon for the map, pets, and profile tabs', () => {
     const { UNSAFE_getByProps } = render(<AppTabBar {...buildProps({ index: 0 })} />);
 
-    expect(UNSAFE_getByProps({ name: 'home' })).toBeTruthy();
-    expect(UNSAFE_getByProps({ name: 'location-outline' })).toBeTruthy();
-    expect(UNSAFE_getByProps({ name: 'person-outline' })).toBeTruthy();
-    expect(UNSAFE_getByProps({ name: 'bone' })).toBeTruthy();
+    expect(UNSAFE_getByProps({ name: 'radar' })).toBeTruthy();
+    expect(UNSAFE_getByProps({ name: 'contacto' })).toBeTruthy();
+    expect(UNSAFE_getByProps({ name: 'carnet-id' })).toBeTruthy();
+  });
+
+  it('swaps the Inicio Ionicon between filled and outline based on focus', () => {
+    const focused = render(<AppTabBar {...buildProps({ index: 0 })} />);
+    expect(focused.UNSAFE_getByProps({ name: 'home' })).toBeTruthy();
+    focused.unmount();
+
+    const unfocused = render(<AppTabBar {...buildProps({ index: 1 })} />);
+    expect(unfocused.UNSAFE_getByProps({ name: 'home-outline' })).toBeTruthy();
+  });
+
+  it('renders the extraviado icon in white on the alert FAB', () => {
+    const { UNSAFE_getByProps } = render(<AppTabBar {...buildProps()} />);
+
+    expect(UNSAFE_getByProps({ name: 'extraviado', color: colors.white })).toBeTruthy();
   });
 
   it('does not render nested routes', () => {
