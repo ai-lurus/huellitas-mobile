@@ -10,6 +10,10 @@ jest.mock('../icons/PlakaIcon', () => ({
     jest.requireActual('react').createElement('PlakaIcon', props),
 }));
 
+jest.mock('expo-router', () => ({
+  useRouter: () => ({ push: jest.fn() }),
+}));
+
 import React from 'react';
 import { StyleSheet, useWindowDimensions } from 'react-native';
 import { fireEvent, render } from '@testing-library/react-native';
@@ -17,6 +21,7 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 
 import { AppTabBar } from './AppTabBar';
 import { colors } from '../../design/tokens';
+import { useAuthStore } from '../../stores/authStore';
 
 const mockUseWindowDimensions = useWindowDimensions as jest.Mock;
 
@@ -166,5 +171,66 @@ describe('AppTabBar', () => {
     fireEvent.press(getByTestId('tab.index'));
 
     expect(props.navigation.navigate).not.toHaveBeenCalled();
+  });
+
+  describe('AppTabBar en modo invitado', () => {
+    beforeEach(() => {
+      mockUseWindowDimensions.mockReturnValue({ width: 375, height: 812, scale: 2, fontScale: 1 });
+      useAuthStore.setState({ isGuest: true });
+    });
+
+    afterEach(() => {
+      useAuthStore.setState({ isGuest: false });
+    });
+
+    it('no navega y muestra el modal de login al tocar Inicio', () => {
+      const props = buildProps({ index: 2 });
+      const { getByTestId } = render(<AppTabBar {...props} />);
+
+      fireEvent.press(getByTestId('tab.index'));
+
+      expect(props.navigation.navigate).not.toHaveBeenCalled();
+      expect(getByTestId('authRequiredModal.signIn')).toBeTruthy();
+    });
+
+    it('no navega y muestra el modal de login al tocar Mascotas', () => {
+      const props = buildProps({ index: 2 });
+      const { getByTestId } = render(<AppTabBar {...props} />);
+
+      fireEvent.press(getByTestId('tab.pets'));
+
+      expect(props.navigation.navigate).not.toHaveBeenCalled();
+      expect(getByTestId('authRequiredModal.signIn')).toBeTruthy();
+    });
+
+    it('no navega y muestra el modal de login al tocar Perfil', () => {
+      const props = buildProps({ index: 2 });
+      const { getByTestId } = render(<AppTabBar {...props} />);
+
+      fireEvent.press(getByTestId('tab.profile'));
+
+      expect(props.navigation.navigate).not.toHaveBeenCalled();
+      expect(getByTestId('authRequiredModal.signIn')).toBeTruthy();
+    });
+
+    it('navega normalmente al tocar Radar', () => {
+      const props = buildProps({ index: 0 });
+      const { getByTestId, queryByTestId } = render(<AppTabBar {...props} />);
+
+      fireEvent.press(getByTestId('tab.map'));
+
+      expect(props.navigation.navigate).toHaveBeenCalledWith('map');
+      expect(queryByTestId('authRequiredModal.signIn')).toBeNull();
+    });
+
+    it('navega normalmente al tocar Servicios', () => {
+      const props = buildProps({ index: 0 });
+      const { getByTestId, queryByTestId } = render(<AppTabBar {...props} />);
+
+      fireEvent.press(getByTestId('tab.services'));
+
+      expect(props.navigation.navigate).toHaveBeenCalledWith('services');
+      expect(queryByTestId('authRequiredModal.signIn')).toBeNull();
+    });
   });
 });

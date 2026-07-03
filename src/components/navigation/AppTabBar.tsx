@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { colors, radius, shadows, spacing, typography } from '../../design/tokens';
 import { BREAKPOINT_TABLET } from '../../design/breakpoints';
+import { useGuestGate } from '../../hooks/useGuestGate';
 
 import { PlakaIcon } from '../icons/PlakaIcon';
 
@@ -13,6 +14,8 @@ const TAB_ICON = 22;
 const FLOATING_MARGIN = 16;
 // Orden y set de tabs del PRD: Inicio/Mascotas/Radar/Servicios/Perfil.
 const TAB_ROUTES = new Set(['index', 'pets', 'map', 'services', 'profile']);
+// Tabs que requieren cuenta; Radar y Servicios quedan siempre abiertos.
+const GUEST_GATED_ROUTES = new Set(['index', 'pets', 'profile']);
 
 export function AppTabBar({
   state,
@@ -22,6 +25,7 @@ export function AppTabBar({
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const isFloating = width >= BREAKPOINT_TABLET;
+  const { isGuest, requireAuth, GuestGateModal } = useGuestGate();
 
   return (
     <View
@@ -52,7 +56,7 @@ export function AppTabBar({
           const isFocused = state.index === index;
           const color = isFocused ? colors.primary : colors.textSecondary;
 
-          const onPress = (): void => {
+          const navigate = (): void => {
             const event = navigation.emit({
               type: 'tabPress',
               target: route.key,
@@ -61,6 +65,14 @@ export function AppTabBar({
             if (!isFocused && !event.defaultPrevented) {
               navigation.navigate(route.name);
             }
+          };
+
+          const onPress = (): void => {
+            if (isGuest && GUEST_GATED_ROUTES.has(route.name)) {
+              requireAuth(navigate);
+              return;
+            }
+            navigate();
           };
 
           let icon: React.ReactNode = (
@@ -104,6 +116,7 @@ export function AppTabBar({
           );
         })}
       </View>
+      <GuestGateModal />
     </View>
   );
 }
