@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#B8C1FF"
+      "backgroundColor": "#0B5369"
     },
     "ios": {
       "supportsTablet": false,
@@ -24,7 +24,7 @@
       "softwareKeyboardLayoutMode": "resize",
       "package": "com.huellitas.mobile",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0B5369",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png"
       },
