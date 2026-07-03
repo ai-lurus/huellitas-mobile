@@ -25,9 +25,11 @@ jest.mock('../services/googleAuthService', () => ({
   runGoogleSignInFlow: jest.fn(),
 }));
 
+const mockEnterGuestMode = jest.fn();
+
 jest.mock('../stores/authStore', () => ({
   useAuthStore: {
-    getState: () => ({ setUser: jest.fn() }),
+    getState: () => ({ setUser: jest.fn(), enterGuestMode: mockEnterGuestMode }),
   },
 }));
 
@@ -47,6 +49,7 @@ describe('SignInScreen', () => {
     mockPush.mockClear();
     mockBack.mockClear();
     runGoogleSignInFlow.mockReset();
+    mockEnterGuestMode.mockClear();
   });
 
   it('navigates to /(app) on success', async () => {
@@ -136,5 +139,14 @@ describe('SignInScreen', () => {
     fireEvent.press(getByTestId('signIn.apple'));
 
     expect(mockPush).toHaveBeenCalledWith('/(auth)/oauth/apple');
+  });
+
+  it('entra en modo invitado y navega a Radar al tocar "Continuar sin cuenta"', () => {
+    const { getByTestId } = render(<SignInScreen />);
+
+    fireEvent.press(getByTestId('signIn.continueAsGuest'));
+
+    expect(mockEnterGuestMode).toHaveBeenCalled();
+    expect(mockReplace).toHaveBeenCalledWith('/(app)/map');
   });
 });

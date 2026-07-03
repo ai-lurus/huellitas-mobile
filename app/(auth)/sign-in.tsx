@@ -1,12 +1,20 @@
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+} from 'react-native';
+import { useRouter, type Href } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, spacing } from '../../src/design/tokens';
 import { SignInForm } from '../../src/components/auth/SignInForm';
 import { useKeyboardHeight } from '../../src/hooks/useKeyboardHeight';
 import { runGoogleSignInFlow } from '../../src/services/googleAuthService';
+import { useAuthStore } from '../../src/stores/authStore';
 
 export default function SignInScreen(): React.JSX.Element {
   const router = useRouter();
@@ -59,6 +67,18 @@ export default function SignInScreen(): React.JSX.Element {
             onApplePress={() => router.push('/(auth)/oauth/apple')}
             onSignUpPress={() => router.push('/(auth)/sign-up')}
           />
+          <Pressable
+            accessibilityRole="button"
+            testID="signIn.continueAsGuest"
+            onPress={() => {
+              useAuthStore.getState().enterGuestMode();
+              router.replace('/(app)/map' as Href);
+            }}
+            style={styles.guestLink}
+            hitSlop={8}
+          >
+            <Text style={styles.guestLinkText}>Continuar sin cuenta</Text>
+          </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -78,5 +98,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
     justifyContent: 'center',
+  },
+  guestLink: {
+    alignItems: 'center',
+    marginTop: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  guestLinkText: {
+    color: colors.textSecondary,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
