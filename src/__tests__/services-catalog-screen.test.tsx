@@ -17,6 +17,7 @@ jest.mock('../hooks/useServices', () => ({
 
 import ServicesScreen from '../../app/(app)/services';
 import { useServiceCatalog } from '../hooks/useServices';
+import { useAuthStore } from '../stores/authStore';
 
 const mockedUseServiceCatalog = jest.mocked(useServiceCatalog);
 
@@ -69,5 +70,23 @@ describe('Catálogo de servicios (Radar §6.1)', () => {
 
     fireEvent.press(getByText('Reintentar'));
     expect(refetch).toHaveBeenCalled();
+  });
+
+  it('modo invitado: "Mis reservas" abre el modal de login en vez de navegar', () => {
+    useAuthStore.setState({ isGuest: true });
+    mockedUseServiceCatalog.mockReturnValue({
+      data: [],
+      isPending: false,
+      isError: false,
+      refetch: jest.fn(),
+    } as never);
+
+    const { getByTestId } = render(<ServicesScreen />);
+    fireEvent.press(getByTestId('services.myBookings'));
+
+    expect(mockPush).not.toHaveBeenCalledWith('/(app)/services/bookings');
+    expect(getByTestId('authRequiredModal.signIn')).toBeTruthy();
+
+    useAuthStore.setState({ isGuest: false });
   });
 });

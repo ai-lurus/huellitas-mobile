@@ -8,11 +8,13 @@ import { colors, radius, shadows, spacing, typography } from '../../src/design/t
 import { useServiceCatalog } from '../../src/hooks/useServices';
 import { CATEGORY_ICONS } from '../../src/domain/services';
 import type { ServiceCategory } from '../../src/domain/services';
+import { useGuestGate } from '../../src/hooks/useGuestGate';
 
 export default function ServicesScreen(): React.JSX.Element {
   const router = useRouter();
   const { data, isPending, isError, refetch } = useServiceCatalog();
   const categories = data ?? [];
+  const { requireAuth, GuestGateModal } = useGuestGate();
 
   const openCategory = (category: ServiceCategory): void => {
     router.push(`/(app)/services/${category.id}`);
@@ -23,7 +25,7 @@ export default function ServicesScreen(): React.JSX.Element {
       <View style={styles.headerRow}>
         <Text style={styles.title}>Servicios</Text>
         <Pressable
-          onPress={(): void => router.push('/(app)/services/bookings')}
+          onPress={(): void => requireAuth(() => router.push('/(app)/services/bookings'))}
           testID="services.myBookings"
           style={styles.myBookingsLink}
         >
@@ -75,6 +77,7 @@ export default function ServicesScreen(): React.JSX.Element {
           )}
         />
       )}
+      <GuestGateModal />
     </SafeAreaView>
   );
 }
