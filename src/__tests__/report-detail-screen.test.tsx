@@ -57,6 +57,7 @@ describe('Detalle de reporte (Radar)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     useAuthStore.getState().setUser({ id: 'owner-1', name: 'Camila', email: 'c@test.com' });
+    useAuthStore.setState({ isGuest: false });
   });
 
   it('el dueño ve "Editar reporte" y navega a la pantalla de edición', async () => {
@@ -102,5 +103,23 @@ describe('Detalle de reporte (Radar)', () => {
 
     await waitFor(() => expect(getByTestId('report.detail.hero.broken')).toBeTruthy());
     expect(getByText('Imagen no disponible')).toBeTruthy();
+  });
+
+  it('modo invitado: "Reportar avistamiento" abre el modal de login', async () => {
+    useAuthStore.getState().clearAuth();
+    useAuthStore.getState().enterGuestMode();
+    mockedUseLostReportDetail.mockReturnValue({
+      data: makeDetail(),
+      isPending: false,
+      isError: false,
+    } as never);
+
+    const { getByTestId } = render(<ReportDetailScreen />);
+    await waitFor(() => expect(getByTestId('report.detail.reportSighting')).toBeTruthy());
+
+    fireEvent.press(getByTestId('report.detail.reportSighting'));
+
+    expect(getByTestId('authRequiredModal.signIn')).toBeTruthy();
+    expect(mockPush).not.toHaveBeenCalledWith('/(app)/reports/report-1/sighting');
   });
 });

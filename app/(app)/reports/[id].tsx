@@ -16,6 +16,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LostReportMap } from '../../../src/components/map/LostReportMap';
 
 import { useAuthStore } from '../../../src/stores/authStore';
+import { useGuestGate } from '../../../src/hooks/useGuestGate';
 import { isLostReportArchived } from '../../../src/domain/lostReports';
 import { useLostReportDetail } from '../../../src/hooks/useLostReports';
 import type { LostReportSighting } from '../../../src/domain/lostReportDetail';
@@ -145,6 +146,7 @@ export default function ReportDetailScreen(): React.JSX.Element {
   const reportQuery = useLostReportDetail(reportId);
   const errorAlertShown = useRef(false);
   const currentLocation = useLocationStore((s) => s.currentLocation);
+  const { requireAuth, GuestGateModal } = useGuestGate();
 
   const detail = reportQuery.data;
 
@@ -553,7 +555,7 @@ export default function ReportDetailScreen(): React.JSX.Element {
             <View style={styles.bottomActions}>
               <Pressable
                 accessibilityRole="button"
-                onPress={onReportSighting}
+                onPress={() => requireAuth(onReportSighting)}
                 style={[styles.primaryOrange, (isResolved || isArchived) && styles.disabled]}
                 testID="report.detail.reportSighting"
                 disabled={isResolved || isArchived}
@@ -574,6 +576,7 @@ export default function ReportDetailScreen(): React.JSX.Element {
           )}
         </View>
       </ScrollView>
+      <GuestGateModal />
     </SafeAreaView>
   );
 }
