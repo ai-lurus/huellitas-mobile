@@ -5,6 +5,11 @@ import type { CreatePetDto } from '../services/petsService';
 import { petsService } from '../services/petsService';
 import type { PetFormSubmitPayload } from '../components/pets/PetForm';
 
+function toBirthDateDto(date: Date | null | undefined): string | undefined {
+  if (!date) return undefined;
+  return date.toISOString().slice(0, 10);
+}
+
 /** URIs que aún no están en el servidor y deben subirse con `uploadPetPhoto`. */
 function isLocalPetPhotoUri(uri: string): boolean {
   const s = uri.trim();
@@ -88,7 +93,9 @@ export function useUpdatePetMutation(petId: string) {
         sex: data.sex,
         breed: data.breed,
         color: data.color,
-        age: data.age,
+        birthDate: toBirthDateDto(data.birthDate),
+        weightKg: data.weightKg,
+        hasMicrochip: data.hasMicrochip,
         notes: data.notes,
       });
       const photos = data.photos ?? [];
@@ -143,7 +150,9 @@ function useCreatePetMutation() {
         sex: data.sex,
         breed: data.breed,
         color: data.color,
-        age: data.age,
+        birthDate: toBirthDateDto(data.birthDate),
+        weightKg: data.weightKg,
+        hasMicrochip: data.hasMicrochip,
         notes: data.notes,
       };
 

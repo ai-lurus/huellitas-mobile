@@ -27,7 +27,9 @@ describe('petsService', () => {
         sex: 'male',
         breed: 'Golden',
         color: 'Dorado',
-        age: 3,
+        birthDate: '2022-03-15',
+        weightKg: 12.5,
+        hasMicrochip: true,
         notes: 'ok',
       });
 
@@ -37,7 +39,9 @@ describe('petsService', () => {
         sex: 'male',
         breed: 'Golden',
         color: 'Dorado',
-        age: 3,
+        birthDate: '2022-03-15',
+        weightKg: 12.5,
+        hasMicrochip: true,
         notes: 'ok',
       });
       expect(pet.id).toBe('pet_1');
@@ -121,7 +125,9 @@ describe('petsService', () => {
         sex: 'male',
         breed: 'Golden',
         color: 'Dorado',
-        age: 3,
+        birthDate: '2022-03-15',
+        weightKg: 12.5,
+        hasMicrochip: true,
         notes: 'ok',
       });
 
@@ -131,7 +137,9 @@ describe('petsService', () => {
         sex: 'male',
         breed: 'Golden',
         color: 'Dorado',
-        age: 3,
+        birthDate: '2022-03-15',
+        weightKg: 12.5,
+        hasMicrochip: true,
         notes: 'ok',
       });
       expect(pet.id).toBe('pet_1');

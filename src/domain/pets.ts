@@ -17,6 +17,12 @@ export const petSchema = z.object({
   color: z.string().nullable().optional(),
   sex: petSexSchema.optional(),
   age: z.number().nullable().optional(),
+  /** Fecha de nacimiento (ISO, solo fecha). La edad se calcula a partir de este campo. */
+  birthDate: z.string().nullable().optional(),
+  /** Peso en kilogramos. */
+  weightKg: z.number().positive().nullable().optional(),
+  /** Si la mascota tiene microchip registrado (el número se administra desde el Carnet). */
+  hasMicrochip: z.boolean().optional(),
   notes: z.string().nullable().optional(),
   /** URLs/ids de fotos (máximo 5 en UI). */
   photos: z.array(z.string()).optional(),
@@ -56,6 +62,9 @@ export const petSummarySchema = z.object({
   photoUrl: z.string().nullable().optional(),
   status: petStatusSchema.optional(),
   isLost: z.boolean().optional(),
+  age: z.number().nullable().optional(),
+  birthDate: z.string().nullable().optional(),
+  weightKg: z.number().positive().nullable().optional(),
 });
 
 export type PetSummary = z.infer<typeof petSummarySchema>;

@@ -95,7 +95,7 @@ describe('Pets screens', () => {
   it('muestra empty state cuando no hay mascotas', async () => {
     petsService.listPets.mockResolvedValueOnce([]);
     const { findByText } = renderWithQuery(<PetsScreen />);
-    expect(await findByText('Add your first pet')).toBeTruthy();
+    expect(await findByText('Aún no tienes mascotas')).toBeTruthy();
   });
 
   it('tap en PetCard navega a detalle', async () => {

@@ -19,7 +19,10 @@ export type CreatePetDto = {
   sex: PetSex;
   breed?: string;
   color?: string;
-  age?: number;
+  /** ISO (solo fecha), ej. "2022-03-15". */
+  birthDate?: string;
+  weightKg?: number;
+  hasMicrochip?: boolean;
   notes?: string;
 };
 

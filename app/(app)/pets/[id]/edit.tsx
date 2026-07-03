@@ -26,7 +26,9 @@ export default function EditPetScreen(): React.ReactElement {
       sex: pet.sex ?? 'unknown',
       breed: pet.breed ?? '',
       color: pet.color ?? '',
-      age: typeof pet.age === 'number' ? String(pet.age) : '',
+      birthDate: pet.birthDate ? new Date(pet.birthDate) : null,
+      weightKg: typeof pet.weightKg === 'number' ? String(pet.weightKg) : '',
+      hasMicrochip: pet.hasMicrochip ?? false,
       notes: pet.notes ?? '',
       photos: (pet.photos ?? []).slice(0, 5),
     };

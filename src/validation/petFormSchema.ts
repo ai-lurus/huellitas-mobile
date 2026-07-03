@@ -20,7 +20,12 @@ export const petFormSchema = z.object({
     .optional()
     .transform((v) => (v && v.length > 0 ? v : undefined)),
   sex: petSexSchema,
-  age: z.preprocess(
+  birthDate: z
+    .date()
+    .max(new Date(), 'La fecha de nacimiento no puede ser futura')
+    .nullable()
+    .optional(),
+  weightKg: z.preprocess(
     (v) => {
       if (v == null) return undefined;
       if (typeof v === 'number') return v;
@@ -31,11 +36,11 @@ export const petFormSchema = z.object({
       return Number.isFinite(n) ? n : v;
     },
     z
-      .number({ invalid_type_error: 'La edad debe ser un número' })
-      .int('La edad debe ser un número entero')
-      .min(0, 'La edad no puede ser negativa')
+      .number({ invalid_type_error: 'El peso debe ser un número' })
+      .positive('El peso debe ser mayor a 0')
       .optional(),
   ),
+  hasMicrochip: z.boolean().optional(),
   notes: z
     .string()
     .trim()

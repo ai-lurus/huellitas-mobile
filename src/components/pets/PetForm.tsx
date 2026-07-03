@@ -3,9 +3,11 @@ import {
   ActivityIndicator,
   Image,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -14,6 +16,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 import { colors, control, radius, shadows, spacing, typography } from '../../design/tokens';
 import type { PetSex } from '../../domain/pets';
@@ -66,6 +69,7 @@ export function PetForm({
 
   const [pickerError, setPickerError] = useState<string | null>(null);
   const [openSelect, setOpenSelect] = useState<null | 'sex'>(null);
+  const [showBirthDatePicker, setShowBirthDatePicker] = useState(false);
 
   const {
     control: rhfControl,
@@ -82,7 +86,9 @@ export function PetForm({
       sex: 'unknown',
       breed: '',
       color: '',
-      age: '',
+      birthDate: null,
+      weightKg: '',
+      hasMicrochip: false,
       notes: '',
       photos: [],
       ...defaultValues,
@@ -101,7 +107,9 @@ export function PetForm({
           sex: 'unknown',
           breed: '',
           color: '',
-          age: '',
+          birthDate: null,
+          weightKg: '',
+          hasMicrochip: false,
           notes: '',
           photos: [],
           ...defaultValues,
@@ -164,7 +172,9 @@ export function PetForm({
       breed: parsed.breed,
       color: parsed.color,
       sex: parsed.sex,
-      age: parsed.age,
+      birthDate: parsed.birthDate,
+      weightKg: parsed.weightKg,
+      hasMicrochip: parsed.hasMicrochip,
       notes: parsed.notes,
       photos: parsed.photos ?? [],
     });
@@ -362,6 +372,74 @@ export function PetForm({
 
         <View style={styles.row}>
           <View style={styles.col}>
+            <Text style={styles.inputLabel}>Nacimiento</Text>
+            <Controller
+              control={rhfControl}
+              name="birthDate"
+              render={({ field: { onChange, value } }) => (
+                <>
+                  <Pressable
+                    testID="petForm.birthDate"
+                    onPress={() => setShowBirthDatePicker(true)}
+                    style={[styles.select, errors.birthDate ? styles.inputError : null]}
+                    disabled={isSubmitting}
+                  >
+                    <Text style={value ? styles.selectText : styles.selectPlaceholder}>
+                      {value
+                        ? value.toLocaleDateString('es-MX', { month: 'short', year: 'numeric' })
+                        : 'Selecciona'}
+                    </Text>
+                    <Ionicons name="calendar-outline" size={18} color={colors.textSecondary} />
+                  </Pressable>
+                  {showBirthDatePicker ? (
+                    <>
+                      <DateTimePicker
+                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                        mode="date"
+                        value={value ?? new Date()}
+                        maximumDate={new Date()}
+                        onChange={(e: DateTimePickerEvent, d?: Date): void => {
+                          if (Platform.OS === 'android' && e.type === 'dismissed') {
+                            setShowBirthDatePicker(false);
+                            return;
+                          }
+                          if (d) onChange(d);
+                          if (Platform.OS === 'android') setShowBirthDatePicker(false);
+                        }}
+                      />
+                      {Platform.OS === 'ios' ? (
+                        <Pressable
+                          onPress={() => setShowBirthDatePicker(false)}
+                          style={styles.pickerDone}
+                        >
+                          <Text style={styles.pickerDoneText}>Listo</Text>
+                        </Pressable>
+                      ) : null}
+                    </>
+                  ) : null}
+                </>
+              )}
+            />
+            {errors.birthDate?.message ? (
+              <Text style={styles.fieldError}>{errors.birthDate.message}</Text>
+            ) : null}
+          </View>
+          <View style={styles.col}>
+            <Text style={styles.inputLabel}>Sexo *</Text>
+            <Pressable
+              testID="petForm.sex"
+              onPress={() => setOpenSelect('sex')}
+              style={[styles.select, errors.sex ? styles.inputError : null]}
+              disabled={isSubmitting}
+            >
+              <Text style={styles.selectText}>{sexLabel}</Text>
+              <Ionicons name="chevron-down" size={18} color={colors.textSecondary} />
+            </Pressable>
+          </View>
+        </View>
+
+        <View style={styles.row}>
+          <View style={styles.col}>
             <Text style={styles.inputLabel}>Color</Text>
             <Controller
               control={rhfControl}
@@ -381,40 +459,48 @@ export function PetForm({
             />
           </View>
           <View style={styles.col}>
-            <Text style={styles.inputLabel}>Edad</Text>
+            <Text style={styles.inputLabel}>Peso (kg)</Text>
             <Controller
               control={rhfControl}
-              name="age"
+              name="weightKg"
               render={({ field: { onChange, onBlur, value } }) => (
                 <TextInput
-                  testID="petForm.age"
+                  testID="petForm.weightKg"
                   value={typeof value === 'string' ? value : value == null ? '' : String(value)}
                   onChangeText={onChange}
                   onBlur={onBlur}
-                  placeholder="Años"
+                  placeholder="Ej. 12.5"
                   placeholderTextColor={colors.textMuted}
                   keyboardType="numeric"
-                  style={[styles.input, errors.age ? styles.inputError : null]}
+                  style={[styles.input, errors.weightKg ? styles.inputError : null]}
                   editable={!isSubmitting}
                 />
               )}
             />
-            {errors.age?.message ? (
-              <Text style={styles.fieldError}>{errors.age.message}</Text>
+            {errors.weightKg?.message ? (
+              <Text style={styles.fieldError}>{errors.weightKg.message}</Text>
             ) : null}
           </View>
         </View>
 
-        <Text style={styles.inputLabel}>Sexo *</Text>
-        <Pressable
-          testID="petForm.sex"
-          onPress={() => setOpenSelect('sex')}
-          style={[styles.select, errors.sex ? styles.inputError : null]}
-          disabled={isSubmitting}
-        >
-          <Text style={styles.selectText}>{sexLabel}</Text>
-          <Ionicons name="chevron-down" size={18} color={colors.textSecondary} />
-        </Pressable>
+        <View style={styles.microchipRow}>
+          <Ionicons name="hardware-chip-outline" size={20} color={colors.textSecondary} />
+          <Text style={styles.microchipLabel}>Tiene microchip</Text>
+          <Controller
+            control={rhfControl}
+            name="hasMicrochip"
+            render={({ field: { onChange, value } }) => (
+              <Switch
+                testID="petForm.hasMicrochip"
+                value={value ?? false}
+                onValueChange={onChange}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor={colors.white}
+                disabled={isSubmitting}
+              />
+            )}
+          />
+        </View>
 
         <Text style={styles.sectionLabel}>NOTAS ADICIONALES</Text>
         <Controller
@@ -579,6 +665,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   selectText: { color: colors.textPrimary, ...typography.body },
+  selectPlaceholder: { color: colors.textMuted, ...typography.body },
+
+  pickerDone: {
+    alignSelf: 'flex-end',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  pickerDoneText: { color: colors.primary, ...typography.bodyStrong },
 
   inputError: { borderColor: colors.danger },
 
@@ -586,6 +680,20 @@ const styles = StyleSheet.create({
 
   row: { flexDirection: 'row', gap: spacing.sm },
   col: { flex: 1 },
+
+  microchipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+    minHeight: control.minHeight,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.md,
+  },
+  microchipLabel: { flex: 1, color: colors.textPrimary, ...typography.body },
 
   photosRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.xs },
   photoSlot: {

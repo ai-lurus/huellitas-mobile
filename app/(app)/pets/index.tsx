@@ -1,61 +1,71 @@
-import React, { useCallback } from 'react';
-import { FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import {
+  FlatList,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { PetCard, PetCardSkeleton } from '../../../src/components/pets/PetCard';
+import { PetHeroCard } from '../../../src/components/pets/PetHeroCard';
+import { PetCardSkeleton } from '../../../src/components/pets/PetCard';
 import { colors, radius, shadows, spacing, typography } from '../../../src/design/tokens';
 import { usePets } from '../../../src/hooks/usePets';
+import { useAuthStore } from '../../../src/stores/authStore';
 import { MAX_PETS_PER_USER } from '../../../src/services/petsService';
-
-import BRAND_LOGO from '../../../assets/icon.png';
-
-const FAB_OFFSET = 88;
 
 export default function PetsScreen(): React.ReactElement {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const { petsQuery } = usePets();
+  const userName = useAuthStore((s) => s.user?.name);
   const pets = petsQuery.data ?? [];
   const count = pets.length;
   const isLoading = petsQuery.isPending;
   const hasError = petsQuery.isError && count === 0;
   const isEmpty = !isLoading && !hasError && count === 0;
   const remaining = Math.max(0, MAX_PETS_PER_USER - count);
+  const atLimit = count >= MAX_PETS_PER_USER;
 
-  const onFabPress = useCallback((): void => {
-    if (count >= MAX_PETS_PER_USER) {
+  const [page, setPage] = useState(0);
+  const cardWidth = width - spacing.lg * 2;
+
+  const onAddPress = useCallback((): void => {
+    if (atLimit) {
       router.push('/(app)/pets/limit');
       return;
     }
     router.push('/(app)/pets/new');
-  }, [count, router]);
+  }, [atLimit, router]);
 
   const openPet = useCallback(
-    (id: string) => {
-      router.push(`/(app)/pets/${id}`);
+    (id: string, tab?: 'carnet' | 'rutina') => {
+      router.push(tab ? `/(app)/pets/${id}?tab=${tab}` : `/(app)/pets/${id}`);
     },
     [router],
   );
 
+  const initial = userName?.trim().charAt(0).toUpperCase() || '?';
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.headerRow}>
-        <View style={styles.headerLeft}>
-          <Image
-            source={BRAND_LOGO}
-            style={styles.brandLogo}
-            accessibilityLabel="Logo de Huellitas"
-          />
-          <Text style={styles.title}>Mis mascotas</Text>
+        <Text style={styles.title}>Mis mascotas</Text>
+        <View style={styles.headerRight}>
+          {!isEmpty ? (
+            <Text style={styles.counter}>
+              {Math.min(page + 1, count)} de {count}
+            </Text>
+          ) : null}
+          <View style={styles.avatar} testID="pets.userAvatar">
+            <Text style={styles.avatarText}>{initial}</Text>
+          </View>
         </View>
-        {!isEmpty ? (
-          <Text style={styles.counter}>
-            {count} de {MAX_PETS_PER_USER}
-          </Text>
-        ) : null}
       </View>
 
       {isLoading ? (
@@ -81,66 +91,68 @@ export default function PetsScreen(): React.ReactElement {
       ) : isEmpty ? (
         <View style={styles.emptyWrap}>
           <View style={styles.pawOuter}>
-            <View style={styles.pawInner}>
-              <Image
-                source={BRAND_LOGO}
-                style={styles.emptyStateLogo}
-                resizeMode="contain"
-                accessibilityLabel="Logo de Huellitas"
-              />
-            </View>
+            <Ionicons name="paw-outline" size={48} color={colors.primary} />
           </View>
-          <Text style={styles.emptyTitle}>Add your first pet</Text>
+          <Text style={styles.emptyTitle}>Aún no tienes mascotas</Text>
           <Text style={styles.emptySubtitle}>
             Crea la tarjeta de tu mascota para mantener su info al día.
           </Text>
+          <Pressable
+            testID="pets.add.empty"
+            onPress={onAddPress}
+            style={styles.emptyCta}
+            accessibilityRole="button"
+          >
+            <Text style={styles.emptyCtaText}>Agregar mi primera mascota</Text>
+          </Pressable>
         </View>
       ) : (
-        <FlatList
-          data={pets}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          refreshControl={
-            <RefreshControl
-              refreshing={petsQuery.isFetching}
-              onRefresh={() => void petsQuery.refetch()}
-            />
-          }
-          ListFooterComponent={
-            count < MAX_PETS_PER_USER ? (
-              <View style={styles.infoBox}>
-                <Ionicons name="information-circle-outline" size={22} color={colors.iconMuted} />
-                <View style={styles.infoTextCol}>
-                  <Text style={styles.infoTitle}>
-                    {remaining === 1
-                      ? 'Puedes agregar 1 mascota más'
-                      : `Puedes agregar ${remaining} mascotas más`}
-                  </Text>
-                  <Text style={styles.infoSub}>Límite máximo: {MAX_PETS_PER_USER} mascotas</Text>
-                </View>
+        <>
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(e) => {
+              const next = Math.round(e.nativeEvent.contentOffset.x / Math.max(1, width));
+              setPage(next);
+            }}
+            contentContainerStyle={styles.pagerContent}
+          >
+            {pets.map((pet) => (
+              <View key={pet.id} style={{ width, paddingHorizontal: spacing.lg }}>
+                <PetHeroCard
+                  pet={pet}
+                  onPress={() => openPet(pet.id)}
+                  onOpenCarnet={() => openPet(pet.id, 'carnet')}
+                  onOpenRutina={() => openPet(pet.id, 'rutina')}
+                />
               </View>
-            ) : (
-              <View style={styles.limitBanner}>
-                <Text style={styles.limitBannerText}>
-                  Has alcanzado el máximo de {MAX_PETS_PER_USER} mascotas. Elimina una para agregar
-                  otra.
+            ))}
+          </ScrollView>
+
+          <View style={[styles.addCardWrap, { width: cardWidth }]}>
+            <Pressable
+              testID="pets.add"
+              onPress={onAddPress}
+              style={styles.addCard}
+              accessibilityRole="button"
+              accessibilityLabel="Agregar mascota"
+            >
+              <View style={styles.addIconCircle}>
+                <Ionicons name="add" size={22} color={colors.primary} />
+              </View>
+              <View style={styles.addTextCol}>
+                <Text style={styles.addCardTitle}>Agregar mascota</Text>
+                <Text style={styles.addCardSubtitle}>
+                  {atLimit
+                    ? `Has alcanzado el límite de ${MAX_PETS_PER_USER} mascotas`
+                    : `Puedes agregar ${remaining} más · límite ${MAX_PETS_PER_USER}`}
                 </Text>
               </View>
-            )
-          }
-          renderItem={({ item }) => <PetCard pet={item} onPress={() => openPet(item.id)} />}
-        />
+            </Pressable>
+          </View>
+        </>
       )}
-
-      <Pressable
-        testID="pets.add"
-        style={[styles.fab, { bottom: insets.bottom + FAB_OFFSET }]}
-        onPress={onFabPress}
-        accessibilityRole="button"
-        accessibilityLabel="Agregar mascota"
-      >
-        <Ionicons name="add" size={30} color={colors.white} />
-      </Pressable>
     </SafeAreaView>
   );
 }
@@ -156,26 +168,26 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
     gap: spacing.sm,
   },
-  headerLeft: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    minWidth: 0,
-  },
-  brandLogo: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.md,
-  },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   title: { color: colors.textPrimary, ...typography.heading, flexShrink: 1 },
   counter: { color: colors.textSecondary, ...typography.caption, fontWeight: '600' },
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  avatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: { color: colors.white, ...typography.bodyStrong, fontSize: 14 },
+
   listContent: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxxl * 2,
     paddingTop: spacing.xs,
   },
+  pagerContent: { paddingBottom: spacing.md },
+
   emptyWrap: {
     flex: 1,
     alignItems: 'center',
@@ -183,26 +195,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
   },
   pawOuter: {
-    width: 132,
-    height: 132,
-    borderRadius: 66,
-    backgroundColor: '#FFE8D4',
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: colors.infoBackground,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.lg,
-  },
-  pawInner: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: '#FFF1E6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  emptyStateLogo: {
-    width: 64,
-    height: 64,
   },
   errorTitle: {
     color: colors.textPrimary,
@@ -232,39 +231,39 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     lineHeight: 22,
   },
-  infoBox: {
-    marginTop: spacing.md,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    padding: spacing.md,
-    borderRadius: radius.lg,
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
-    borderColor: colors.infoBorder,
-    backgroundColor: colors.infoBackground,
-  },
-  infoTextCol: { flex: 1 },
-  infoTitle: { color: colors.primary, ...typography.bodyStrong },
-  infoSub: { color: colors.textSecondary, ...typography.caption, marginTop: 4 },
-  limitBanner: {
-    marginTop: spacing.md,
-    padding: spacing.md,
-    borderRadius: radius.lg,
-    backgroundColor: colors.dangerSoft,
-    borderWidth: 1,
-    borderColor: colors.danger,
-  },
-  limitBannerText: { color: colors.dangerDark, ...typography.body },
-  fab: {
-    position: 'absolute',
-    right: spacing.lg,
-    width: 56,
-    height: 56,
-    borderRadius: radius.full,
+  emptyCta: {
+    marginTop: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    height: 52,
+    borderRadius: radius.button,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     ...shadows.button,
   },
+  emptyCtaText: { color: colors.white, ...typography.button },
+
+  addCardWrap: { alignSelf: 'center', marginBottom: spacing.lg },
+  addCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderRadius: radius.xl,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: colors.infoBorder,
+    padding: spacing.md,
+  },
+  addIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.infoBackground,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addTextCol: { flex: 1 },
+  addCardTitle: { color: colors.textPrimary, ...typography.bodyStrong },
+  addCardSubtitle: { color: colors.textSecondary, ...typography.caption, marginTop: 2 },
 });
