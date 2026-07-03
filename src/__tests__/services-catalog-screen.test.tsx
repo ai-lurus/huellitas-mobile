@@ -26,6 +26,10 @@ describe('Catálogo de servicios (Radar §6.1)', () => {
     jest.clearAllMocks();
   });
 
+  afterEach(() => {
+    useAuthStore.setState({ isGuest: false });
+  });
+
   it('lista las categorías y navega al detalle al tocar una', async () => {
     mockedUseServiceCatalog.mockReturnValue({
       data: [
@@ -86,7 +90,5 @@ describe('Catálogo de servicios (Radar §6.1)', () => {
 
     expect(mockPush).not.toHaveBeenCalledWith('/(app)/services/bookings');
     expect(getByTestId('authRequiredModal.signIn')).toBeTruthy();
-
-    useAuthStore.setState({ isGuest: false });
   });
 });

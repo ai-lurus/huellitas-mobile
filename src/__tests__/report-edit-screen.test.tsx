@@ -62,6 +62,10 @@ describe('Editar reporte de mascota perdida', () => {
     mockedUseUpdateLostReportMutation.mockReturnValue({ mutateAsync } as never);
   });
 
+  afterEach(() => {
+    useAuthStore.setState({ isGuest: false });
+  });
+
   it('prellena la descripción actual y guarda los cambios', async () => {
     mockedUseLostReportDetail.mockReturnValue({
       data: makeDetail(),
@@ -116,7 +120,5 @@ describe('Editar reporte de mascota perdida', () => {
     render(<ReportEditScreen />);
 
     await waitFor(() => expect(mockBack).toHaveBeenCalled());
-
-    useAuthStore.setState({ isGuest: false });
   });
 });

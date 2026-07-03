@@ -21,7 +21,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
   isGuest: false,
-  setUser: (user): void => set(() => ({ user, isAuthenticated: user !== null })),
+  setUser: (user): void => set(() => ({ user, isAuthenticated: user !== null, isGuest: false })),
   clearAuth: (): void => set(() => ({ user: null, isAuthenticated: false, isGuest: false })),
   enterGuestMode: (): void => set(() => ({ isGuest: true })),
 }));

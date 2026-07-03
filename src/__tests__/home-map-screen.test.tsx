@@ -137,6 +137,10 @@ describe('Map tab screen', () => {
     } as never);
   });
 
+  afterEach(() => {
+    useAuthStore.setState({ isGuest: false });
+  });
+
   it('renderiza markers para cada reporte', () => {
     const { getByTestId } = render(<MapScreen />);
     expect(getByTestId('marker.r1')).toBeTruthy();
@@ -188,7 +192,5 @@ describe('Map tab screen', () => {
     fireEvent.press(getByTestId('map.fab'));
 
     expect(getByTestId('authRequiredModal.signIn')).toBeTruthy();
-
-    useAuthStore.setState({ isGuest: false });
   });
 });

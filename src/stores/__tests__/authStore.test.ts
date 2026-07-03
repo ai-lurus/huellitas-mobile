@@ -22,4 +22,12 @@ describe('useAuthStore — guest mode', () => {
     expect(useAuthStore.getState().user).toBeNull();
     expect(useAuthStore.getState().isAuthenticated).toBe(false);
   });
+
+  it('setUser resetea isGuest a false (un invitado que inicia sesión deja de ser invitado)', () => {
+    useAuthStore.getState().enterGuestMode();
+    useAuthStore.getState().setUser({ id: 'u1', name: 'Ana', email: 'ana@test.com' });
+
+    expect(useAuthStore.getState().isGuest).toBe(false);
+    expect(useAuthStore.getState().isAuthenticated).toBe(true);
+  });
 });

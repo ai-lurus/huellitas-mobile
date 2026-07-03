@@ -57,6 +57,10 @@ describe('Solicitar servicio (§6.3)', () => {
     mockedUsePets.mockReturnValue({ pets: [{ id: 'pet_1', name: 'Max' }] } as never);
   });
 
+  afterEach(() => {
+    useAuthStore.setState({ isGuest: false });
+  });
+
   it('exige seleccionar mascota antes de habilitar el envío para un servicio que la requiere', async () => {
     mockedUseServiceDetail.mockReturnValue({ data: groomingDetail() } as never);
 
@@ -137,7 +141,5 @@ describe('Solicitar servicio (§6.3)', () => {
 
     expect(mutateAsync).not.toHaveBeenCalled();
     expect(getByTestId('authRequiredModal.signIn')).toBeTruthy();
-
-    useAuthStore.setState({ isGuest: false });
   });
 });
