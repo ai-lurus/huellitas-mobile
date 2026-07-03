@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios';
 import { z } from 'zod';
 
 import type { AuthUser } from '../types/auth';
@@ -12,10 +13,12 @@ const userSchema = z.object({
   name: z.string(),
   email: z.string().email(),
   image: z.union([z.string().url(), z.null()]).optional(),
+  phone: z.string().optional(),
   alertRadiusKm: z.number().optional(),
-  alertsEnabled: z.boolean().optional(),
-  notificationsEnabled: z.boolean().optional(),
-  emailAlertsEnabled: z.boolean().optional(),
+  taskRemindersEnabled: z.boolean().optional(),
+  radarAlertsEnabled: z.boolean().optional(),
+  serviceUpdatesEnabled: z.boolean().optional(),
+  plakaNewsEnabled: z.boolean().optional(),
 });
 
 const meSchema = userSchema;
@@ -43,9 +46,10 @@ function asNumber(value: unknown): number | undefined {
 
 export interface UserSettingsPatchPayload {
   alertRadiusKm?: number;
-  alertsEnabled?: boolean;
-  notificationsEnabled?: boolean;
-  emailAlertsEnabled?: boolean;
+  taskRemindersEnabled?: boolean;
+  radarAlertsEnabled?: boolean;
+  serviceUpdatesEnabled?: boolean;
+  plakaNewsEnabled?: boolean;
 }
 
 export interface UserLocationPayload {
@@ -53,13 +57,20 @@ export interface UserLocationPayload {
   lng: number;
 }
 
+export interface UpdateAccountProfilePayload {
+  name?: string;
+  email?: string;
+  phone?: string | null;
+}
+
 export type MeProfile = {
   user: AuthUser;
   settings: {
     alertRadiusKm?: number;
-    alertsEnabled?: boolean;
-    pushNotificationsEnabled?: boolean;
-    emailAlertsEnabled?: boolean;
+    taskRemindersEnabled?: boolean;
+    radarAlertsEnabled?: boolean;
+    serviceUpdatesEnabled?: boolean;
+    plakaNewsEnabled?: boolean;
   };
 };
 
@@ -72,12 +83,14 @@ async function getMe(): Promise<MeProfile> {
       name: parsed.name,
       email: parsed.email,
       image: parsed.image ?? undefined,
+      phone: parsed.phone,
     },
     settings: {
       alertRadiusKm: parsed.alertRadiusKm,
-      alertsEnabled: parsed.alertsEnabled,
-      pushNotificationsEnabled: parsed.notificationsEnabled,
-      emailAlertsEnabled: parsed.emailAlertsEnabled,
+      taskRemindersEnabled: parsed.taskRemindersEnabled,
+      radarAlertsEnabled: parsed.radarAlertsEnabled,
+      serviceUpdatesEnabled: parsed.serviceUpdatesEnabled,
+      plakaNewsEnabled: parsed.plakaNewsEnabled,
     },
   };
 }
@@ -260,10 +273,39 @@ async function patchSettings(payload: UserSettingsPatchPayload): Promise<MeProfi
   const parsed = userSchema.parse(res.data);
   return {
     alertRadiusKm: parsed.alertRadiusKm,
-    alertsEnabled: parsed.alertsEnabled,
-    pushNotificationsEnabled: parsed.notificationsEnabled,
-    emailAlertsEnabled: parsed.emailAlertsEnabled,
+    taskRemindersEnabled: parsed.taskRemindersEnabled,
+    radarAlertsEnabled: parsed.radarAlertsEnabled,
+    serviceUpdatesEnabled: parsed.serviceUpdatesEnabled,
+    plakaNewsEnabled: parsed.plakaNewsEnabled,
   };
+}
+
+/**
+ * PRD §7.2: un cambio de correo dispara verificación por link/código antes de
+ * darlo por definitivo; un correo ya usado por otra cuenta no debe guardarse.
+ */
+async function updateAccountProfile(payload: UpdateAccountProfilePayload): Promise<AuthUser> {
+  const body: Record<string, unknown> = {};
+  if (payload.name != null) body['name'] = payload.name;
+  if (payload.email != null) body['email'] = payload.email;
+  if (payload.phone !== undefined) body['phone'] = payload.phone;
+
+  try {
+    const res = await httpClient.patch<unknown>('/users/me', body);
+    const parsed = userSchema.parse(res.data);
+    return {
+      id: parsed.id,
+      name: parsed.name,
+      email: parsed.email,
+      image: parsed.image ?? undefined,
+      phone: parsed.phone,
+    };
+  } catch (err) {
+    if (isAxiosError(err) && err.response?.status === 409) {
+      throw new Error('Este correo ya está en uso');
+    }
+    throw err;
+  }
 }
 
 async function deleteAccount(): Promise<void> {
@@ -278,6 +320,7 @@ export const usersService = {
   getMe,
   getUserPublicProfile,
   updateProfile,
+  updateAccountProfile,
   patchSettings,
   patchMyLocation,
   deleteAccount,

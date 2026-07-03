@@ -3,18 +3,21 @@ import { DEFAULT_ALERT_RADIUS_KM } from '../config/constants';
 
 export interface SettingsState {
   alertRadiusKm: number;
-  alertsEnabled: boolean;
-  pushNotificationsEnabled: boolean;
-  emailAlertsEnabled: boolean;
+  taskRemindersEnabled: boolean;
+  radarAlertsEnabled: boolean;
+  serviceUpdatesEnabled: boolean;
+  plakaNewsEnabled: boolean;
   setAlertRadius: (km: number) => void;
-  setAlertsEnabled: (enabled: boolean) => void;
-  setPushNotificationsEnabled: (enabled: boolean) => void;
-  setEmailAlertsEnabled: (enabled: boolean) => void;
+  setTaskRemindersEnabled: (enabled: boolean) => void;
+  setRadarAlertsEnabled: (enabled: boolean) => void;
+  setServiceUpdatesEnabled: (enabled: boolean) => void;
+  setPlakaNewsEnabled: (enabled: boolean) => void;
   hydrateFromProfile: (profile: {
     alertRadiusKm?: number | null;
-    alertsEnabled?: boolean | null;
-    pushNotificationsEnabled?: boolean | null;
-    emailAlertsEnabled?: boolean | null;
+    taskRemindersEnabled?: boolean | null;
+    radarAlertsEnabled?: boolean | null;
+    serviceUpdatesEnabled?: boolean | null;
+    plakaNewsEnabled?: boolean | null;
   }) => void;
   reset: () => void;
 }
@@ -28,31 +31,36 @@ function clampRadiusKm(km: number): number {
 
 export const useSettingsStore = create<SettingsState>((set) => ({
   alertRadiusKm: DEFAULT_ALERT_RADIUS_KM,
-  alertsEnabled: true,
-  pushNotificationsEnabled: true,
-  emailAlertsEnabled: false,
+  taskRemindersEnabled: true,
+  radarAlertsEnabled: true,
+  serviceUpdatesEnabled: true,
+  plakaNewsEnabled: false,
   setAlertRadius: (km): void => set(() => ({ alertRadiusKm: clampRadiusKm(km) })),
-  setAlertsEnabled: (enabled): void => set(() => ({ alertsEnabled: enabled })),
-  setPushNotificationsEnabled: (enabled): void =>
-    set(() => ({ pushNotificationsEnabled: enabled })),
-  setEmailAlertsEnabled: (enabled): void => set(() => ({ emailAlertsEnabled: enabled })),
+  setTaskRemindersEnabled: (enabled): void => set(() => ({ taskRemindersEnabled: enabled })),
+  setRadarAlertsEnabled: (enabled): void => set(() => ({ radarAlertsEnabled: enabled })),
+  setServiceUpdatesEnabled: (enabled): void => set(() => ({ serviceUpdatesEnabled: enabled })),
+  setPlakaNewsEnabled: (enabled): void => set(() => ({ plakaNewsEnabled: enabled })),
   hydrateFromProfile: (profile): void =>
     set(() => ({
       alertRadiusKm:
         profile.alertRadiusKm == null
           ? DEFAULT_ALERT_RADIUS_KM
           : clampRadiusKm(profile.alertRadiusKm),
-      alertsEnabled: profile.alertsEnabled == null ? true : Boolean(profile.alertsEnabled),
-      pushNotificationsEnabled:
-        profile.pushNotificationsEnabled == null ? true : Boolean(profile.pushNotificationsEnabled),
-      emailAlertsEnabled:
-        profile.emailAlertsEnabled == null ? false : Boolean(profile.emailAlertsEnabled),
+      taskRemindersEnabled:
+        profile.taskRemindersEnabled == null ? true : Boolean(profile.taskRemindersEnabled),
+      radarAlertsEnabled:
+        profile.radarAlertsEnabled == null ? true : Boolean(profile.radarAlertsEnabled),
+      serviceUpdatesEnabled:
+        profile.serviceUpdatesEnabled == null ? true : Boolean(profile.serviceUpdatesEnabled),
+      plakaNewsEnabled:
+        profile.plakaNewsEnabled == null ? false : Boolean(profile.plakaNewsEnabled),
     })),
   reset: (): void =>
     set(() => ({
       alertRadiusKm: DEFAULT_ALERT_RADIUS_KM,
-      alertsEnabled: true,
-      pushNotificationsEnabled: true,
-      emailAlertsEnabled: false,
+      taskRemindersEnabled: true,
+      radarAlertsEnabled: true,
+      serviceUpdatesEnabled: true,
+      plakaNewsEnabled: false,
     })),
 }));

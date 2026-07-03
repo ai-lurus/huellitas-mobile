@@ -64,3 +64,39 @@ describe('usersService.updateProfile', () => {
     });
   });
 });
+
+describe('usersService.updateAccountProfile (§7.2 Mi perfil)', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('envía nombre, correo y teléfono en el PATCH', async () => {
+    jest.mocked(httpClient.patch).mockResolvedValue({
+      data: { id: '1', name: 'Nueva', email: 'nueva@test.com', phone: '5512345678' },
+    });
+
+    const user = await usersService.updateAccountProfile({
+      name: 'Nueva',
+      email: 'nueva@test.com',
+      phone: '5512345678',
+    });
+
+    expect(httpClient.patch).toHaveBeenCalledWith('/users/me', {
+      name: 'Nueva',
+      email: 'nueva@test.com',
+      phone: '5512345678',
+    });
+    expect(user.phone).toBe('5512345678');
+  });
+
+  it('lanza "Este correo ya está en uso" cuando el backend responde 409', async () => {
+    jest.mocked(httpClient.patch).mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 409 },
+    });
+
+    await expect(
+      usersService.updateAccountProfile({ email: 'duplicado@test.com' }),
+    ).rejects.toThrow('Este correo ya está en uso');
+  });
+});

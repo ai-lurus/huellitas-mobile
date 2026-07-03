@@ -54,6 +54,7 @@ jest.mock('../services/usersService', () => ({
     patchSettings: jest.fn(),
     deleteAccount: jest.fn(),
     updateProfile: jest.fn(),
+    updateAccountProfile: jest.fn(),
   },
 }));
 
@@ -72,6 +73,10 @@ jest.mock('../services/googleAuthService', () => ({
   authClient: { signOut: jest.fn(() => Promise.resolve()) },
 }));
 
+jest.mock('../services/pendingRadarReportStore', () => ({
+  loadPendingRadarReport: jest.fn(() => Promise.resolve(null)),
+}));
+
 describe('SettingsScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -81,16 +86,18 @@ describe('SettingsScreen', () => {
     });
     useSettingsStore.setState({
       alertRadiusKm: 3,
-      alertsEnabled: true,
-      pushNotificationsEnabled: true,
-      emailAlertsEnabled: false,
+      taskRemindersEnabled: true,
+      radarAlertsEnabled: true,
+      serviceUpdatesEnabled: true,
+      plakaNewsEnabled: false,
     });
     jest.useFakeTimers();
     jest.mocked(usersService.patchSettings).mockResolvedValue({
       alertRadiusKm: 3,
-      alertsEnabled: true,
-      pushNotificationsEnabled: true,
-      emailAlertsEnabled: false,
+      taskRemindersEnabled: true,
+      radarAlertsEnabled: true,
+      serviceUpdatesEnabled: true,
+      plakaNewsEnabled: false,
     });
     jest.mocked(usersService.updateProfile).mockResolvedValue({
       id: 'u1',
@@ -98,16 +105,21 @@ describe('SettingsScreen', () => {
       email: 'ana@test.com',
       image: 'https://example.com/a.jpg',
     });
+    jest.mocked(usersService.updateAccountProfile).mockResolvedValue({
+      id: 'u1',
+      name: 'Ana García',
+      email: 'ana@test.com',
+    });
   });
 
   afterEach(() => {
     jest.useRealTimers();
   });
 
-  it('renderiza y muestra email (solo lectura)', () => {
+  it('renderiza y muestra el resumen de perfil', () => {
     const { getByTestId } = render(<SettingsScreen />);
     expect(getByTestId('settings.screen')).toBeTruthy();
-    expect(getByTestId('settings.email')).toHaveTextContent('ana@test.com');
+    expect(getByTestId('settings.email')).toHaveTextContent(/ana@test\.com/);
   });
 
   it('cambiar slider actualiza el store', () => {
@@ -119,7 +131,7 @@ describe('SettingsScreen', () => {
 
   it('toggle dispara PATCH (debounce 500ms)', async () => {
     const { getByTestId } = render(<SettingsScreen />);
-    fireEvent(getByTestId('settings.alertsEnabled'), 'valueChange', false);
+    fireEvent(getByTestId('settings.radarAlerts'), 'valueChange', false);
 
     expect(usersService.patchSettings).not.toHaveBeenCalled();
     jest.advanceTimersByTime(500);
@@ -127,11 +139,47 @@ describe('SettingsScreen', () => {
     await waitFor(() => {
       expect(usersService.patchSettings).toHaveBeenCalledWith({
         alertRadiusKm: 3,
-        alertsEnabled: false,
-        notificationsEnabled: true,
-        emailAlertsEnabled: false,
+        taskRemindersEnabled: true,
+        radarAlertsEnabled: false,
+        serviceUpdatesEnabled: true,
+        plakaNewsEnabled: false,
       });
     });
+  });
+
+  it('editar perfil valida y guarda nombre/correo/teléfono', async () => {
+    const { getByTestId } = render(<SettingsScreen />);
+    fireEvent.press(getByTestId('settings.editProfile'));
+
+    fireEvent.changeText(getByTestId('settings.editProfile.name'), 'Ana G.');
+    fireEvent.changeText(getByTestId('settings.editProfile.email'), 'ana.g@test.com');
+    fireEvent.changeText(getByTestId('settings.editProfile.phone'), '5512345678');
+    fireEvent.press(getByTestId('settings.editProfile.save'));
+
+    await waitFor(() => {
+      expect(usersService.updateAccountProfile).toHaveBeenCalledWith({
+        name: 'Ana G.',
+        email: 'ana.g@test.com',
+        phone: '5512345678',
+      });
+    });
+  });
+
+  it('editar perfil muestra error inline con correo duplicado', async () => {
+    jest
+      .mocked(usersService.updateAccountProfile)
+      .mockRejectedValueOnce(new Error('Este correo ya está en uso'));
+
+    const { getByTestId } = render(<SettingsScreen />);
+    fireEvent.press(getByTestId('settings.editProfile'));
+    fireEvent.changeText(getByTestId('settings.editProfile.email'), 'duplicado@test.com');
+    fireEvent.press(getByTestId('settings.editProfile.save'));
+
+    await waitFor(() =>
+      expect(getByTestId('settings.editProfile.error')).toHaveTextContent(
+        'Este correo ya está en uso',
+      ),
+    );
   });
 
   it('logout confirma y navega a sign-in', async () => {

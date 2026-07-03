@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -22,6 +23,7 @@ import { colors, radius, shadows, spacing, typography } from '../../../src/desig
 import { deleteSessionTokenAsync } from '../../../src/services/sessionTokenStorage';
 import { authClient } from '../../../src/services/googleAuthService';
 import { notificationsService } from '../../../src/services/notificationsService';
+import { loadPendingRadarReport } from '../../../src/services/pendingRadarReportStore';
 import { usersService } from '../../../src/services/usersService';
 import { useAuthStore } from '../../../src/stores/authStore';
 import { useSettingsStore } from '../../../src/stores/settingsStore';
@@ -29,8 +31,35 @@ import { useAppLanguage } from '../../../src/i18n/useAppLanguage';
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
+const SUPPORT_EMAIL = 'soporte@plaka.app';
+
+const FAQ_ITEMS: { question: string; answer: string }[] = [
+  {
+    question: '¿Cómo reporto una mascota perdida?',
+    answer:
+      'Ve a Radar y toca "Reportar". Podrás elegir la mascota, el lugar y la hora en que se perdió.',
+  },
+  {
+    question: '¿Cómo cancelo una reserva de un servicio?',
+    answer:
+      'En Servicios > Mis reservas, toca "Cancelar". Si faltan menos de 2 horas para la cita, contacta a soporte.',
+  },
+  {
+    question: '¿Cómo cambio mi correo o teléfono?',
+    answer: 'Entra a "Editar perfil" dentro de esta pantalla y actualiza el campo correspondiente.',
+  },
+];
+
 function kmLabel(km: number): string {
   return `${km} km`;
+}
+
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
+function isValidPhone(value: string): boolean {
+  return /^[0-9+\-\s()]{7,20}$/.test(value.trim());
 }
 
 const BRAND_NAVY = '#002B5B';
@@ -62,21 +91,30 @@ export default function SettingsScreen({
   const setUser = useAuthStore((s) => s.setUser);
   const email = user?.email ?? '';
   const name = user?.name ?? 'Usuario';
+  const phone = user?.phone ?? '';
   const profileImageUri = user?.image;
   const alertRadiusKm = useSettingsStore((s) => s.alertRadiusKm);
-  const alertsEnabled = useSettingsStore((s) => s.alertsEnabled);
-  const pushNotificationsEnabled = useSettingsStore((s) => s.pushNotificationsEnabled);
-  const emailAlertsEnabled = useSettingsStore((s) => s.emailAlertsEnabled);
+  const taskRemindersEnabled = useSettingsStore((s) => s.taskRemindersEnabled);
+  const radarAlertsEnabled = useSettingsStore((s) => s.radarAlertsEnabled);
+  const serviceUpdatesEnabled = useSettingsStore((s) => s.serviceUpdatesEnabled);
+  const plakaNewsEnabled = useSettingsStore((s) => s.plakaNewsEnabled);
   const setAlertRadius = useSettingsStore((s) => s.setAlertRadius);
-  const setAlertsEnabled = useSettingsStore((s) => s.setAlertsEnabled);
-  const setPushNotificationsEnabled = useSettingsStore((s) => s.setPushNotificationsEnabled);
-  const setEmailAlertsEnabled = useSettingsStore((s) => s.setEmailAlertsEnabled);
+  const setTaskRemindersEnabled = useSettingsStore((s) => s.setTaskRemindersEnabled);
+  const setRadarAlertsEnabled = useSettingsStore((s) => s.setRadarAlertsEnabled);
+  const setServiceUpdatesEnabled = useSettingsStore((s) => s.setServiceUpdatesEnabled);
+  const setPlakaNewsEnabled = useSettingsStore((s) => s.setPlakaNewsEnabled);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteText, setDeleteText] = useState('');
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [photoBusy, setPhotoBusy] = useState(false);
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [editName, setEditName] = useState(name);
+  const [editEmail, setEditEmail] = useState(email);
+  const [editPhone, setEditPhone] = useState(phone);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
   const language = useAppLanguage();
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -107,9 +145,10 @@ export default function SettingsScreen({
       void usersService
         .patchSettings({
           alertRadiusKm,
-          alertsEnabled,
-          notificationsEnabled: pushNotificationsEnabled,
-          emailAlertsEnabled,
+          taskRemindersEnabled,
+          radarAlertsEnabled,
+          serviceUpdatesEnabled,
+          plakaNewsEnabled,
         })
         .then((settings) => {
           if (!isMountedRef.current) return;
@@ -131,7 +170,13 @@ export default function SettingsScreen({
       if (debounceRef.current) clearTimeout(debounceRef.current);
       if (saveIdleTimerRef.current) clearTimeout(saveIdleTimerRef.current);
     };
-  }, [alertRadiusKm, alertsEnabled, pushNotificationsEnabled, emailAlertsEnabled]);
+  }, [
+    alertRadiusKm,
+    taskRemindersEnabled,
+    radarAlertsEnabled,
+    serviceUpdatesEnabled,
+    plakaNewsEnabled,
+  ]);
 
   const appVersion = useMemo(() => {
     const v = Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? '0.1.0';
@@ -180,8 +225,13 @@ export default function SettingsScreen({
     router.replace('/(auth)/sign-in');
   }
 
-  function onPressLogout(): void {
-    Alert.alert('¿Cerrar sesión?', 'Se cerrará tu sesión en este dispositivo.', [
+  async function onPressLogout(): Promise<void> {
+    const pendingDraft = await loadPendingRadarReport().catch(() => null);
+    const message = pendingDraft
+      ? 'Tienes un reporte de Radar sin sincronizar. Se guardará en este dispositivo y se enviará si vuelves a iniciar sesión con la misma cuenta aquí. ¿Deseas continuar?'
+      : 'Se cerrará tu sesión en este dispositivo.';
+
+    Alert.alert('¿Cerrar sesión?', message, [
       { text: 'Cancelar', style: 'cancel' },
       {
         text: 'Cerrar sesión',
@@ -191,6 +241,55 @@ export default function SettingsScreen({
         },
       },
     ]);
+  }
+
+  async function onSaveEditProfile(): Promise<void> {
+    const trimmedName = editName.trim();
+    const trimmedEmail = editEmail.trim();
+    const trimmedPhone = editPhone.trim();
+
+    if (trimmedName.length < 1 || trimmedName.length > 80) {
+      setEditError('El nombre debe tener entre 1 y 80 caracteres.');
+      return;
+    }
+    if (!isValidEmail(trimmedEmail)) {
+      setEditError('Ingresa un correo válido.');
+      return;
+    }
+    if (trimmedPhone.length > 0 && !isValidPhone(trimmedPhone)) {
+      setEditError('Ingresa un teléfono válido.');
+      return;
+    }
+
+    setEditError(null);
+    setEditSaving(true);
+    const emailChanged = trimmedEmail !== email;
+    try {
+      const updated = await usersService.updateAccountProfile({
+        name: trimmedName,
+        email: trimmedEmail,
+        phone: trimmedPhone.length > 0 ? trimmedPhone : null,
+      });
+      if (!isMountedRef.current) return;
+      setUser(updated);
+      setEditProfileOpen(false);
+      if (emailChanged) {
+        Alert.alert('Revisa tu correo', 'Revisa tu correo para confirmar el cambio.');
+      }
+    } catch (err) {
+      if (!isMountedRef.current) return;
+      setEditError(err instanceof Error ? err.message : 'No se pudo guardar los cambios.');
+    } finally {
+      if (isMountedRef.current) setEditSaving(false);
+    }
+  }
+
+  function onOpenEditProfile(): void {
+    setEditName(name);
+    setEditEmail(email);
+    setEditPhone(phone);
+    setEditError(null);
+    setEditProfileOpen(true);
   }
 
   async function onConfirmDelete(): Promise<void> {
@@ -355,37 +454,21 @@ export default function SettingsScreen({
         </View>
 
         <View style={styles.card}>
-          <View style={styles.row}>
-            <SettingsIconTile backgroundColor="rgba(66, 133, 244, 0.18)">
-              <Ionicons name="mail" size={18} color={colors.google} />
-            </SettingsIconTile>
-            <View style={styles.rowLeft}>
-              <Text style={styles.rowTitle}>Correo electrónico</Text>
-              <Text style={styles.rowSubtitle} testID="settings.email">
-                {email || '—'}
-              </Text>
-            </View>
-            <View style={styles.readOnlyPill}>
-              <Text style={styles.readOnlyText}>Solo lectura</Text>
-            </View>
-          </View>
-
-          <View style={styles.divider} />
-
           <Pressable
             accessibilityRole="button"
-            testID="settings.nameRow"
-            onPress={() =>
-              Alert.alert('Próximamente', 'Aquí irá la edición del nombre, alineada al backend.')
-            }
+            testID="settings.editProfile"
+            onPress={onOpenEditProfile}
             style={styles.row}
           >
             <SettingsIconTile backgroundColor="rgba(60, 60, 70, 0.08)">
               <Ionicons name="person-outline" size={18} color={colors.textSecondary} />
             </SettingsIconTile>
             <View style={styles.rowLeft}>
-              <Text style={styles.rowTitle}>Nombre</Text>
-              <Text style={styles.rowSubtitle}>{name}</Text>
+              <Text style={styles.rowTitle}>Editar perfil</Text>
+              <Text style={styles.rowSubtitle} testID="settings.email">
+                {name} · {email || '—'}
+                {phone ? ` · ${phone}` : ''}
+              </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </Pressable>
@@ -411,21 +494,21 @@ export default function SettingsScreen({
           </Pressable>
         </View>
 
-        <Text style={styles.sectionLabel}>ALERTAS Y NOTIFICACIONES</Text>
+        <Text style={styles.sectionLabel}>NOTIFICACIONES</Text>
 
         <View style={styles.card}>
           <View style={styles.row}>
             <SettingsIconTile backgroundColor="rgba(255, 107, 53, 0.16)">
-              <Ionicons name="notifications" size={18} color={colors.navActive} />
+              <Ionicons name="checkmark-done" size={18} color={colors.navActive} />
             </SettingsIconTile>
             <View style={styles.rowLeft}>
-              <Text style={styles.rowTitle}>Activar alertas</Text>
-              <Text style={styles.rowSubtitle}>Recibir notificaciones de mascotas cercanas</Text>
+              <Text style={styles.rowTitle}>Recordatorios de tareas</Text>
+              <Text style={styles.rowSubtitle}>Rutinas y pendientes de tus mascotas</Text>
             </View>
             <Switch
-              testID="settings.alertsEnabled"
-              value={alertsEnabled}
-              onValueChange={(v) => setAlertsEnabled(v)}
+              testID="settings.taskReminders"
+              value={taskRemindersEnabled}
+              onValueChange={(v) => setTaskRemindersEnabled(v)}
               trackColor={{ false: colors.border, true: colors.navActive }}
               thumbColor={colors.white}
             />
@@ -433,52 +516,74 @@ export default function SettingsScreen({
 
           <View style={styles.divider} />
 
-          <View style={styles.sliderBlock}>
-            <View style={styles.sliderHeader}>
-              <SettingsIconTile backgroundColor="rgba(255, 107, 53, 0.16)">
-                <Ionicons name="sunny" size={18} color={colors.navActive} />
-              </SettingsIconTile>
-              <View style={styles.rowLeft}>
-                <Text style={styles.rowTitle}>Radio de alertas</Text>
-                <Text style={styles.rowSubtitle}>Mascotas en esta distancia</Text>
-              </View>
-              <View style={styles.badge} testID="settings.radiusBadge">
-                <Text style={styles.badgeText}>{kmLabel(alertRadiusKm)}</Text>
-              </View>
+          <View style={styles.row}>
+            <SettingsIconTile backgroundColor="rgba(255, 107, 53, 0.16)">
+              <Ionicons name="notifications" size={18} color={colors.navActive} />
+            </SettingsIconTile>
+            <View style={styles.rowLeft}>
+              <Text style={styles.rowTitle}>Alertas de Radar cercanas</Text>
+              <Text style={styles.rowSubtitle}>Mascotas perdidas o vistas cerca de ti</Text>
             </View>
-
-            <Slider
-              testID="settings.alertRadius"
-              minimumValue={1}
-              maximumValue={10}
-              step={1}
-              value={alertRadiusKm}
-              minimumTrackTintColor={colors.navActive}
-              maximumTrackTintColor={colors.border}
-              thumbTintColor={colors.white}
-              onValueChange={(v) => setAlertRadius(Number(v))}
+            <Switch
+              testID="settings.radarAlerts"
+              value={radarAlertsEnabled}
+              onValueChange={(v) => setRadarAlertsEnabled(v)}
+              trackColor={{ false: colors.border, true: colors.navActive }}
+              thumbColor={colors.white}
             />
-
-            <View style={styles.sliderTicks}>
-              <Text style={styles.tickText}>1 km</Text>
-              <Text style={styles.tickText}>10 km</Text>
-            </View>
           </View>
+
+          {radarAlertsEnabled ? (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.sliderBlock}>
+                <View style={styles.sliderHeader}>
+                  <SettingsIconTile backgroundColor="rgba(255, 107, 53, 0.16)">
+                    <Ionicons name="sunny" size={18} color={colors.navActive} />
+                  </SettingsIconTile>
+                  <View style={styles.rowLeft}>
+                    <Text style={styles.rowTitle}>Radio de alertas</Text>
+                    <Text style={styles.rowSubtitle}>Mascotas en esta distancia</Text>
+                  </View>
+                  <View style={styles.badge} testID="settings.radiusBadge">
+                    <Text style={styles.badgeText}>{kmLabel(alertRadiusKm)}</Text>
+                  </View>
+                </View>
+
+                <Slider
+                  testID="settings.alertRadius"
+                  minimumValue={1}
+                  maximumValue={10}
+                  step={1}
+                  value={alertRadiusKm}
+                  minimumTrackTintColor={colors.navActive}
+                  maximumTrackTintColor={colors.border}
+                  thumbTintColor={colors.white}
+                  onValueChange={(v) => setAlertRadius(Number(v))}
+                />
+
+                <View style={styles.sliderTicks}>
+                  <Text style={styles.tickText}>1 km</Text>
+                  <Text style={styles.tickText}>10 km</Text>
+                </View>
+              </View>
+            </>
+          ) : null}
 
           <View style={styles.divider} />
 
           <View style={styles.row}>
             <SettingsIconTile backgroundColor="rgba(67, 160, 71, 0.16)">
-              <Ionicons name="notifications" size={18} color={colors.successIcon} />
+              <Ionicons name="cart-outline" size={18} color={colors.successIcon} />
             </SettingsIconTile>
             <View style={styles.rowLeft}>
-              <Text style={styles.rowTitle}>Notificaciones push</Text>
-              <Text style={styles.rowSubtitle}>Alertas instantáneas en el dispositivo</Text>
+              <Text style={styles.rowTitle}>Actualizaciones de servicios</Text>
+              <Text style={styles.rowSubtitle}>Estado de tus reservas y servicios</Text>
             </View>
             <Switch
-              testID="settings.pushEnabled"
-              value={pushNotificationsEnabled}
-              onValueChange={(v) => setPushNotificationsEnabled(v)}
+              testID="settings.serviceUpdates"
+              value={serviceUpdatesEnabled}
+              onValueChange={(v) => setServiceUpdatesEnabled(v)}
               trackColor={{ false: colors.border, true: colors.navActive }}
               thumbColor={colors.white}
             />
@@ -488,20 +593,118 @@ export default function SettingsScreen({
 
           <View style={styles.row}>
             <SettingsIconTile backgroundColor="rgba(66, 133, 244, 0.16)">
-              <Ionicons name="mail-outline" size={18} color={colors.google} />
+              <Ionicons name="megaphone-outline" size={18} color={colors.google} />
             </SettingsIconTile>
             <View style={styles.rowLeft}>
-              <Text style={styles.rowTitle}>Alertas por correo</Text>
-              <Text style={styles.rowSubtitle}>Resumen diario de mascotas cercanas</Text>
+              <Text style={styles.rowTitle}>Novedades de Plaka</Text>
+              <Text style={styles.rowSubtitle}>Anuncios y novedades de la app</Text>
             </View>
             <Switch
-              testID="settings.emailAlertsEnabled"
-              value={emailAlertsEnabled}
-              onValueChange={(v) => setEmailAlertsEnabled(v)}
+              testID="settings.plakaNews"
+              value={plakaNewsEnabled}
+              onValueChange={(v) => setPlakaNewsEnabled(v)}
               trackColor={{ false: colors.border, true: colors.navActive }}
               thumbColor={colors.white}
             />
           </View>
+        </View>
+
+        <Text style={styles.sectionLabel}>PAGOS Y DIRECCIONES</Text>
+
+        <View style={styles.card}>
+          <Pressable
+            accessibilityRole="button"
+            testID="settings.paymentMethods"
+            onPress={() =>
+              Alert.alert(
+                'Próximamente',
+                'La gestión de métodos de pago estará disponible más adelante.',
+              )
+            }
+            style={styles.row}
+          >
+            <SettingsIconTile backgroundColor="rgba(60, 60, 70, 0.08)">
+              <Ionicons name="card-outline" size={18} color={colors.textSecondary} />
+            </SettingsIconTile>
+            <View style={styles.rowLeft}>
+              <Text style={styles.rowTitle}>Métodos de pago</Text>
+              <Text style={styles.rowSubtitle}>Próximamente</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </Pressable>
+
+          <View style={styles.divider} />
+
+          <Pressable
+            accessibilityRole="button"
+            testID="settings.addresses"
+            onPress={() =>
+              Alert.alert(
+                'Próximamente',
+                'La gestión de direcciones estará disponible más adelante.',
+              )
+            }
+            style={styles.row}
+          >
+            <SettingsIconTile backgroundColor="rgba(60, 60, 70, 0.08)">
+              <Ionicons name="location-outline" size={18} color={colors.textSecondary} />
+            </SettingsIconTile>
+            <View style={styles.rowLeft}>
+              <Text style={styles.rowTitle}>Direcciones</Text>
+              <Text style={styles.rowSubtitle}>Próximamente</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </Pressable>
+        </View>
+
+        <Text style={styles.sectionLabel}>REPORTES Y AYUDA</Text>
+
+        <View style={styles.card}>
+          <Pressable
+            accessibilityRole="button"
+            testID="settings.myReports"
+            onPress={() => router.push('/(app)/profile/reports')}
+            style={styles.row}
+          >
+            <SettingsIconTile backgroundColor="rgba(60, 60, 70, 0.08)">
+              <Ionicons name="document-text-outline" size={18} color={colors.textSecondary} />
+            </SettingsIconTile>
+            <View style={styles.rowLeft}>
+              <Text style={styles.rowTitle}>Mis reportes</Text>
+              <Text style={styles.rowSubtitle}>Historial de reportes de Radar</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </Pressable>
+        </View>
+
+        <View style={styles.card}>
+          {FAQ_ITEMS.map((item, index) => (
+            <View key={item.question}>
+              {index > 0 ? <View style={styles.divider} /> : null}
+              <View style={styles.faqItem} testID={`settings.faq.${index}`}>
+                <Text style={styles.rowTitle}>{item.question}</Text>
+                <Text style={styles.rowSubtitle}>{item.answer}</Text>
+              </View>
+            </View>
+          ))}
+
+          <View style={styles.divider} />
+
+          <Pressable
+            accessibilityRole="button"
+            testID="settings.contactSupport"
+            onPress={() => void Linking.openURL(`mailto:${SUPPORT_EMAIL}`)}
+            style={styles.row}
+          >
+            <SettingsIconTile backgroundColor="rgba(66, 133, 244, 0.16)">
+              <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.google} />
+            </SettingsIconTile>
+            <View style={styles.rowLeft}>
+              <Text style={styles.rowTitle}>Contactar soporte</Text>
+              <Text style={styles.rowSubtitle}>{SUPPORT_EMAIL}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </Pressable>
         </View>
 
         <Text style={styles.sectionLabel}>SESIÓN Y PRIVACIDAD</Text>
@@ -510,7 +713,7 @@ export default function SettingsScreen({
           <Pressable
             accessibilityRole="button"
             testID="settings.logout"
-            onPress={onPressLogout}
+            onPress={() => void onPressLogout()}
             style={styles.row}
           >
             <SettingsIconTile backgroundColor="rgba(60, 60, 70, 0.08)">
@@ -593,6 +796,74 @@ export default function SettingsScreen({
               setDeleteOpen(false);
               setDeleteText('');
             }}
+            style={styles.cancelButton}
+          >
+            <Text style={styles.cancelText}>Cancelar</Text>
+          </Pressable>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={editProfileOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditProfileOpen(false)}
+      >
+        <Pressable style={styles.modalBackdrop} onPress={() => setEditProfileOpen(false)} />
+        <View style={styles.modalSheet}>
+          <Text style={styles.modalTitle}>Editar perfil</Text>
+
+          <TextInput
+            testID="settings.editProfile.name"
+            value={editName}
+            onChangeText={setEditName}
+            placeholder="Nombre"
+            style={[styles.input, styles.inputDefault]}
+          />
+
+          <TextInput
+            testID="settings.editProfile.email"
+            value={editEmail}
+            onChangeText={setEditEmail}
+            placeholder="Correo"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            style={[styles.input, styles.inputDefault]}
+          />
+
+          <TextInput
+            testID="settings.editProfile.phone"
+            value={editPhone}
+            onChangeText={setEditPhone}
+            placeholder="Teléfono (opcional)"
+            keyboardType="phone-pad"
+            style={[styles.input, styles.inputDefault]}
+          />
+
+          {editError ? (
+            <Text style={styles.editErrorText} testID="settings.editProfile.error">
+              {editError}
+            </Text>
+          ) : null}
+
+          <Pressable
+            accessibilityRole="button"
+            testID="settings.editProfile.save"
+            disabled={editSaving}
+            onPress={() => void onSaveEditProfile()}
+            style={[styles.deleteButton, styles.saveProfileButton]}
+          >
+            {editSaving ? (
+              <ActivityIndicator color={colors.white} size="small" />
+            ) : (
+              <Text style={styles.deleteButtonText}>Guardar cambios</Text>
+            )}
+          </Pressable>
+
+          <Pressable
+            accessibilityRole="button"
+            testID="settings.editProfile.cancel"
+            onPress={() => setEditProfileOpen(false)}
             style={styles.cancelButton}
           >
             <Text style={styles.cancelText}>Cancelar</Text>
@@ -905,5 +1176,15 @@ const styles = StyleSheet.create({
   cancelText: {
     color: colors.textSecondary,
     ...typography.bodyStrong,
+  },
+  faqItem: {
+    gap: spacing.xxs,
+  },
+  editErrorText: {
+    color: colors.danger,
+    ...typography.caption,
+  },
+  saveProfileButton: {
+    backgroundColor: colors.navActive,
   },
 });
