@@ -15,6 +15,7 @@ import {
 } from '../../../../src/domain/services';
 import { SlotPicker } from '../../../../src/components/services/SlotPicker';
 import type { KibbleProduct } from '../../../../src/domain/services';
+import { useGuestGate } from '../../../../src/hooks/useGuestGate';
 
 export default function BookServiceScreen(): React.JSX.Element {
   const router = useRouter();
@@ -26,6 +27,7 @@ export default function BookServiceScreen(): React.JSX.Element {
   const detail = detailQuery.data;
   const { pets = [] } = usePets();
   const createBooking = useCreateBookingMutation();
+  const { requireAuth, GuestGateModal } = useGuestGate();
 
   const [selectedPetId, setSelectedPetId] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
@@ -226,7 +228,7 @@ export default function BookServiceScreen(): React.JSX.Element {
 
           <Pressable
             disabled={!canSubmit}
-            onPress={(): void => void onSubmit()}
+            onPress={(): void => requireAuth(() => void onSubmit())}
             style={[styles.ctaButton, !canSubmit ? styles.ctaButtonDisabled : null]}
             testID="services.book.submit"
           >
@@ -234,6 +236,7 @@ export default function BookServiceScreen(): React.JSX.Element {
           </Pressable>
         </ScrollView>
       )}
+      <GuestGateModal />
     </SafeAreaView>
   );
 }

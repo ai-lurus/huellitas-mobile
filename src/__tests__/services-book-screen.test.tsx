@@ -1,5 +1,6 @@
 import React from 'react';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { useAuthStore } from '../stores/authStore';
 
 jest.mock('@expo/vector-icons', () => ({
   Ionicons: (): null => null,
@@ -121,5 +122,22 @@ describe('Solicitar servicio (§6.3)', () => {
     await waitFor(() =>
       expect(getByTestId('services.book.submit').props.accessibilityState?.disabled).toBe(false),
     );
+  });
+
+  it('modo invitado: el envío abre el modal de login en vez de crear la reserva', async () => {
+    useAuthStore.setState({ isGuest: true });
+    mockedUseServiceDetail.mockReturnValue({ data: groomingDetail() } as never);
+
+    const { getByTestId } = render(<BookServiceScreen />);
+    await waitFor(() => expect(getByTestId('services.book.pet.pet_1')).toBeTruthy());
+
+    fireEvent.press(getByTestId('services.book.pet.pet_1'));
+    fireEvent.press(getByTestId('services.book.slots.slot.2026-07-10T15:00:00.000Z'));
+    fireEvent.press(getByTestId('services.book.submit'));
+
+    expect(mutateAsync).not.toHaveBeenCalled();
+    expect(getByTestId('authRequiredModal.signIn')).toBeTruthy();
+
+    useAuthStore.setState({ isGuest: false });
   });
 });
