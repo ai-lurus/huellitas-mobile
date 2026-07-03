@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
-import type { LostReport } from '../domain/lostReports';
-import { lostReportSchema } from '../domain/lostReports';
+import type { LostReport, MyLostReportSummary } from '../domain/lostReports';
+import { lostReportSchema, myLostReportSummarySchema } from '../domain/lostReports';
 import type { LostReportDetail, LostReportSighting } from '../domain/lostReportDetail';
 import { lostReportDetailSchema, lostReportSightingSchema } from '../domain/lostReportDetail';
 import { petSpeciesSchema } from '../domain/pets';
@@ -240,6 +240,7 @@ function normalizeLostReportDetailBase(raw: unknown): Omit<LostReportDetail, 'si
     asString(record.reportedAt) ??
     asString(record.created_at) ??
     undefined;
+  const lastSeenAt = asString(record.lastSeenAt) ?? asString(record.last_seen_at) ?? undefined;
   const message =
     asString(record.message) ??
     asString(record.description) ??
@@ -255,6 +256,7 @@ function normalizeLostReportDetailBase(raw: unknown): Omit<LostReportDetail, 'si
     petBreed,
     petPhotoUrl: petPhotoUrl ?? null,
     createdAt,
+    lastSeenAt,
     message,
     lossLocation,
     lossRadiusMeters,
@@ -537,6 +539,25 @@ async function createSighting(
   return normalizeCreateSightingResponse(res.data);
 }
 
+export interface UpdateLostReportDto {
+  lat: number;
+  lng: number;
+  /** ISO 8601 */
+  lastSeenAt: string;
+  message?: string | null;
+}
+
+async function updateLostReport(reportId: string, dto: UpdateLostReportDto): Promise<void> {
+  await httpClient.patch(`/api/v1/lost-reports/${encodeURIComponent(reportId)}`, {
+    lat: dto.lat,
+    lng: dto.lng,
+    lastSeenAt: dto.lastSeenAt,
+    ...(dto.message != null && String(dto.message).trim().length > 0
+      ? { message: dto.message.trim() }
+      : {}),
+  });
+}
+
 async function resolveLostReport(reportId: string): Promise<ResolveLostReportResult> {
   const res = await httpClient.patch<unknown>(
     `/api/v1/lost-reports/${encodeURIComponent(reportId)}/resolve`,
@@ -562,10 +583,60 @@ async function resolveLostReport(reportId: string): Promise<ResolveLostReportRes
   return { resolvedAt, notifiedUsersCount, sightingsCount, totalMinutes };
 }
 
+function normalizeMyReport(raw: unknown): MyLostReportSummary | null {
+  const record = asRecord(raw);
+  if (!record) return null;
+  const pet = asRecord(record.pet) ?? record;
+
+  const speciesRaw =
+    asString(pet.species) ?? asString(record.petSpecies) ?? asString(pet.type) ?? 'other';
+  const species = petSpeciesSchema.safeParse(speciesRaw.toLowerCase());
+
+  const resolvedAt = asString(record.resolvedAt) ?? asString(record.resolved_at) ?? null;
+  const kindRaw = asString(record.reportKind) ?? asString(record.kind) ?? asString(record.status);
+  const lower = kindRaw?.toLowerCase() ?? '';
+  const reportKind =
+    resolvedAt != null || lower === 'resolved' || lower === 'resuelto'
+      ? ('resolved' as const)
+      : lower === 'sighted' || lower === 'seen' || lower === 'avistado'
+        ? ('sighted' as const)
+        : ('lost' as const);
+
+  const parsed = myLostReportSummarySchema.safeParse({
+    id: asString(record.id) ?? asString(record.reportId),
+    petName: asString(pet.name) ?? asString(record.petName) ?? 'Mascota',
+    petSpecies: species.success ? species.data : 'other',
+    petPhotoUrl:
+      asString(pet.photoUrl) ?? asString(pet.imageUrl) ?? asString(record.petPhotoUrl) ?? null,
+    reportKind,
+    createdAt:
+      asString(record.createdAt) ?? asString(record.reportedAt) ?? new Date().toISOString(),
+    resolvedAt,
+  });
+
+  return parsed.success ? parsed.data : null;
+}
+
+async function getMyReports(): Promise<MyLostReportSummary[]> {
+  const res = await httpClient.get<unknown>('/api/v1/lost-reports/mine');
+  const record = asRecord(res.data);
+  const list =
+    (Array.isArray(res.data) ? res.data : null) ??
+    (record && Array.isArray(record.data) ? record.data : null) ??
+    (record && Array.isArray(record.items) ? record.items : null) ??
+    [];
+
+  return list
+    .map((item) => normalizeMyReport(item))
+    .filter((x): x is MyLostReportSummary => x != null);
+}
+
 export const reportsService = {
   getNearby,
   createLostReport,
+  getMyReports,
   getLostReportDetail,
   createSighting,
+  updateLostReport,
   resolveLostReport,
 };

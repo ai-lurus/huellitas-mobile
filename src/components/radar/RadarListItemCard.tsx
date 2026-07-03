@@ -2,23 +2,22 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-import type { LostReport } from '../../domain/lostReports';
+import type { RadarListItem } from '../../domain/radarListItem';
 import { colors, radius, shadows, spacing, typography } from '../../design/tokens';
-import { SPECIES_ICON_ASSETS } from '../pets/speciesIconAssets';
+import { formatRelativeTime } from '../../utils/date.utils';
+import { SPECIES_ICON_ASSETS, SPECIES_LABELS } from '../pets/speciesIconAssets';
 import { PetPhoto } from '../common/PetPhoto';
 
-export interface ReportCardProps {
-  report: LostReport;
+export interface RadarListItemCardProps {
+  item: RadarListItem;
   onPress: () => void;
 }
 
-function speciesLabel(species: LostReport['petSpecies']): string {
-  if (species === 'dog') return 'Perro';
-  if (species === 'cat') return 'Gato';
-  if (species === 'bird') return 'Perico';
-  if (species === 'rabbit') return 'Conejo';
-  return 'Otro';
-}
+const BADGE_BY_KIND: Record<RadarListItem['kind'], { label: string; color: string }> = {
+  lost: { label: 'PERDIDO', color: colors.danger },
+  sighted: { label: 'VISTO', color: colors.primary },
+  found: { label: 'ENCONTRADO', color: colors.accent },
+};
 
 function formatDistance(distanceMeters: number): string {
   if (!Number.isFinite(distanceMeters)) return '--';
@@ -26,54 +25,37 @@ function formatDistance(distanceMeters: number): string {
   return `${(distanceMeters / 1000).toFixed(1)} km`;
 }
 
-function formatTimeAgo(isoDate: string): string {
-  const createdAt = new Date(isoDate);
-  if (Number.isNaN(createdAt.getTime())) return 'ahora';
-  const diff = Math.max(0, Date.now() - createdAt.getTime());
-  const mins = Math.max(1, Math.round(diff / 60000));
-  if (mins < 60) return `hace ${mins} min`;
-  const hours = Math.round(mins / 60);
-  if (hours < 24) return `hace ${hours}h`;
-  const days = Math.round(hours / 24);
-  return `hace ${days} d`;
-}
-
-export function ReportCard({ report, onPress }: ReportCardProps): React.ReactElement {
-  const isLost = report.reportKind === 'lost';
-  const isSighted = report.reportKind === 'sighted';
-  const stripColor = isLost ? '#E11D48' : isSighted ? '#3B82F6' : '#22C55E';
-  const badgeBg = isLost ? '#FF6B3D' : isSighted ? '#3B82F6' : '#22C55E';
-  const badgeLabel = isLost ? 'PERDIDO' : isSighted ? 'VISTO' : 'RESUELTO';
-
-  const metaLine = [speciesLabel(report.petSpecies), report.petBreed].filter(Boolean).join(' • ');
+export function RadarListItemCard({ item, onPress }: RadarListItemCardProps): React.ReactElement {
+  const badge = BADGE_BY_KIND[item.kind];
+  const metaLine = [SPECIES_LABELS[item.species], item.breed].filter(Boolean).join(' • ');
 
   return (
     <Pressable
-      accessibilityLabel={`${report.petName}, ${speciesLabel(report.petSpecies)}`}
+      accessibilityLabel={`${item.name}, ${SPECIES_LABELS[item.species]}`}
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => [styles.card, pressed ? styles.pressed : null]}
-      testID={`report-card.${report.id}`}
+      testID={`radar.listItem.${item.id}`}
     >
       <View style={styles.cardInner}>
-        <View style={[styles.statusStrip, { backgroundColor: stripColor }]} />
+        <View style={[styles.statusStrip, { backgroundColor: badge.color }]} />
         <View style={styles.cardBody}>
           <View style={styles.row}>
             <View style={styles.thumbWrap}>
-              <View style={[styles.badge, { backgroundColor: badgeBg }]}>
+              <View style={[styles.badge, { backgroundColor: badge.color }]}>
                 <View style={styles.badgeDot} />
-                <Text style={styles.badgeLabel}>{badgeLabel}</Text>
+                <Text style={styles.badgeLabel}>{badge.label}</Text>
               </View>
               <PetPhoto
-                uri={report.petPhotoUrl}
-                fallback={SPECIES_ICON_ASSETS[report.petSpecies].selected}
+                uri={item.photoUrl}
+                fallback={SPECIES_ICON_ASSETS[item.species].selected}
                 style={styles.thumb}
                 resizeMode="cover"
               />
             </View>
             <View style={styles.content}>
               <Text numberOfLines={1} style={styles.name}>
-                {report.petName}
+                {item.name}
               </Text>
               <Text numberOfLines={1} style={styles.meta}>
                 {metaLine}
@@ -81,11 +63,11 @@ export function ReportCard({ report, onPress }: ReportCardProps): React.ReactEle
               <View style={styles.detailsRow}>
                 <View style={styles.detailGroup}>
                   <Ionicons color={colors.textSecondary} name="location-outline" size={12} />
-                  <Text style={styles.details}>{formatDistance(report.distanceMeters)}</Text>
+                  <Text style={styles.details}>{formatDistance(item.distanceMeters)}</Text>
                 </View>
                 <View style={styles.detailGroup}>
                   <Ionicons color={colors.textSecondary} name="time-outline" size={12} />
-                  <Text style={styles.details}>{formatTimeAgo(report.createdAt)}</Text>
+                  <Text style={styles.details}>{formatRelativeTime(item.createdAt)}</Text>
                 </View>
               </View>
             </View>

@@ -12,6 +12,12 @@ export const STORAGE_KEY_LOCATION_BG_PROMPT_DECLINED = '@huellitas/location_bg_p
 export const MAX_PET_NOTES_LENGTH = 300;
 /** Mensaje opcional al reportar mascota perdida (FE-012). */
 export const MAX_LOST_REPORT_MESSAGE_LENGTH = 500;
+/** Descripción del wizard unificado de Crear reporte en Radar (PRD §5.3). */
+export const MAX_REPORT_DESCRIPTION_LENGTH = 300;
+/** Clave de AsyncStorage para el borrador "Pendiente de enviar" de Radar (PRD §5.3.1). */
+export const STORAGE_KEY_PENDING_RADAR_REPORT = '@huellitas/pending_radar_report_v1';
+/** Días sin resolver tras los cuales un reporte de Radar se archiva como "Inactivo" (PRD §5.4.1). */
+export const LOST_REPORT_AUTO_ARCHIVE_DAYS = 60;
 
 /** Token Expo Push guardado para detectar cambios y re-POST al backend (FE-013). */
 export const STORAGE_KEY_PUSH_LAST_EXPO_TOKEN = '@huellitas/push_last_expo_token';

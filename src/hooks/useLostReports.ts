@@ -6,7 +6,8 @@ import {
   type UseQueryResult,
 } from '@tanstack/react-query';
 
-import type { LostReport } from '../domain/lostReports';
+import type { LostReport, MyLostReportSummary } from '../domain/lostReports';
+import { isLostReportArchived } from '../domain/lostReports';
 import {
   reportsService,
   type CreateLostReportDto,
@@ -15,6 +16,7 @@ import {
   type CreateLostReportSightingResult,
   type ResolveLostReportResult,
   type NearbyLostReportsParams,
+  type UpdateLostReportDto,
 } from '../services/reportsService';
 import type { LostReportDetail } from '../domain/lostReportDetail';
 
@@ -40,9 +42,22 @@ export function useLostReports(params: NearbyLostReportsParams): UseQueryResult<
   return useQuery({
     queryKey: [LOST_REPORTS_QUERY_KEY, params] as const,
     queryFn: () => reportsService.getNearby(params),
+    select: (data) =>
+      data.filter((r) => !isLostReportArchived(r.createdAt, r.reportKind === 'resolved')),
     enabled: Number.isFinite(params.lat) && Number.isFinite(params.lng) && params.radius > 0,
     refetchInterval: 30_000,
     staleTime: 25_000,
+  });
+}
+
+export const MY_REPORTS_QUERY_KEY = 'my-reports';
+
+/** PRD §7.6 (Mis reportes): historial propio, agrupado en la pantalla por estado. */
+export function useMyReports(): UseQueryResult<MyLostReportSummary[]> {
+  return useQuery({
+    queryKey: [MY_REPORTS_QUERY_KEY] as const,
+    queryFn: () => reportsService.getMyReports(),
+    staleTime: 15_000,
   });
 }
 
@@ -68,6 +83,21 @@ export function useCreateSightingMutation(
   const queryClient = useQueryClient();
   return useMutation<CreateLostReportSightingResult, Error, CreateLostReportSightingDto>({
     mutationFn: (dto) => reportsService.createSighting(reportId, dto),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: lostReportDetailQueryKey(reportId) }),
+        queryClient.invalidateQueries({ queryKey: [LOST_REPORTS_QUERY_KEY] }),
+      ]);
+    },
+  });
+}
+
+export function useUpdateLostReportMutation(
+  reportId: string,
+): UseMutationResult<void, Error, UpdateLostReportDto> {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, UpdateLostReportDto>({
+    mutationFn: (dto: UpdateLostReportDto) => reportsService.updateLostReport(reportId, dto),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: lostReportDetailQueryKey(reportId) }),

@@ -48,6 +48,9 @@ export const lostReportDetailSchema = z.object({
   /** Fecha de creación del reporte (si el backend la expone). */
   createdAt: optionalNonEmptyString.optional(),
 
+  /** Fecha y hora en que se perdió la mascota, capturada al crear el reporte. */
+  lastSeenAt: optionalNonEmptyString.optional(),
+
   /** Mensaje del reporte de pérdida (si el backend lo expone). */
   message: z.string().trim().min(1).nullable().optional(),
 

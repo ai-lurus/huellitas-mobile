@@ -144,17 +144,34 @@ describe('Map tab screen', () => {
 
   it('filtra markers por especie via opacity sin desmontar', () => {
     const { getByTestId } = render(<MapScreen />);
-    fireEvent.press(getByTestId('map.filter.dog'));
+    fireEvent.press(getByTestId('radar.filters.trigger'));
+    fireEvent.press(getByTestId('radar.filters.species.dog'));
     expect(getByTestId('marker.r1').props.opacity).toBe(1);
     expect(getByTestId('marker.r2').props.opacity).toBe(0);
   });
 
   it('al cambiar de perros a gatos muestra solo gatos', () => {
     const { getByTestId } = render(<MapScreen />);
-    fireEvent.press(getByTestId('map.filter.dog'));
-    fireEvent.press(getByTestId('map.filter.cat'));
+    fireEvent.press(getByTestId('radar.filters.trigger'));
+    fireEvent.press(getByTestId('radar.filters.species.dog'));
+    fireEvent.press(getByTestId('radar.filters.species.cat'));
     expect(getByTestId('marker.r1').props.opacity).toBe(0);
     expect(getByTestId('marker.r2').props.opacity).toBe(1);
+  });
+
+  it('muestra la Lista con los reportes al cambiar de tab', () => {
+    const { getByTestId, queryByTestId } = render(<MapScreen />);
+    fireEvent.press(getByTestId('radar.viewMode.lista'));
+    expect(queryByTestId('marker.r1')).toBeNull();
+    expect(getByTestId('radar.listItem.r1')).toBeTruthy();
+    expect(getByTestId('radar.listItem.r2')).toBeTruthy();
+  });
+
+  it('tap en un item de la Lista navega al detalle del reporte', () => {
+    const { getByTestId } = render(<MapScreen />);
+    fireEvent.press(getByTestId('radar.viewMode.lista'));
+    fireEvent.press(getByTestId('radar.listItem.r1'));
+    expect(mockPush).toHaveBeenCalledWith('/(app)/reports/r1');
   });
 
   it('tap en callout navega al detalle del reporte', () => {

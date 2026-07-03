@@ -17,11 +17,12 @@ import { PlaceMarker } from '../../src/components/map/PlaceMarker';
 import { RoutePolyline } from '../../src/components/map/RoutePolyline';
 import { StrayMarker } from '../../src/components/map/StrayMarker';
 import { HuellitasMap } from '../../src/components/map/HuellitasMap';
-import { MapFilters } from '../../src/components/map/MapFilters';
 import { RadiusCircle } from '../../src/components/map/RadiusCircle';
 import { RadiusDropdown } from '../../src/components/map/RadiusDropdown';
 import { PlaceBottomSheet } from '../../src/components/places/PlaceBottomSheet';
 import { RouteBottomSheet } from '../../src/components/routes/RouteBottomSheet';
+import { RadarFiltersPanel } from '../../src/components/radar/RadarFiltersPanel';
+import { RadarListView } from '../../src/components/radar/RadarListView';
 import { Skeleton } from '../../src/components/skeleton/Skeleton';
 import { DEFAULT_MAP_FALLBACK } from '../../src/config/constants';
 import type {
@@ -29,6 +30,8 @@ import type {
   LostReportSpeciesFilter,
   MapReportTypeFilter,
 } from '../../src/domain/lostReports';
+import { isActiveLostReport, isActiveStrayReport } from '../../src/domain/radarListItem';
+import type { RadarDateRangeFilter } from '../../src/domain/radarFilters';
 import type { Place } from '../../src/domain/places';
 import type { Route } from '../../src/domain/routes';
 import { colors, radius, spacing, typography } from '../../src/design/tokens';
@@ -42,6 +45,7 @@ import { useSettingsStore } from '../../src/stores/settingsStore';
 import BRAND_LOGO from '../../assets/icon.png';
 
 type MapLayer = 'alerts' | 'lugares';
+type RadarViewMode = 'mapa' | 'lista';
 
 function showReportActionSheet(onLostPet: () => void, onStray: () => void): void {
   if (Platform.OS === 'ios') {
@@ -71,9 +75,14 @@ export default function MapScreen(): React.JSX.Element {
   const setAlertRadius = useSettingsStore((s) => s.setAlertRadius);
   const [selectedSpecies, setSelectedSpecies] = useState<LostReportSpeciesFilter>('all');
   const [selectedReportType, setSelectedReportType] = useState<MapReportTypeFilter>('all');
+  const [dateRange, setDateRange] = useState<RadarDateRangeFilter>('all');
   const [layer, setLayer] = useState<MapLayer>('alerts');
+  const [viewMode, setViewMode] = useState<RadarViewMode>('mapa');
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
+  const hasActiveFilters =
+    selectedSpecies !== 'all' || selectedReportType !== 'all' || dateRange !== 'all';
 
   const searchCenter = currentLocation ?? DEFAULT_MAP_FALLBACK;
   const reportsQuery = useLostReports({
@@ -186,8 +195,8 @@ export default function MapScreen(): React.JSX.Element {
       return;
     }
     showReportActionSheet(
-      () => router.push('/(app)/pets' as Href),
-      () => router.push('/(app)/stray/new' as Href),
+      () => router.push('/(app)/radar/report/new?type=lost' as Href),
+      () => router.push('/(app)/radar/report/new?type=stray' as Href),
     );
   }, [layer, router]);
 
@@ -234,91 +243,161 @@ export default function MapScreen(): React.JSX.Element {
       </View>
 
       {layer === 'alerts' ? (
-        <MapFilters
-          onChange={setSelectedSpecies}
-          selected={selectedSpecies}
-          selectedType={selectedReportType}
-          onChangeType={setSelectedReportType}
-        />
+        <View style={styles.radarToolbar}>
+          <View style={styles.viewModeToggle}>
+            <Pressable
+              style={[styles.viewModeBtn, viewMode === 'mapa' && styles.viewModeBtnActive]}
+              onPress={() => setViewMode('mapa')}
+              testID="radar.viewMode.mapa"
+            >
+              <Text
+                style={[styles.viewModeLabel, viewMode === 'mapa' && styles.viewModeLabelActive]}
+              >
+                Mapa
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[styles.viewModeBtn, viewMode === 'lista' && styles.viewModeBtnActive]}
+              onPress={() => setViewMode('lista')}
+              testID="radar.viewMode.lista"
+            >
+              <Text
+                style={[styles.viewModeLabel, viewMode === 'lista' && styles.viewModeLabelActive]}
+              >
+                Lista
+              </Text>
+            </Pressable>
+          </View>
+          <Pressable
+            onPress={() => setFiltersOpen(true)}
+            style={styles.filtersBtn}
+            testID="radar.filters.trigger"
+          >
+            <Ionicons name="options-outline" size={16} color={colors.primary} />
+            <Text style={styles.filtersBtnLabel}>Filtros</Text>
+            {hasActiveFilters ? <View style={styles.filtersBtnDot} /> : null}
+          </Pressable>
+        </View>
       ) : null}
 
-      <View style={styles.mapCard}>
-        <HuellitasMap
-          containerStyle={styles.mapInner}
-          showCenterButton={false}
-          overlay={
-            <>
-              {showReportsLoading && layer === 'alerts' ? (
-                <Skeleton style={StyleSheet.absoluteFillObject} borderRadius={18} />
-              ) : null}
-              <View style={styles.mapChips} pointerEvents="box-none">
-                <View style={styles.smallChip}>
-                  <Ionicons color={colors.textSecondary} name="location" size={12} />
-                  <Text style={styles.smallChipLabel}>Colima, Colima</Text>
+      {layer === 'alerts' && viewMode === 'lista' ? (
+        <>
+          <View style={styles.listToolbar}>
+            <View style={styles.smallChip}>
+              <Ionicons color={colors.textSecondary} name="location" size={12} />
+              <Text style={styles.smallChipLabel}>Colima, Colima</Text>
+            </View>
+            <RadiusDropdown
+              value={alertRadiusKm}
+              onChange={setAlertRadius}
+              variant="list"
+              testID="radar.list.radius.trigger"
+            />
+          </View>
+          <RadarListView
+            searchCenter={searchCenter}
+            radiusKm={alertRadiusKm}
+            speciesFilter={selectedSpecies}
+            typeFilter={selectedReportType}
+            dateRangeFilter={dateRange}
+            onOpenItem={(href) => router.push(href)}
+          />
+        </>
+      ) : (
+        <View style={styles.mapCard}>
+          <HuellitasMap
+            containerStyle={styles.mapInner}
+            showCenterButton={false}
+            overlay={
+              <>
+                {showReportsLoading && layer === 'alerts' ? (
+                  <Skeleton style={StyleSheet.absoluteFillObject} borderRadius={18} />
+                ) : null}
+                <View style={styles.mapChips} pointerEvents="box-none">
+                  <View style={styles.smallChip}>
+                    <Ionicons color={colors.textSecondary} name="location" size={12} />
+                    <Text style={styles.smallChipLabel}>Colima, Colima</Text>
+                  </View>
+                  <RadiusDropdown
+                    value={alertRadiusKm}
+                    onChange={setAlertRadius}
+                    variant="map"
+                    testID="map.radius.trigger"
+                  />
                 </View>
-                <RadiusDropdown
-                  value={alertRadiusKm}
-                  onChange={setAlertRadius}
-                  variant="map"
-                  testID="map.radius.trigger"
-                />
-              </View>
-              {showReportsLoading && layer === 'alerts' ? (
-                <View style={styles.overlay} testID="reports.loading">
-                  <Text style={styles.overlayLabel}>Cargando reportes cercanos...</Text>
-                </View>
-              ) : null}
-            </>
-          }
-        >
-          {layer === 'alerts' ? (
-            <RadiusCircle center={searchCenter} radiusKm={alertRadiusKm} />
-          ) : null}
+                {showReportsLoading && layer === 'alerts' ? (
+                  <View style={styles.overlay} testID="reports.loading">
+                    <Text style={styles.overlayLabel}>Cargando reportes cercanos...</Text>
+                  </View>
+                ) : null}
+              </>
+            }
+          >
+            {layer === 'alerts' ? (
+              <RadiusCircle center={searchCenter} radiusKm={alertRadiusKm} />
+            ) : null}
 
-          {(reportsQuery.data ?? []).map((report: LostReport) => {
-            const typeVisible = selectedReportType === 'all' || selectedReportType === 'lost';
-            const visible =
-              layer === 'alerts' && typeVisible && isSpeciesVisible(report.petSpecies);
-            return (
-              <AlertMarker
-                key={report.id}
-                report={report}
-                onPressCallout={openReport}
-                opacity={visible ? 1 : 0}
-                interactive={visible}
+            {(reportsQuery.data ?? []).filter(isActiveLostReport).map((report: LostReport) => {
+              const typeVisible = selectedReportType === 'all' || selectedReportType === 'lost';
+              const visible =
+                layer === 'alerts' && typeVisible && isSpeciesVisible(report.petSpecies);
+              return (
+                <AlertMarker
+                  key={report.id}
+                  report={report}
+                  onPressCallout={openReport}
+                  opacity={visible ? 1 : 0}
+                  interactive={visible}
+                />
+              );
+            })}
+            {(strayQuery.data ?? []).filter(isActiveStrayReport).map((stray) => {
+              const typeVisible = selectedReportType === 'all' || selectedReportType === 'stray';
+              const visible = layer === 'alerts' && typeVisible;
+              return (
+                <StrayMarker
+                  key={`stray-${stray.id}`}
+                  report={stray}
+                  onPressCallout={openStray}
+                  opacity={visible ? 1 : 0}
+                />
+              );
+            })}
+            {(placesQuery.data ?? []).map((place) => (
+              <PlaceMarker
+                key={`place-${place.id}`}
+                place={place}
+                onPressCallout={handlePlaceCallout}
+                opacity={layer === 'lugares' ? 1 : 0}
               />
-            );
-          })}
-          {(strayQuery.data ?? []).map((stray) => {
-            const typeVisible = selectedReportType === 'all' || selectedReportType === 'stray';
-            const visible = layer === 'alerts' && typeVisible;
-            return (
-              <StrayMarker
-                key={`stray-${stray.id}`}
-                report={stray}
-                onPressCallout={openStray}
-                opacity={visible ? 1 : 0}
+            ))}
+            {(routesQuery.data ?? []).map((route: Route) => (
+              <RoutePolyline
+                key={`route-${route.id}`}
+                route={route}
+                onPressCallout={handleRouteCallout}
+                opacity={layer === 'lugares' ? 1 : 0}
               />
-            );
-          })}
-          {(placesQuery.data ?? []).map((place) => (
-            <PlaceMarker
-              key={`place-${place.id}`}
-              place={place}
-              onPressCallout={handlePlaceCallout}
-              opacity={layer === 'lugares' ? 1 : 0}
-            />
-          ))}
-          {(routesQuery.data ?? []).map((route: Route) => (
-            <RoutePolyline
-              key={`route-${route.id}`}
-              route={route}
-              onPressCallout={handleRouteCallout}
-              opacity={layer === 'lugares' ? 1 : 0}
-            />
-          ))}
-        </HuellitasMap>
-      </View>
+            ))}
+          </HuellitasMap>
+        </View>
+      )}
+
+      <RadarFiltersPanel
+        visible={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        typeFilter={selectedReportType}
+        onChangeType={setSelectedReportType}
+        speciesFilter={selectedSpecies}
+        onChangeSpecies={setSelectedSpecies}
+        dateRangeFilter={dateRange}
+        onChangeDateRange={setDateRange}
+        onClear={() => {
+          setSelectedReportType('all');
+          setSelectedSpecies('all');
+          setDateRange('all');
+        }}
+      />
 
       <Pressable
         onPress={handleFab}
@@ -419,6 +498,57 @@ const styles = StyleSheet.create({
   layerBtnActive: { backgroundColor: colors.primary },
   layerBtnLabel: { ...typography.caption, color: colors.textSecondary },
   layerBtnLabelActive: { color: colors.white, fontWeight: '600' },
+  radarToolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.xs,
+    gap: spacing.sm,
+  },
+  viewModeToggle: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 3,
+  },
+  viewModeBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
+    alignItems: 'center',
+  },
+  viewModeBtnActive: { backgroundColor: colors.primary },
+  viewModeLabel: { ...typography.caption, color: colors.textSecondary },
+  viewModeLabelActive: { color: colors.white, fontWeight: '600' },
+  filtersBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.surface,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 7,
+  },
+  filtersBtnLabel: { ...typography.caption, color: colors.primary, fontWeight: '600' },
+  filtersBtnDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.danger,
+    marginLeft: 2,
+  },
+  listToolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.xs,
+  },
   mapCard: {
     marginTop: spacing.xs,
     marginHorizontal: spacing.md,

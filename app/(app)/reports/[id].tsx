@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -16,6 +16,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LostReportMap } from '../../../src/components/map/LostReportMap';
 
 import { useAuthStore } from '../../../src/stores/authStore';
+import { isLostReportArchived } from '../../../src/domain/lostReports';
 import { useLostReportDetail } from '../../../src/hooks/useLostReports';
 import type { LostReportSighting } from '../../../src/domain/lostReportDetail';
 import { colors, radius, shadows, spacing, typography } from '../../../src/design/tokens';
@@ -34,6 +35,29 @@ function formatTimeAgo(isoDate: string): string {
   if (hours < 24) return `hace ${hours}h`;
   const days = Math.round(hours / 24);
   return `hace ${days} d`;
+}
+
+function PhotoTile({ uri }: { uri: string }): React.JSX.Element {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <View style={[styles.photoTile, styles.photoTileBroken]} testID="report.detail.photo.broken">
+        <Ionicons name="image-outline" size={18} color={colors.textMuted} />
+        <Text style={styles.photoTileBrokenText} numberOfLines={2}>
+          Imagen no disponible
+        </Text>
+      </View>
+    );
+  }
+  return (
+    <Image
+      source={{ uri }}
+      style={styles.photoTile}
+      resizeMode="cover"
+      accessibilityLabel="Foto del avistamiento"
+      onError={() => setFailed(true)}
+    />
+  );
 }
 
 function SmallPhotoGrid({
@@ -58,15 +82,7 @@ function SmallPhotoGrid({
               </View>
             );
           }
-          return (
-            <Image
-              key={`${item}-${idx}`}
-              source={{ uri: item as string }}
-              style={styles.photoTile}
-              resizeMode="cover"
-              accessibilityLabel="Foto del avistamiento"
-            />
-          );
+          return <PhotoTile key={`${item}-${idx}`} uri={item as string} />;
         })}
       </View>
     </View>
@@ -138,6 +154,11 @@ export default function ReportDetailScreen(): React.JSX.Element {
   }, [detail?.ownerId, meId]);
 
   const isResolved = Boolean(detail?.resolvedAt);
+  const isArchived = useMemo(
+    () => isLostReportArchived(detail?.createdAt, isResolved),
+    [detail?.createdAt, isResolved],
+  );
+  const [heroPhotoFailed, setHeroPhotoFailed] = useState(false);
 
   const ownerProfileQuery = useUserProfile(!isOwner && detail?.ownerId ? detail.ownerId : '');
   const ownerProfile = ownerProfileQuery.data;
@@ -167,8 +188,8 @@ export default function ReportDetailScreen(): React.JSX.Element {
   }, [reportId, router]);
 
   const onEditReport = useCallback((): void => {
-    Alert.alert('Próximamente', 'La edición de reportes aún no está disponible en esta versión.');
-  }, []);
+    router.push(`/(app)/reports/${reportId}/edit`);
+  }, [reportId, router]);
 
   const onShare = useCallback(async (): Promise<void> => {
     if (!detail) return;
@@ -259,14 +280,26 @@ export default function ReportDetailScreen(): React.JSX.Element {
         testID="report.detail.screen"
       >
         <View style={styles.hero}>
-          {detail.petPhotoUrl ? (
+          {detail.petPhotoUrl && !heroPhotoFailed ? (
             <Image
               source={{ uri: detail.petPhotoUrl }}
               style={styles.heroImage}
               resizeMode="cover"
+              onError={() => setHeroPhotoFailed(true)}
+              testID="report.detail.hero.photo"
             />
           ) : (
-            <View style={[styles.heroImage, styles.heroImageFallback]} />
+            <View
+              style={[styles.heroImage, styles.heroImageFallback]}
+              testID="report.detail.hero.broken"
+            >
+              {heroPhotoFailed ? (
+                <>
+                  <Ionicons name="image-outline" size={28} color={colors.textSecondary} />
+                  <Text style={styles.heroImageFallbackText}>Imagen no disponible</Text>
+                </>
+              ) : null}
+            </View>
           )}
           <View style={styles.heroOverlay} />
           <View style={styles.heroTopRow}>
@@ -281,10 +314,17 @@ export default function ReportDetailScreen(): React.JSX.Element {
             <View
               style={[
                 styles.heroStatusPill,
-                isResolved ? styles.heroStatusResolved : styles.heroStatusLost,
+                isResolved
+                  ? styles.heroStatusResolved
+                  : isArchived
+                    ? styles.heroStatusArchived
+                    : styles.heroStatusLost,
               ]}
+              testID="report.detail.statusPill"
             >
-              <Text style={styles.heroStatusText}>{isResolved ? 'RESUELTO' : 'PERDIDO'}</Text>
+              <Text style={styles.heroStatusText}>
+                {isResolved ? 'RESUELTO' : isArchived ? 'INACTIVO' : 'PERDIDO'}
+              </Text>
             </View>
             <Pressable
               accessibilityRole="button"
@@ -479,9 +519,9 @@ export default function ReportDetailScreen(): React.JSX.Element {
             <View style={styles.bottomActions}>
               <Pressable
                 accessibilityRole="button"
-                disabled={isResolved}
+                disabled={isResolved || isArchived}
                 onPress={() => void onFound()}
-                style={[styles.primaryGreen, isResolved && styles.disabled]}
+                style={[styles.primaryGreen, (isResolved || isArchived) && styles.disabled]}
                 testID="report.detail.markFound"
               >
                 <Ionicons name="checkmark-circle" size={18} color={colors.white} />
@@ -499,8 +539,9 @@ export default function ReportDetailScreen(): React.JSX.Element {
                 </Pressable>
                 <Pressable
                   accessibilityRole="button"
+                  disabled={isArchived}
                   onPress={onEditReport}
-                  style={styles.secondaryBtn}
+                  style={[styles.secondaryBtn, isArchived && styles.disabled]}
                   testID="report.detail.edit"
                 >
                   <Ionicons name="pencil-outline" size={18} color={colors.textPrimary} />
@@ -513,9 +554,9 @@ export default function ReportDetailScreen(): React.JSX.Element {
               <Pressable
                 accessibilityRole="button"
                 onPress={onReportSighting}
-                style={[styles.primaryOrange, isResolved && styles.disabled]}
+                style={[styles.primaryOrange, (isResolved || isArchived) && styles.disabled]}
                 testID="report.detail.reportSighting"
-                disabled={isResolved}
+                disabled={isResolved || isArchived}
               >
                 <Ionicons name="camera-outline" size={18} color={colors.white} />
                 <Text style={styles.primaryOrangeText}>Reportar avistamiento</Text>
@@ -563,7 +604,13 @@ const styles = StyleSheet.create({
 
   hero: { height: 250, backgroundColor: '#ECEFF5' },
   heroImage: { width: '100%', height: '100%' },
-  heroImageFallback: { backgroundColor: '#ECEFF5' },
+  heroImageFallback: {
+    backgroundColor: '#ECEFF5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+  heroImageFallbackText: { ...typography.caption, color: colors.textSecondary, fontWeight: '700' },
   heroOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.28)',
@@ -594,6 +641,7 @@ const styles = StyleSheet.create({
   },
   heroStatusLost: { backgroundColor: colors.navActive },
   heroStatusResolved: { backgroundColor: colors.success },
+  heroStatusArchived: { backgroundColor: colors.textSecondary },
   heroStatusText: {
     ...typography.caption,
     color: colors.white,
@@ -852,4 +900,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   photoTileExtraText: { ...typography.bodyStrong, color: colors.white },
+  photoTileBroken: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+    paddingHorizontal: 4,
+  },
+  photoTileBrokenText: {
+    ...typography.caption,
+    color: colors.textMuted,
+    fontSize: 9,
+    textAlign: 'center',
+  },
 });

@@ -63,8 +63,9 @@ async function create(input: StrayReportSubmitInput): Promise<StrayReport> {
   form.append('species', input.species);
   form.append('lat', String(input.lat));
   form.append('lng', String(input.lng));
+  form.append('seenAt', input.seenAt.toISOString());
+  form.append('description', input.description);
   if (input.color) form.append('color', input.color);
-  if (input.description) form.append('description', input.description);
 
   for (const uri of input.photoUris ?? []) {
     const filename = uri.split('/').pop() ?? 'photo.jpg';

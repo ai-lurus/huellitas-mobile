@@ -3,9 +3,13 @@ import { StyleSheet, View } from 'react-native';
 
 import { colors, radius, shadows, spacing } from '../../design/tokens';
 
-export function ReportCardSkeleton(): React.ReactElement {
+export function RadarListItemCardSkeleton(): React.ReactElement {
   return (
-    <View accessibilityLabel="Cargando reportes" style={styles.card} testID="report-card-skeleton">
+    <View
+      accessibilityLabel="Cargando reportes"
+      style={styles.card}
+      testID="radar.listItemSkeleton"
+    >
       <View style={styles.cardInner}>
         <View style={styles.strip} />
         <View style={styles.row}>

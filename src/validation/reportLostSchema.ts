@@ -1,16 +1,6 @@
 import { z } from 'zod';
 
-import { MAX_LOST_REPORT_MESSAGE_LENGTH } from '../config/constants';
-
-export { MAX_LOST_REPORT_MESSAGE_LENGTH };
-
-export const reportLostDetailsFormSchema = z.object({
-  lastSeenDate: z.date(),
-  lastSeenTime: z.date(),
-  message: z.string().max(MAX_LOST_REPORT_MESSAGE_LENGTH).optional(),
-});
-
-export type ReportLostDetailsForm = z.infer<typeof reportLostDetailsFormSchema>;
+import { MAX_REPORT_DESCRIPTION_LENGTH } from '../config/constants';
 
 export function combineReportDateTime(date: Date, time: Date): Date {
   return new Date(
@@ -24,16 +14,28 @@ export function combineReportDateTime(date: Date, time: Date): Date {
   );
 }
 
-export const reportLostSubmitSchema = z
+export const lostReportWizardDataFormSchema = z.object({
+  lastSeenDate: z.date(),
+  lastSeenTime: z.date(),
+  message: z
+    .string()
+    .trim()
+    .min(1, 'La descripción es requerida')
+    .max(MAX_REPORT_DESCRIPTION_LENGTH),
+});
+
+export type LostReportWizardDataForm = z.infer<typeof lostReportWizardDataFormSchema>;
+
+export const lostReportSubmitSchema = z
   .object({
     lat: z.number().gte(-90).lte(90),
     lng: z.number().gte(-180).lte(180),
     lastSeenAt: z.date(),
-    message: z.string().max(MAX_LOST_REPORT_MESSAGE_LENGTH).optional(),
+    message: z.string().trim().min(1).max(MAX_REPORT_DESCRIPTION_LENGTH),
   })
   .refine((d) => d.lastSeenAt.getTime() <= Date.now(), {
     message: 'La fecha y hora no pueden ser futuras',
     path: ['lastSeenAt'],
   });
 
-export type ReportLostSubmitInput = z.infer<typeof reportLostSubmitSchema>;
+export type LostReportSubmitInput = z.infer<typeof lostReportSubmitSchema>;
