@@ -92,6 +92,19 @@ describe('Pets screens', () => {
     expect(await findByTestId('petCard.pet_2')).toBeTruthy();
   });
 
+  it('no muestra el contador de paginado "X de Y" con la lista vertical', async () => {
+    petsService.listPets.mockResolvedValueOnce([
+      { id: 'pet_1', name: 'Max', species: 'dog', isLost: false, photoUrl: null },
+      { id: 'pet_2', name: 'Luna', species: 'cat', isLost: true, photoUrl: null },
+    ]);
+
+    const { findByTestId, queryByText } = renderWithQuery(<PetsScreen />);
+
+    expect(await findByTestId('petCard.pet_1')).toBeTruthy();
+    expect(await findByTestId('petCard.pet_2')).toBeTruthy();
+    expect(queryByText('1 de 2')).toBeNull();
+  });
+
   it('muestra empty state cuando no hay mascotas', async () => {
     petsService.listPets.mockResolvedValueOnce([]);
     const { findByText } = renderWithQuery(<PetsScreen />);

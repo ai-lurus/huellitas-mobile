@@ -1,13 +1,5 @@
-import React, { useCallback, useState } from 'react';
-import {
-  FlatList,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import React, { useCallback } from 'react';
+import { FlatList, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -32,7 +24,6 @@ export default function PetsScreen(): React.ReactElement {
   const remaining = Math.max(0, MAX_PETS_PER_USER - count);
   const atLimit = count >= MAX_PETS_PER_USER;
 
-  const [page, setPage] = useState(0);
   const cardWidth = width - spacing.lg * 2;
 
   const onAddPress = useCallback((): void => {
@@ -57,11 +48,6 @@ export default function PetsScreen(): React.ReactElement {
       <View style={styles.headerRow}>
         <Text style={styles.title}>Mis mascotas</Text>
         <View style={styles.headerRight}>
-          {!isEmpty ? (
-            <Text style={styles.counter}>
-              {Math.min(page + 1, count)} de {count}
-            </Text>
-          ) : null}
           <View style={styles.avatar} testID="pets.userAvatar">
             <Text style={styles.avatarText}>{initial}</Text>
           </View>
@@ -108,27 +94,20 @@ export default function PetsScreen(): React.ReactElement {
         </View>
       ) : (
         <>
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={(e) => {
-              const next = Math.round(e.nativeEvent.contentOffset.x / Math.max(1, width));
-              setPage(next);
-            }}
-            contentContainerStyle={styles.pagerContent}
-          >
-            {pets.map((pet) => (
-              <View key={pet.id} style={{ width, paddingHorizontal: spacing.lg }}>
-                <PetHeroCard
-                  pet={pet}
-                  onPress={() => openPet(pet.id)}
-                  onOpenCarnet={() => openPet(pet.id, 'carnet')}
-                  onOpenRutina={() => openPet(pet.id, 'rutina')}
-                />
-              </View>
-            ))}
-          </ScrollView>
+          <FlatList
+            data={pets}
+            keyExtractor={(pet) => pet.id}
+            contentContainerStyle={styles.listContent}
+            ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
+            renderItem={({ item: pet }) => (
+              <PetHeroCard
+                pet={pet}
+                onPress={() => openPet(pet.id)}
+                onOpenCarnet={() => openPet(pet.id, 'carnet')}
+                onOpenRutina={() => openPet(pet.id, 'rutina')}
+              />
+            )}
+          />
 
           <View style={[styles.addCardWrap, { width: cardWidth }]}>
             <Pressable
@@ -170,7 +149,6 @@ const styles = StyleSheet.create({
   },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   title: { color: colors.textPrimary, ...typography.heading, flexShrink: 1 },
-  counter: { color: colors.textSecondary, ...typography.caption, fontWeight: '600' },
   avatar: {
     width: 32,
     height: 32,
@@ -186,7 +164,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxxl * 2,
     paddingTop: spacing.xs,
   },
-  pagerContent: { paddingBottom: spacing.md },
+  itemSeparator: { height: spacing.md },
 
   emptyWrap: {
     flex: 1,
