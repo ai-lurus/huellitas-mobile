@@ -97,6 +97,7 @@ export default function PetsScreen(): React.ReactElement {
           <FlatList
             data={pets}
             keyExtractor={(pet) => pet.id}
+            style={styles.list}
             contentContainerStyle={styles.listContent}
             ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
             renderItem={({ item: pet }) => (
@@ -165,6 +166,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xs,
   },
   itemSeparator: { height: spacing.md },
+  list: { flex: 1 },
 
   emptyWrap: {
     flex: 1,
