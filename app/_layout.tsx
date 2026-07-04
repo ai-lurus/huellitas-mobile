@@ -19,6 +19,7 @@ import { useAppFonts } from '../src/hooks/useAppFonts';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { queryClient } from '../src/query/queryClient';
 import { queryPersister } from '../src/query/queryPersister';
+import { shouldPersistQuery } from '../src/query/shouldPersistQuery';
 import * as Sentry from '@sentry/react-native';
 import { env } from '../src/config/env';
 import { httpClient } from '../src/network';
@@ -76,7 +77,15 @@ export default function RootLayout(): React.JSX.Element {
       <GlobalErrorBoundary onError={(e) => Sentry.captureException(e)}>
         <PersistQueryClientProvider
           client={queryClient}
-          persistOptions={{ persister: queryPersister, maxAge: 1000 * 60 * 60 * 24 }}
+          persistOptions={{
+            persister: queryPersister,
+            maxAge: 1000 * 60 * 60 * 24,
+            dehydrateOptions: { shouldDehydrateQuery: shouldPersistQuery },
+            // Invalida cachés ya guardados en dispositivos antes de excluir 'pets' de la
+            // persistencia (evita que un conteo de mascotas desactualizado se rehidrate una
+            // última vez). Solo subir este valor si hace falta invalidar de nuevo.
+            buster: 'pets-not-persisted-v1',
+          }}
         >
           <View style={{ flex: 1 }}>
             <AuthDeepLinkSync />

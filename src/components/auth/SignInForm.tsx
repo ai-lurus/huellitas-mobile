@@ -14,6 +14,7 @@ import { z } from 'zod';
 import { colors, control, radius, shadows, spacing, typography } from '../../design/tokens';
 import { authService } from '../../services/emailAuthService';
 import { useAuthStore } from '../../stores/authStore';
+import { queryClient } from '../../query/queryClient';
 
 const AUTH_ERROR_COPY = 'Correo o contraseña incorrectos. Verifica tus datos e intenta de nuevo.';
 const NETWORK_ERROR_COPY =
@@ -37,13 +38,8 @@ function formatSubmitError(err: unknown): string {
   if (isNetworkError(err)) return NETWORK_ERROR_COPY;
   if (err instanceof Error && err.message) {
     const m = err.message.toLowerCase();
-    if (
-      m.includes('invalid') ||
-      m.includes('credential') ||
-      m.includes('401') ||
-      m.includes('unauthorized')
-    ) {
-      return AUTH_ERROR_COPY;
+    if (m.includes('429') || m.includes('demasiadas peticiones')) {
+      return err.message;
     }
   }
   return AUTH_ERROR_COPY;
@@ -160,6 +156,8 @@ export function SignInForm({
       );
 
       useAuthStore.getState().setUser(user);
+      // Evita servir datos cacheados/persistidos de una identidad anterior en este dispositivo.
+      queryClient.clear();
       onSuccess({ isFirstLogin });
     } catch (err: unknown) {
       setState((prev) => ({

@@ -108,8 +108,10 @@ describe('NewPetScreen', () => {
     });
   });
 
-  it('muestra error de límite 3 mascotas cuando backend responde 422', async () => {
-    petsService.createPet.mockRejectedValueOnce({ response: { status: 422 } });
+  it('muestra error de límite 3 mascotas cuando backend responde 422 LIMIT_EXCEEDED', async () => {
+    petsService.createPet.mockRejectedValueOnce({
+      response: { status: 422, data: { code: 'LIMIT_EXCEEDED' } },
+    });
 
     const { getByTestId, findByText } = renderWithQuery(<NewPetScreen />);
 
@@ -117,6 +119,19 @@ describe('NewPetScreen', () => {
     fireEvent.press(getByTestId('petForm.submit'));
 
     expect(await findByText('Solo puedes tener un máximo de 3 mascotas')).toBeTruthy();
+  });
+
+  it('muestra el mensaje real del backend para un 422 que no es de límite', async () => {
+    petsService.createPet.mockRejectedValueOnce({
+      response: { status: 422, data: { error: 'Validation failed' } },
+    });
+
+    const { getByTestId, findByText } = renderWithQuery(<NewPetScreen />);
+
+    fireEvent.changeText(getByTestId('petForm.name'), 'Max');
+    fireEvent.press(getByTestId('petForm.submit'));
+
+    expect(await findByText('Validation failed')).toBeTruthy();
   });
 
   it('cancel navega atrás', () => {

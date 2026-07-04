@@ -1,4 +1,5 @@
-import { formatOAuthErrorMessage } from '../googleAuthService';
+import { authClient, formatOAuthErrorMessage, runGoogleSignInFlow } from '../googleAuthService';
+import { queryClient } from '../../query/queryClient';
 
 jest.mock('better-auth/react', () => ({
   createAuthClient: jest.fn(() => ({
@@ -35,6 +36,10 @@ jest.mock('../postOAuthRouting', () => ({
   getPostOAuthDestination: jest.fn().mockResolvedValue('app'),
 }));
 
+jest.mock('../../query/queryClient', () => ({
+  queryClient: { clear: jest.fn() },
+}));
+
 describe('googleAuthService OAuth helpers', () => {
   it('formatOAuthErrorMessage devuelve mensaje genérico para errores desconocidos', () => {
     expect(formatOAuthErrorMessage(null)).toMatch(/Google/);
@@ -50,5 +55,20 @@ describe('googleAuthService OAuth helpers', () => {
 
   it('formatOAuthErrorMessage explica rate limit ante 429', () => {
     expect(formatOAuthErrorMessage({ status: 429 })).toMatch(/429/);
+  });
+});
+
+describe('runGoogleSignInFlow', () => {
+  it('limpia el caché de queries tras un login exitoso', async () => {
+    jest.mocked(authClient.signIn.social).mockResolvedValueOnce(undefined as never);
+    jest.mocked(authClient.getSession).mockResolvedValue({
+      data: { user: { id: 'u1', name: 'Ana', email: 'ana@test.com' } },
+      error: null,
+    } as never);
+
+    const { navigateTo } = await runGoogleSignInFlow();
+
+    expect(queryClient.clear).toHaveBeenCalled();
+    expect(navigateTo).toBe('/(app)');
   });
 });

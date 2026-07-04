@@ -6,6 +6,7 @@ import { httpClient } from '../network';
 import { setSessionTokenAsync } from './sessionTokenStorage';
 import { logger } from '../utils/logger';
 import type { AuthUser } from '../types/auth';
+import { RATE_LIMIT_429_COPY } from './authErrorMessages';
 
 function toFriendlyAuthError(err: unknown): Error {
   if (isAxiosError(err)) {
@@ -41,6 +42,9 @@ function toFriendlyAuthError(err: unknown): Error {
     if (status === 409) {
       const data = err.response?.data as { message?: string } | undefined;
       return new Error(data?.message ?? 'El correo ya está registrado.');
+    }
+    if (status === 429) {
+      return new Error(RATE_LIMIT_429_COPY);
     }
     if (err.code === 'ERR_NETWORK' || err.message === 'Network Error') {
       return new Error(

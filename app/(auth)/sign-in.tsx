@@ -15,6 +15,7 @@ import { SignInForm } from '../../src/components/auth/SignInForm';
 import { useKeyboardHeight } from '../../src/hooks/useKeyboardHeight';
 import { runGoogleSignInFlow } from '../../src/services/googleAuthService';
 import { useAuthStore } from '../../src/stores/authStore';
+import { queryClient } from '../../src/query/queryClient';
 
 export default function SignInScreen(): React.JSX.Element {
   const router = useRouter();
@@ -72,6 +73,8 @@ export default function SignInScreen(): React.JSX.Element {
             testID="signIn.continueAsGuest"
             onPress={() => {
               useAuthStore.getState().enterGuestMode();
+              // Evita servir datos cacheados/persistidos de una identidad anterior en este dispositivo.
+              queryClient.clear();
               router.replace('/(app)/map' as Href);
             }}
             style={styles.guestLink}

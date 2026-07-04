@@ -3,6 +3,8 @@ import { render, fireEvent, waitFor } from '@testing-library/react-native';
 
 import { SignInForm } from './SignInForm';
 import { authService } from '../../services/emailAuthService';
+import { queryClient } from '../../query/queryClient';
+import { RATE_LIMIT_429_COPY } from '../../services/authErrorMessages';
 
 jest.mock('@expo/vector-icons', () => ({
   Ionicons: (): null => null,
@@ -14,6 +16,10 @@ jest.mock('../../stores/authStore', () => ({
   useAuthStore: {
     getState: () => ({ setUser: jest.fn() }),
   },
+}));
+
+jest.mock('../../query/queryClient', () => ({
+  queryClient: { clear: jest.fn() },
 }));
 
 describe('SignInForm', () => {
@@ -63,6 +69,23 @@ describe('SignInForm', () => {
     await waitFor(() => {
       expect(authService.signIn).toHaveBeenCalledWith('a@b.com', 'password123');
       expect(onSuccess).toHaveBeenCalledWith({ isFirstLogin: false });
+    });
+  });
+
+  it('limpia el caché de queries al iniciar sesión exitosamente', async () => {
+    jest.mocked(authService.signIn).mockImplementationOnce(async () => ({
+      user: { id: '1', name: 'Test', email: 'a@b.com' },
+      isFirstLogin: false,
+    }));
+
+    const { getByTestId } = render(<SignInForm onSuccess={jest.fn()} />);
+
+    fireEvent.changeText(getByTestId('signIn.email'), 'a@b.com');
+    fireEvent.changeText(getByTestId('signIn.password'), 'password123');
+    fireEvent.press(getByTestId('signIn.submit'));
+
+    await waitFor(() => {
+      expect(queryClient.clear).toHaveBeenCalled();
     });
   });
 
@@ -146,5 +169,22 @@ describe('SignInForm', () => {
     expect(
       await findByText('Correo o contraseña incorrectos. Verifica tus datos e intenta de nuevo.'),
     ).toBeTruthy();
+  });
+
+  it('muestra el mensaje de límite de peticiones cuando falla por 429, no el de credenciales', async () => {
+    jest
+      .mocked(authService.signIn)
+      .mockImplementationOnce(() => Promise.reject(new Error(RATE_LIMIT_429_COPY)));
+
+    const { getByTestId, findByText, queryByText } = render(<SignInForm onSuccess={jest.fn()} />);
+
+    fireEvent.changeText(getByTestId('signIn.email'), 'a@b.com');
+    fireEvent.changeText(getByTestId('signIn.password'), 'password123');
+    fireEvent.press(getByTestId('signIn.submit'));
+
+    expect(await findByText(RATE_LIMIT_429_COPY)).toBeTruthy();
+    expect(
+      queryByText('Correo o contraseña incorrectos. Verifica tus datos e intenta de nuevo.'),
+    ).toBeNull();
   });
 });

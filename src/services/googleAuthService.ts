@@ -10,6 +10,8 @@ import type { AuthUser } from '../types/auth';
 import { getSessionTokenAsync } from './sessionTokenStorage';
 import { httpClient } from '../network';
 import { getPostOAuthDestination } from './postOAuthRouting';
+import { queryClient } from '../query/queryClient';
+import { RATE_LIMIT_429_COPY } from './authErrorMessages';
 
 /**
  * En web, `expo-secure-store` no implementa el nativo (stub vacío) y rompe `getItem`/`setItem` síncronos
@@ -88,9 +90,6 @@ function mapSessionUserToAuthUser(user: {
 
 const ORIGIN_403_COPY =
   'El servidor rechazó la petición (403). Con Expo en el navegador, añade el origen de la app (p. ej. http://localhost:8081) a trustedOrigins o BETTER_AUTH_TRUSTED_ORIGINS en tu API Better Auth y reinicia el servidor.';
-
-const RATE_LIMIT_429_COPY =
-  'Demasiadas peticiones al servidor (429). Espera un minuto sin pulsar de nuevo. En desarrollo, relaja o desactiva el rate limiting de Better Auth (p. ej. opción `rateLimit` en la config del auth).';
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null;
@@ -215,6 +214,8 @@ export async function runGoogleSignInFlow(): Promise<{
       navigateTo: null,
     };
   }
+  // Evita servir datos cacheados/persistidos de una identidad anterior en este dispositivo.
+  queryClient.clear();
   const dest = await getPostOAuthDestination();
   return {
     result: { status: 'success' },

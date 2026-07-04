@@ -14,6 +14,7 @@ import { z } from 'zod';
 import { colors, control, radius, shadows, spacing, typography } from '../../design/tokens';
 import { authService } from '../../services/emailAuthService';
 import { useAuthStore } from '../../stores/authStore';
+import { queryClient } from '../../query/queryClient';
 
 export const signUpSchema = z
   .object({
@@ -187,6 +188,8 @@ export function SignUpForm({
         validated.data.password,
       );
       useAuthStore.getState().setUser(user);
+      // Evita servir datos cacheados/persistidos de una identidad anterior en este dispositivo.
+      queryClient.clear();
       onSuccess();
     } catch (err: unknown) {
       setState((prev) => ({

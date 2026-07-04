@@ -7,6 +7,7 @@ import { notificationsService } from '../services/notificationsService';
 import { usersService } from '../services/usersService';
 import { useAuthStore } from '../stores/authStore';
 import { useSettingsStore } from '../stores/settingsStore';
+import { queryClient } from '../query/queryClient';
 
 const mockReplace = jest.fn();
 const mockBack = jest.fn();
@@ -75,6 +76,10 @@ jest.mock('../services/googleAuthService', () => ({
 
 jest.mock('../services/pendingRadarReportStore', () => ({
   loadPendingRadarReport: jest.fn(() => Promise.resolve(null)),
+}));
+
+jest.mock('../query/queryClient', () => ({
+  queryClient: { clear: jest.fn() },
 }));
 
 describe('SettingsScreen', () => {
@@ -196,6 +201,7 @@ describe('SettingsScreen', () => {
       expect(mockReplace).toHaveBeenCalledWith('/(auth)/sign-in');
       expect(notificationsService.deletePushToken).toHaveBeenCalled();
       expect(notificationsService.clearStoredExpoPushToken).toHaveBeenCalled();
+      expect(queryClient.clear).toHaveBeenCalled();
     });
 
     alertSpy.mockRestore();

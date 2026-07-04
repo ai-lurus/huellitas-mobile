@@ -27,6 +27,7 @@ import { loadPendingRadarReport } from '../../../src/services/pendingRadarReport
 import { usersService } from '../../../src/services/usersService';
 import { useAuthStore } from '../../../src/stores/authStore';
 import { useSettingsStore } from '../../../src/stores/settingsStore';
+import { queryClient } from '../../../src/query/queryClient';
 import { useAppLanguage } from '../../../src/i18n/useAppLanguage';
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -222,6 +223,8 @@ export default function SettingsScreen({
     await deleteSessionTokenAsync().catch(() => {});
     useAuthStore.getState().clearAuth();
     useSettingsStore.getState().reset();
+    // Evita que la próxima sesión en este dispositivo herede datos cacheados/persistidos.
+    queryClient.clear();
     router.replace('/(auth)/sign-in');
   }
 

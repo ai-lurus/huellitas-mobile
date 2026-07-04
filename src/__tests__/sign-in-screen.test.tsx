@@ -6,6 +6,7 @@ jest.mock('@expo/vector-icons', () => ({
 }));
 
 import SignInScreen from '../../app/(auth)/sign-in';
+import { queryClient } from '../query/queryClient';
 
 const mockReplace = jest.fn();
 const mockPush = jest.fn();
@@ -31,6 +32,10 @@ jest.mock('../stores/authStore', () => ({
   useAuthStore: {
     getState: () => ({ setUser: jest.fn(), enterGuestMode: mockEnterGuestMode }),
   },
+}));
+
+jest.mock('../query/queryClient', () => ({
+  queryClient: { clear: jest.fn() },
 }));
 
 const { authService } = jest.requireMock('../services/emailAuthService') as {
@@ -148,5 +153,6 @@ describe('SignInScreen', () => {
 
     expect(mockEnterGuestMode).toHaveBeenCalled();
     expect(mockReplace).toHaveBeenCalledWith('/(app)/map');
+    expect(queryClient.clear).toHaveBeenCalled();
   });
 });

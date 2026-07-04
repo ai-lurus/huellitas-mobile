@@ -9,13 +9,17 @@ import { colors, spacing, typography } from '../../../src/design/tokens';
 import { usePets } from '../../../src/hooks/usePets';
 import { MAX_PETS_PER_USER } from '../../../src/services/petsService';
 
-function statusFromUnknown(err: unknown): number | null {
-  const e = err as { response?: { status?: unknown }; status?: unknown; statusCode?: unknown };
-  const rs = e?.response?.status;
-  if (typeof rs === 'number') return rs;
-  if (typeof e?.status === 'number') return e.status;
-  if (typeof e?.statusCode === 'number') return e.statusCode;
-  return null;
+/** El backend distingue "límite alcanzado" de otros 422 (p. ej. validación) vía `code`. */
+function isPetLimitError(err: unknown): boolean {
+  const e = err as { response?: { status?: unknown; data?: { code?: unknown } } };
+  return e?.response?.status === 422 && e?.response?.data?.code === 'LIMIT_EXCEEDED';
+}
+
+/** Mensaje de error real del backend, si vino uno (útil para 422 que no son de límite). */
+function serverErrorMessage(err: unknown): string | null {
+  const e = err as { response?: { data?: { error?: unknown } } };
+  const msg = e?.response?.data?.error;
+  return typeof msg === 'string' && msg.length > 0 ? msg : null;
 }
 
 export default function NewPetScreen(): React.ReactElement {
@@ -32,8 +36,9 @@ export default function NewPetScreen(): React.ReactElement {
   const submitError = useMemo(() => {
     const err = createPetMutation.error;
     if (!err) return null;
-    const status = statusFromUnknown(err);
-    if (status === 422) return 'Solo puedes tener un máximo de 3 mascotas';
+    if (isPetLimitError(err)) return 'Solo puedes tener un máximo de 3 mascotas';
+    const serverMessage = serverErrorMessage(err);
+    if (serverMessage) return serverMessage;
     if (err instanceof Error && err.message) return err.message;
     return 'No se pudo guardar tu mascota. Intenta de nuevo.';
   }, [createPetMutation.error]);

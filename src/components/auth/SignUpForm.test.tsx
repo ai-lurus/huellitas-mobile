@@ -3,6 +3,7 @@ import { render, fireEvent, waitFor } from '@testing-library/react-native';
 
 import { SignUpForm } from './SignUpForm';
 import { authService } from '../../services/emailAuthService';
+import { queryClient } from '../../query/queryClient';
 
 jest.mock('@expo/vector-icons', () => ({
   Ionicons: (): null => null,
@@ -14,6 +15,10 @@ jest.mock('../../stores/authStore', () => ({
   useAuthStore: {
     getState: () => ({ setUser: jest.fn() }),
   },
+}));
+
+jest.mock('../../query/queryClient', () => ({
+  queryClient: { clear: jest.fn() },
 }));
 
 describe('SignUpForm', () => {
@@ -109,6 +114,23 @@ describe('SignUpForm', () => {
         'password123',
       );
       expect(onSuccess).toHaveBeenCalled();
+    });
+  });
+
+  it('limpia el caché de queries al registrarse exitosamente', async () => {
+    jest.mocked(authService.signUp).mockResolvedValueOnce({
+      user: { id: '1', name: 'Ana García', email: 'ana@ejemplo.com' },
+      isFirstLogin: true,
+    });
+
+    const { getByTestId } = render(<SignUpForm onSuccess={jest.fn()} />);
+
+    fillValidForm(getByTestId);
+    fireEvent.press(getByTestId('signUp.terms'));
+    fireEvent.press(getByTestId('signUp.submit'));
+
+    await waitFor(() => {
+      expect(queryClient.clear).toHaveBeenCalled();
     });
   });
 
