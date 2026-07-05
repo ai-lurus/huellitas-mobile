@@ -15,6 +15,7 @@ import type { PlaceCategory } from '../../../src/domain/places';
 import { CATEGORY_ICONS, CATEGORY_LABELS } from '../../../src/domain/places';
 import { colors, radius, spacing, typography } from '../../../src/design/tokens';
 import { usePlaceDetail, useUpvotePlace } from '../../../src/hooks/usePlaces';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 
 export default function PlaceDetailScreen(): React.JSX.Element {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -47,15 +48,7 @@ export default function PlaceDetailScreen(): React.JSX.Element {
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <View style={styles.headerRow}>
-        <Pressable onPress={() => router.back()} testID="place-detail.back">
-          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
-        </Pressable>
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          {place.name}
-        </Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <ScreenHeader title={place.name} onBack={() => router.back()} testID="place-detail" />
 
       {place.coverPhotoUrl != null ? (
         <Image
@@ -140,20 +133,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   backBtnLabel: { ...typography.button, color: colors.white },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: spacing.xxxl,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  headerTitle: {
-    ...typography.bodyStrong,
-    color: colors.textPrimary,
-    flex: 1,
-    textAlign: 'center',
-  },
   photo: { marginHorizontal: spacing.md, height: 220, borderRadius: radius.xl },
   photoPlaceholder: {
     marginHorizontal: spacing.md,
