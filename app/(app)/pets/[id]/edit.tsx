@@ -1,9 +1,8 @@
 import React, { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
+import { ScreenHeader } from '../../../../src/components/navigation/ScreenHeader';
 import { PetForm, type PetFormSubmitPayload } from '../../../../src/components/pets/PetForm';
 import { Skeleton } from '../../../../src/components/skeleton/Skeleton';
 import { colors, radius, spacing, typography } from '../../../../src/design/tokens';
@@ -52,19 +51,8 @@ export default function EditPetScreen(): React.ReactElement {
 
   if (petQuery.isPending) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        <View style={styles.header}>
-          <Pressable
-            onPress={() => router.back()}
-            style={styles.backBtn}
-            accessibilityRole="button"
-            accessibilityLabel="Volver"
-          >
-            <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
-          </Pressable>
-          <Text style={styles.title}>Editar mascota</Text>
-          <View style={styles.backBtn} />
-        </View>
+      <View style={styles.safe}>
+        <ScreenHeader title="Editar mascota" onBack={() => router.back()} testID="pet.edit" />
         <View style={styles.skeletonContent}>
           <View style={styles.skeletonPhotosRow}>
             {[0, 1, 2].map((i) => (
@@ -94,46 +82,24 @@ export default function EditPetScreen(): React.ReactElement {
           <Skeleton style={styles.skeletonTextarea} borderRadius={radius.lg} />
           <Skeleton style={styles.skeletonButton} borderRadius={radius.button} />
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (!petQuery.data) {
     return (
-      <SafeAreaView style={styles.safe} edges={['top']}>
-        <View style={styles.header}>
-          <Pressable
-            onPress={() => router.back()}
-            style={styles.backBtn}
-            accessibilityRole="button"
-            accessibilityLabel="Volver"
-          >
-            <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
-          </Pressable>
-          <Text style={styles.title}>Editar mascota</Text>
-          <View style={styles.backBtn} />
-        </View>
+      <View style={styles.safe}>
+        <ScreenHeader title="Editar mascota" onBack={() => router.back()} testID="pet.edit" />
         <View style={styles.loading}>
           <Text style={styles.errorText}>No se pudo cargar la mascota.</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => router.back()}
-          style={styles.backBtn}
-          accessibilityRole="button"
-          accessibilityLabel="Volver"
-        >
-          <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
-        </Pressable>
-        <Text style={styles.title}>Editar mascota</Text>
-        <View style={styles.backBtn} />
-      </View>
+    <View style={styles.safe}>
+      <ScreenHeader title="Editar mascota" onBack={() => router.back()} testID="pet.edit" />
 
       <PetForm
         key={petId}
@@ -144,30 +110,12 @@ export default function EditPetScreen(): React.ReactElement {
         onSubmit={onSubmit}
         onCancel={() => router.back()}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundApp },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  title: { color: colors.textPrimary, ...typography.heading },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl },
   errorText: { color: colors.textSecondary, ...typography.body, textAlign: 'center' },
 
