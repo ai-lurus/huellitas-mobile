@@ -1,10 +1,10 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 
 import { PlaceForm } from '../../../src/components/places/PlaceForm';
-import { colors, spacing, typography } from '../../../src/design/tokens';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
+import { colors } from '../../../src/design/tokens';
 import { useCreatePlace } from '../../../src/hooks/usePlaces';
 import { useLocationStore } from '../../../src/stores/locationStore';
 import { DEFAULT_MAP_FALLBACK } from '../../../src/config/constants';
@@ -17,13 +17,11 @@ export default function NewPlaceScreen(): React.JSX.Element {
 
   return (
     <View style={styles.screen}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} testID="new-place.back">
-          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
-        </Pressable>
-        <Text style={styles.title}>Agregar lugar pet-friendly</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <ScreenHeader
+        title="Agregar lugar pet-friendly"
+        onBack={() => router.back()}
+        testID="new-place"
+      />
 
       <PlaceForm
         lat={location.lat}
@@ -43,13 +41,4 @@ export default function NewPlaceScreen(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.backgroundApp },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: spacing.xxxl,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  title: { ...typography.heading, color: colors.textPrimary },
 });
