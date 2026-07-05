@@ -1,8 +1,6 @@
 import React, { useCallback } from 'react';
-import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { useRouter, type Href } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { Group } from '../../../src/domain/groups';
 import { GroupCard } from '../../../src/components/groups/GroupCard';
@@ -10,10 +8,10 @@ import { colors, spacing, typography } from '../../../src/design/tokens';
 import { useGroups, useJoinGroup } from '../../../src/hooks/useGroups';
 import { useLocationStore } from '../../../src/stores/locationStore';
 import { DEFAULT_MAP_FALLBACK } from '../../../src/config/constants';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 
 export default function GroupsScreen(): React.JSX.Element {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const currentLocation = useLocationStore((s) => s.currentLocation);
   const loc = currentLocation ?? DEFAULT_MAP_FALLBACK;
 
@@ -41,20 +39,15 @@ export default function GroupsScreen(): React.JSX.Element {
 
   if (groupsQuery.isLoading) {
     return (
-      <View style={[styles.centered, { paddingTop: insets.top }]}>
+      <View style={styles.centered}>
         <ActivityIndicator color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <View style={styles.topBar}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
-        </Pressable>
-        <Text style={styles.title}>Grupos</Text>
-      </View>
+    <View style={styles.screen}>
+      <ScreenHeader title="Grupos" onBack={() => router.back()} testID="groups" />
 
       <FlatList
         data={allItems}
@@ -94,23 +87,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  backBtn: {
-    padding: spacing.xxs,
-  },
-  title: {
-    ...typography.heading,
-    color: colors.textPrimary,
   },
   listContent: {
     padding: spacing.md,
