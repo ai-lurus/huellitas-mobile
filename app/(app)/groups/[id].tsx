@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { Post } from '../../../src/domain/posts';
 import { GroupHeader } from '../../../src/components/groups/GroupHeader';
 import { PostCard } from '../../../src/components/feed/PostCard';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 import { colors, shadows, spacing, typography } from '../../../src/design/tokens';
 import { useGroupDetail, useJoinGroup, useLeaveGroup } from '../../../src/hooks/useGroups';
 import { useGroupFeed } from '../../../src/hooks/useGroupFeed';
@@ -51,7 +52,7 @@ export default function GroupDetailScreen(): React.JSX.Element {
 
   if (groupQuery.isLoading) {
     return (
-      <View style={[styles.centered, { paddingTop: insets.top }]}>
+      <View style={[styles.centered, { paddingTop: spacing.xl }]}>
         <ActivityIndicator color={colors.primary} />
       </View>
     );
@@ -59,7 +60,7 @@ export default function GroupDetailScreen(): React.JSX.Element {
 
   if (!group) {
     return (
-      <View style={[styles.centered, { paddingTop: insets.top }]}>
+      <View style={[styles.centered, { paddingTop: spacing.xl }]}>
         <Text style={styles.errorText}>Grupo no encontrado</Text>
         <Pressable onPress={() => router.back()}>
           <Text style={styles.backLink}>Volver</Text>
@@ -83,7 +84,8 @@ export default function GroupDetailScreen(): React.JSX.Element {
   );
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top }]}>
+    <View style={styles.screen}>
+      <ScreenHeader title={group.name} onBack={() => router.back()} testID="group-detail" />
       <FlatList<Post>
         data={allPosts}
         keyExtractor={(p) => p.id}
