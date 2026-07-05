@@ -20,6 +20,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 
 import { colors, radius, shadows, spacing, typography } from '../../../src/design/tokens';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 import { deleteSessionTokenAsync } from '../../../src/services/sessionTokenStorage';
 import { authClient } from '../../../src/services/googleAuthService';
 import { notificationsService } from '../../../src/services/notificationsService';
@@ -63,7 +64,6 @@ function isValidPhone(value: string): boolean {
   return /^[0-9+\-\s()]{7,20}$/.test(value.trim());
 }
 
-const BRAND_NAVY = '#002B5B';
 const serifName = { fontFamily: 'Georgia', fontWeight: '700' as const, fontSize: 22 };
 
 function SettingsIconTile({
@@ -320,27 +320,11 @@ export default function SettingsScreen({
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={styles.content} testID="settings.screen">
-        <View style={styles.header}>
-          <View style={styles.brandRow} testID="settings.brand">
-            <Image
-              source={require('../../../assets/icon.png')}
-              style={styles.brandLogo}
-              accessibilityLabel="Huellitas"
-              contentFit="contain"
-            />
-            <Text style={styles.brand}>Huellitas</Text>
-          </View>
-          {showBack ? (
-            <Pressable
-              accessibilityRole="button"
-              testID="settings.back"
-              onPress={() => router.back()}
-              style={styles.backButton}
-            >
-              <Text style={styles.backText}>Volver</Text>
-            </Pressable>
-          ) : null}
-        </View>
+        {showBack ? (
+          <ScreenHeader title="Ajustes" onBack={() => router.back()} testID="settings" />
+        ) : (
+          <ScreenHeader title="Huellitas" testID="settings" />
+        )}
 
         <View style={styles.profileCard}>
           <View style={styles.avatarWrap}>
@@ -886,39 +870,6 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     paddingBottom: spacing.xxxl,
     gap: spacing.md,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  brandLogo: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-  },
-  brand: {
-    color: BRAND_NAVY,
-    fontSize: 20,
-    fontWeight: '800',
-    letterSpacing: -0.2,
-  },
-  backButton: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    borderRadius: radius.button,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  backText: {
-    color: colors.textPrimary,
-    ...typography.bodyStrong,
   },
   profileCard: {
     alignItems: 'center',
