@@ -1,7 +1,6 @@
 import React from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 import { colors, radius, shadows, spacing, typography } from '../../src/design/tokens';
@@ -9,6 +8,7 @@ import { useServiceCatalog } from '../../src/hooks/useServices';
 import { CATEGORY_ICONS } from '../../src/domain/services';
 import type { ServiceCategory } from '../../src/domain/services';
 import { useGuestGate } from '../../src/hooks/useGuestGate';
+import { ScreenHeader } from '../../src/components/navigation/ScreenHeader';
 
 export default function ServicesScreen(): React.JSX.Element {
   const router = useRouter();
@@ -21,21 +21,19 @@ export default function ServicesScreen(): React.JSX.Element {
   };
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']} testID="services.screen">
-      <View style={styles.headerRow}>
-        <Text style={styles.title}>Servicios</Text>
-        {/* "Mis reservas" oculto: el subsistema de bookings (GET/POST /api/v1/bookings)
-            está fuera de alcance del spec de service-catalog y aún no existe en el backend.
-            Reactivar cuando ese subsistema esté implementado. */}
-        {/* <Pressable
-          onPress={(): void => requireAuth(() => router.push('/(app)/services/bookings'))}
-          testID="services.myBookings"
-          style={styles.myBookingsLink}
-        >
-          <Ionicons name="calendar-outline" size={18} color={colors.primary} />
-          <Text style={styles.myBookingsText}>Mis reservas</Text>
-        </Pressable> */}
-      </View>
+    <View style={styles.screen} testID="services.screen">
+      <ScreenHeader title="Servicios" />
+      {/* "Mis reservas" oculto: el subsistema de bookings (GET/POST /api/v1/bookings)
+          está fuera de alcance del spec de service-catalog y aún no existe en el backend.
+          Reactivar cuando ese subsistema esté implementado. */}
+      {/* <Pressable
+        onPress={(): void => requireAuth(() => router.push('/(app)/services/bookings'))}
+        testID="services.myBookings"
+        style={styles.myBookingsLink}
+      >
+        <Ionicons name="calendar-outline" size={18} color={colors.primary} />
+        <Text style={styles.myBookingsText}>Mis reservas</Text>
+      </Pressable> */}
 
       {isPending ? (
         <FlatList
@@ -81,20 +79,12 @@ export default function ServicesScreen(): React.JSX.Element {
         />
       )}
       <GuestGateModal />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.backgroundApp },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  title: { ...typography.heading, color: colors.textPrimary },
   myBookingsLink: { flexDirection: 'row', alignItems: 'center', gap: spacing.xxs },
   myBookingsText: { ...typography.bodyStrong, color: colors.primary },
   listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.sm },
