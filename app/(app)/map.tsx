@@ -1,14 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import {
-  ActionSheetIOS,
-  Alert,
-  Image,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ActionSheetIOS, Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, type Href } from 'expo-router';
 
@@ -23,6 +14,7 @@ import { PlaceBottomSheet } from '../../src/components/places/PlaceBottomSheet';
 import { RouteBottomSheet } from '../../src/components/routes/RouteBottomSheet';
 import { RadarFiltersPanel } from '../../src/components/radar/RadarFiltersPanel';
 import { RadarListView } from '../../src/components/radar/RadarListView';
+import { ScreenHeader } from '../../src/components/navigation/ScreenHeader';
 import { Skeleton } from '../../src/components/skeleton/Skeleton';
 import { DEFAULT_MAP_FALLBACK } from '../../src/config/constants';
 import type {
@@ -42,8 +34,6 @@ import { useNearbyRoutes, useRateRoute } from '../../src/hooks/useRoutes';
 import { useNearbyStrayReports } from '../../src/hooks/useStrayReports';
 import { useLocationStore } from '../../src/stores/locationStore';
 import { useSettingsStore } from '../../src/stores/settingsStore';
-
-import BRAND_LOGO from '../../assets/icon.png';
 
 type MapLayer = 'alerts' | 'lugares';
 type RadarViewMode = 'mapa' | 'lista';
@@ -205,23 +195,15 @@ export default function MapScreen(): React.JSX.Element {
 
   return (
     <View style={styles.screen}>
-      <View style={styles.topBar}>
-        <View style={styles.brand}>
-          <View style={styles.logoMark}>
-            <Image
-              accessibilityLabel="Huellitas"
-              resizeMode="contain"
-              source={BRAND_LOGO}
-              style={styles.logoImage}
-            />
-          </View>
-          <Text style={styles.brandLabel}>Huellitas</Text>
-        </View>
-        <View style={styles.actions}>
-          <Ionicons color={colors.textPrimary} name="search" size={20} />
-          <Ionicons color={colors.textPrimary} name="notifications-outline" size={20} />
-        </View>
-      </View>
+      <ScreenHeader
+        title="Huellitas"
+        rightSlot={
+          <>
+            <Ionicons color={colors.textPrimary} name="search" size={20} />
+            <Ionicons color={colors.textPrimary} name="notifications-outline" size={20} />
+          </>
+        }
+      />
 
       {/* Layer toggle */}
       <View style={styles.layerToggle}>
@@ -448,41 +430,6 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.backgroundApp,
-  },
-  topBar: {
-    paddingTop: spacing.xxxl + spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  brand: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  logoMark: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FFB366',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  logoImage: {
-    width: 28,
-    height: 28,
-  },
-  brandLabel: {
-    ...typography.bodyStrong,
-    color: colors.textPrimary,
-  },
-  actions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
   },
   layerToggle: {
     flexDirection: 'row',
