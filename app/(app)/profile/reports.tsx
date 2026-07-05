@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, shadows, spacing, typography } from '../../../src/design/tokens';
 import type { MyLostReportSummary } from '../../../src/domain/lostReports';
 import { useMyReports } from '../../../src/hooks/useLostReports';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 import {
   loadPendingRadarReport,
   type PendingRadarReportDraft,
@@ -62,18 +63,7 @@ export default function MyReportsScreen(): React.JSX.Element {
 
   return (
     <View style={styles.screen}>
-      <View style={styles.header}>
-        <Pressable
-          accessibilityRole="button"
-          testID="profile.reports.back"
-          onPress={() => router.back()}
-          style={styles.backButton}
-        >
-          <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Mis reportes</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      <ScreenHeader title="Mis reportes" onBack={() => router.back()} testID="profile.reports" />
 
       <ScrollView contentContainerStyle={styles.content} testID="profile.reports.screen">
         {isPending ? (
@@ -151,25 +141,6 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.backgroundApp,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: spacing.lg,
-  },
-  backButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    color: colors.textPrimary,
-    ...typography.heading,
-  },
-  headerSpacer: {
-    width: 36,
   },
   content: {
     padding: spacing.lg,
