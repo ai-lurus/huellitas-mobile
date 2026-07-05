@@ -1,9 +1,9 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, Image, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
+import { ScreenHeader } from '../../src/components/navigation/ScreenHeader';
 import type { InboxNotification } from '../../src/domain/inboxNotifications';
 import {
   useClearInboxMutation,
@@ -211,36 +211,32 @@ export default function NotificationsScreen(): React.JSX.Element {
   }, [clearAll]);
 
   return (
-    <SafeAreaView edges={['top']} style={styles.safe}>
-      <View style={styles.header}>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.back()}
-          style={styles.backBtn}
-          testID="notifications.back"
-        >
-          <Ionicons name="arrow-back" size={18} color={colors.primary} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Notificaciones</Text>
-        <View style={styles.headerRight}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => void markAllRead.mutateAsync().catch(() => {})}
-            style={styles.iconBtn}
-            testID="notifications.markAllRead"
-          >
-            <Ionicons name="checkmark" size={18} color={colors.success} />
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            onPress={onClearAll}
-            style={styles.iconBtn}
-            testID="notifications.clearAll"
-          >
-            <Ionicons name="trash-outline" size={18} color={colors.danger} />
-          </Pressable>
-        </View>
-      </View>
+    <View style={styles.safe}>
+      <ScreenHeader
+        title="Notificaciones"
+        onBack={() => router.back()}
+        testID="notifications"
+        rightSlot={
+          <>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void markAllRead.mutateAsync().catch(() => {})}
+              style={styles.iconBtn}
+              testID="notifications.markAllRead"
+            >
+              <Ionicons name="checkmark" size={18} color={colors.success} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={onClearAll}
+              style={styles.iconBtn}
+              testID="notifications.clearAll"
+            >
+              <Ionicons name="trash-outline" size={18} color={colors.danger} />
+            </Pressable>
+          </>
+        }
+      />
 
       <View style={styles.tabsRow}>
         <TabPill
@@ -285,7 +281,7 @@ export default function NotificationsScreen(): React.JSX.Element {
           </Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -293,26 +289,6 @@ const BG = '#E9E9EA';
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BG },
-  header: {
-    paddingHorizontal: spacing.md,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  backBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: { ...typography.heading, color: colors.textPrimary },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   iconBtn: {
     width: 34,
     height: 34,
