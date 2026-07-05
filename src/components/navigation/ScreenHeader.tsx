@@ -5,6 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors, spacing, typography } from '../../design/tokens';
 
+const LOGO_BACKGROUND_COLOR = '#FFB366';
+
 export interface ScreenHeaderProps {
   title: string;
   onBack?: () => void;
@@ -85,7 +87,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#FFB366',
+    backgroundColor: LOGO_BACKGROUND_COLOR,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
