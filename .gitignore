@@ -44,3 +44,4 @@ coverage/
 /ios
 /android
 .worktrees/
+.superpowers/
