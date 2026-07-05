@@ -1,9 +1,9 @@
 import React, { useCallback } from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 import { PetHeroCard } from '../../../src/components/pets/PetHeroCard';
 import { PetCardSkeleton } from '../../../src/components/pets/PetCard';
 import { colors, radius, shadows, spacing, typography } from '../../../src/design/tokens';
@@ -44,15 +44,15 @@ export default function PetsScreen(): React.ReactElement {
   const initial = userName?.trim().charAt(0).toUpperCase() || '?';
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.headerRow}>
-        <Text style={styles.title}>Mis mascotas</Text>
-        <View style={styles.headerRight}>
+    <View style={styles.safe}>
+      <ScreenHeader
+        title="Mis mascotas"
+        rightSlot={
           <View style={styles.avatar} testID="pets.userAvatar">
             <Text style={styles.avatarText}>{initial}</Text>
           </View>
-        </View>
-      </View>
+        }
+      />
 
       {isLoading ? (
         <FlatList
@@ -133,23 +133,12 @@ export default function PetsScreen(): React.ReactElement {
           </View>
         </>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundApp },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-    gap: spacing.sm,
-  },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  title: { color: colors.textPrimary, ...typography.heading, flexShrink: 1 },
   avatar: {
     width: 32,
     height: 32,
