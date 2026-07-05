@@ -8,7 +8,6 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -16,6 +15,7 @@ import {
   SPECIES_ICON_ASSETS,
   SPECIES_LABELS,
 } from '../../../src/components/pets/speciesIconAssets';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 import { colors, control, radius, shadows, spacing, typography } from '../../../src/design/tokens';
 import type { PetSpecies, PetSummary } from '../../../src/domain/pets';
 import { usePets } from '../../../src/hooks/usePets';
@@ -56,20 +56,8 @@ export default function PetLimitScreen(): React.ReactElement {
   );
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.topBar}>
-        <Pressable
-          testID="petLimit.back"
-          onPress={() => router.back()}
-          style={styles.backBtn}
-          accessibilityRole="button"
-          accessibilityLabel="Volver"
-        >
-          <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
-        </Pressable>
-        <Text style={styles.topTitle}>Nueva mascota</Text>
-        <View style={styles.backBtn} />
-      </View>
+    <View style={styles.safe}>
+      <ScreenHeader title="Nueva mascota" onBack={() => router.back()} testID="petLimit" />
 
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.alertIconWrap}>
@@ -133,30 +121,12 @@ export default function PetLimitScreen(): React.ReactElement {
           <Text style={styles.secondaryCtaText}>Ir a mis mascotas</Text>
         </Pressable>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundApp },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  topTitle: { ...typography.heading, color: colors.textPrimary },
   scroll: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxxl,
