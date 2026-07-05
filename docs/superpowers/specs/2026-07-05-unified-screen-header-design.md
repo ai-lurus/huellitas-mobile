@@ -39,6 +39,10 @@ atrás.
 - **`PetProfileHeader`** (usado en `pets/[id].tsx`): header "hero" con foto de
   portada de la mascota; ya usa el ícono `chevron-back` sobre la imagen. No se
   toca — es un caso especial de diseño, no una inconsistencia a corregir.
+- **`reports/[id].tsx`** (detalle de reporte de mascota perdida): descubierto
+  durante la verificación del código real — también es un header "hero" (foto
+  de portada + botón atrás superpuesto + pill de estado), igual en espíritu a
+  `PetProfileHeader`. Se queda como está por la misma razón.
 
 ## Diseño del componente
 
@@ -84,7 +88,8 @@ envuelva en `SafeAreaView` solo por el header.
 **Migran a modo "root":**
 
 - `pets/index.tsx` → título "Mis mascotas", avatar como `rightSlot`.
-- `map.tsx` → título "Radar".
+- `map.tsx` → título "Huellitas" (el texto de marca que ya muestra hoy), con
+  los íconos de buscar/notificaciones existentes como `rightSlot`.
 - `services.tsx` → título "Servicios".
 - `profile/settings.tsx` cuando `showBack=false` (usado como root del tab
   Perfil vía `profile/index.tsx`).
@@ -100,9 +105,19 @@ estilos de header duplicados de cada archivo):
 `profile/reports`, `profile/[id]`, `feed/new-post`, `feed/[id]`, `stray/[id]`,
 `routes/index`, `routes/new`, `routes/[id]`, `services/bookings`,
 `services/[categoryId]/index`, `services/[categoryId]/book`,
-`services/[categoryId]/providers`, `radar/report/new`, `reports/[id]`,
+`services/[categoryId]/providers`, `radar/report/new`,
 `reports/[id]/edit`, `reports/[id]/sighting`, `reports/[id]/found`,
 `reports/[id]/map`.
+
+Dos casos de estas son un gap real (no tienen ningún header hoy, no solo un
+estilo distinto) descubiertos durante la verificación del código:
+`feed/new-post.tsx` (no tiene ningún botón de volver ni título) y
+`groups/[id].tsx` (el hero `GroupHeader` no incluye navegación hacia atrás).
+También `pets/[id]/qr.tsx` tiene botón de volver pero sin título — se le
+agrega uno ("Código QR"). En `feed/[id].tsx` y `groups/[id].tsx` el botón de
+volver hoy está mezclado con contenido de la lista (autor del post / hero de
+grupo) dentro de un `ListHeaderComponent` de `FlatList`; el rollout separa el
+`ScreenHeader` fijo arriba y deja ese contenido dentro de la lista.
 
 ## Testing
 
