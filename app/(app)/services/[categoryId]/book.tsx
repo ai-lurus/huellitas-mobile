@@ -79,7 +79,8 @@ export default function BookServiceScreen(): React.JSX.Element {
           ? cartItems.map(({ productId, quantity }) => ({ productId, quantity }))
           : undefined,
       });
-      router.replace('/(app)/services/bookings');
+      router.dismissTo('/(app)/services');
+      router.push('/(app)/services/bookings');
     } catch {
       Alert.alert('No se pudo enviar la solicitud', 'Inténtalo de nuevo en unos momentos.');
     } finally {

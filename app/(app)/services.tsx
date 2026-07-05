@@ -14,7 +14,7 @@ export default function ServicesScreen(): React.JSX.Element {
   const router = useRouter();
   const { data, isPending, isError, refetch } = useServiceCatalog();
   const categories = data ?? [];
-  const { requireAuth, GuestGateModal } = useGuestGate();
+  const { GuestGateModal } = useGuestGate();
 
   const openCategory = (category: ServiceCategory): void => {
     router.push(`/(app)/services/${category.id}`);
@@ -24,14 +24,17 @@ export default function ServicesScreen(): React.JSX.Element {
     <SafeAreaView style={styles.screen} edges={['top']} testID="services.screen">
       <View style={styles.headerRow}>
         <Text style={styles.title}>Servicios</Text>
-        <Pressable
+        {/* "Mis reservas" oculto: el subsistema de bookings (GET/POST /api/v1/bookings)
+            está fuera de alcance del spec de service-catalog y aún no existe en el backend.
+            Reactivar cuando ese subsistema esté implementado. */}
+        {/* <Pressable
           onPress={(): void => requireAuth(() => router.push('/(app)/services/bookings'))}
           testID="services.myBookings"
           style={styles.myBookingsLink}
         >
           <Ionicons name="calendar-outline" size={18} color={colors.primary} />
           <Text style={styles.myBookingsText}>Mis reservas</Text>
-        </Pressable>
+        </Pressable> */}
       </View>
 
       {isPending ? (

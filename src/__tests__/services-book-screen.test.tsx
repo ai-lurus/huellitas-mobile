@@ -8,9 +8,16 @@ jest.mock('@expo/vector-icons', () => ({
 
 const mockReplace = jest.fn();
 const mockBack = jest.fn();
+const mockPush = jest.fn();
+const mockDismissTo = jest.fn();
 
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ replace: mockReplace, back: mockBack }),
+  useRouter: () => ({
+    replace: mockReplace,
+    back: mockBack,
+    push: mockPush,
+    dismissTo: mockDismissTo,
+  }),
   useLocalSearchParams: () => ({ categoryId: 'cat_grooming', providerId: 'prov_1' }),
 }));
 
@@ -98,7 +105,8 @@ describe('Solicitar servicio (§6.3)', () => {
     const call = mutateAsync.mock.calls[0][0] as { petId: string; scheduledAt: string };
     expect(call.petId).toBe('pet_1');
     expect(call.scheduledAt).toBe('2026-07-10T15:00:00.000Z');
-    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/(app)/services/bookings'));
+    await waitFor(() => expect(mockDismissTo).toHaveBeenCalledWith('/(app)/services'));
+    expect(mockPush).toHaveBeenCalledWith('/(app)/services/bookings');
   });
 
   it('Croquetas omite la selección de mascota y usa carrito + dirección', async () => {
