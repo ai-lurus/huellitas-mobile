@@ -25,14 +25,14 @@ export function PetPhoto({
     <View style={[styles.container, style]}>
       <Image
         source={fallback}
-        style={StyleSheet.absoluteFill}
+        style={[StyleSheet.absoluteFill, styles.fill]}
         resizeMode={fallbackResizeMode}
         accessibilityIgnoresInvertColors
       />
       {hasPhoto && (
         <Image
           source={{ uri: uri as string }}
-          style={[StyleSheet.absoluteFill, loaded ? null : styles.hidden]}
+          style={[StyleSheet.absoluteFill, styles.fill, loaded ? null : styles.hidden]}
           resizeMode={resizeMode}
           onLoad={() => setLoaded(true)}
           onError={() => setErrored(true)}
@@ -47,5 +47,6 @@ export function PetPhoto({
 
 const styles = StyleSheet.create({
   container: { overflow: 'hidden' },
+  fill: { width: '100%', height: '100%' },
   hidden: { opacity: 0 },
 });

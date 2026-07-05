@@ -105,7 +105,7 @@ export function PetProfileHeader({
                 fallback={defaultCoverForSpecies(species)}
                 style={styles.heroImg}
                 resizeMode="cover"
-                fallbackResizeMode="cover"
+                fallbackResizeMode="contain"
               />
             </View>
           ))}
