@@ -6,6 +6,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { colors, radius, spacing, typography } from '../../../../src/design/tokens';
 import { usePet, useMarkFoundMutation } from '../../../../src/hooks/usePets';
+import { ScreenHeader } from '../../../../src/components/navigation/ScreenHeader';
 
 export default function MarkFoundScreen(): React.ReactElement {
   const router = useRouter();
@@ -38,19 +39,12 @@ export default function MarkFoundScreen(): React.ReactElement {
   const petName = pet?.name?.trim() || 'tu mascota';
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top']}>
-      <View style={styles.header}>
-        <Pressable
-          onPress={() => router.back()}
-          style={styles.backBtn}
-          accessibilityRole="button"
-          accessibilityLabel="Volver"
-        >
-          <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Marcar como encontrado</Text>
-        <View style={styles.backBtn} />
-      </View>
+    <View style={styles.safe}>
+      <ScreenHeader
+        title="Marcar como encontrado"
+        onBack={() => router.back()}
+        testID="pet.found"
+      />
 
       <View style={styles.body}>
         <View style={styles.iconWrap}>
@@ -99,31 +93,13 @@ export default function MarkFoundScreen(): React.ReactElement {
           <Text style={styles.cancelBtnText}>Cancelar</Text>
         </Pressable>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundApp },
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  headerTitle: { color: colors.textPrimary, ...typography.heading },
   body: {
     flex: 1,
     alignItems: 'center',
