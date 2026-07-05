@@ -1,10 +1,10 @@
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 
+import { ScreenHeader } from '../../../../src/components/navigation/ScreenHeader';
 import { PetQRCode } from '../../../../src/components/pets/PetQRCode';
-import { colors, spacing } from '../../../../src/design/tokens';
+import { colors } from '../../../../src/design/tokens';
 import { usePetQrToken, useRotateQrToken } from '../../../../src/hooks/usePetQr';
 import { usePet } from '../../../../src/hooks/usePets';
 
@@ -19,11 +19,7 @@ export default function PetQrScreen(): React.JSX.Element {
 
   return (
     <View style={styles.screen}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} testID="qr.back">
-          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
-        </Pressable>
-      </View>
+      <ScreenHeader title="Código QR" onBack={() => router.back()} testID="qr" />
 
       <PetQRCode
         petId={petId}
@@ -41,9 +37,4 @@ export default function PetQrScreen(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.backgroundApp },
-  header: {
-    paddingTop: spacing.xxxl,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
-  },
 });
