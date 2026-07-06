@@ -3,6 +3,7 @@ import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from '
 import { useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 import { RouteCard } from '../../../src/components/routes/RouteCard';
 import { colors, radius, spacing, typography } from '../../../src/design/tokens';
 import { useNearbyRoutes } from '../../../src/hooks/useRoutes';
@@ -29,15 +30,16 @@ export default function RouteListScreen(): React.JSX.Element {
 
   return (
     <View style={styles.screen}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} testID="routes.back">
-          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
-        </Pressable>
-        <Text style={styles.title}>Rutas para pasear</Text>
-        <Pressable onPress={() => router.push('/(app)/routes/new' as Href)} testID="routes.add">
-          <Ionicons name="add-circle-outline" size={26} color={colors.primary} />
-        </Pressable>
-      </View>
+      <ScreenHeader
+        title="Rutas para pasear"
+        onBack={() => router.back()}
+        testID="routes"
+        rightSlot={
+          <Pressable onPress={() => router.push('/(app)/routes/new' as Href)} testID="routes.add">
+            <Ionicons name="add-circle-outline" size={26} color={colors.primary} />
+          </Pressable>
+        }
+      />
 
       {isLoading ? (
         <View style={styles.center}>
@@ -79,15 +81,6 @@ export default function RouteListScreen(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.backgroundApp },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: spacing.xxxl,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  title: { ...typography.heading, color: colors.textPrimary },
   center: {
     flex: 1,
     alignItems: 'center',
