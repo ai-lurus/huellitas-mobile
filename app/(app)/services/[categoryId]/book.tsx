@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { colors, radius, spacing, typography } from '../../../../src/design/tokens';
@@ -16,6 +15,7 @@ import {
 import { SlotPicker } from '../../../../src/components/services/SlotPicker';
 import type { KibbleProduct } from '../../../../src/domain/services';
 import { useGuestGate } from '../../../../src/hooks/useGuestGate';
+import { ScreenHeader } from '../../../../src/components/navigation/ScreenHeader';
 
 export default function BookServiceScreen(): React.JSX.Element {
   const router = useRouter();
@@ -89,20 +89,12 @@ export default function BookServiceScreen(): React.JSX.Element {
   };
 
   return (
-    <SafeAreaView edges={['top']} style={styles.safe}>
-      <View style={styles.headerRow}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Volver"
-          onPress={(): void => router.back()}
-          style={styles.backBtn}
-          testID="services.book.back"
-        >
-          <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Solicitar servicio</Text>
-        <View style={styles.backBtn} />
-      </View>
+    <View style={styles.safe}>
+      <ScreenHeader
+        title="Solicitar servicio"
+        onBack={() => router.back()}
+        testID="services.book"
+      />
 
       {!detail ? (
         <View style={styles.stateWrap} testID="services.book.loading">
@@ -238,26 +230,12 @@ export default function BookServiceScreen(): React.JSX.Element {
         </ScrollView>
       )}
       <GuestGateModal />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundApp },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  backBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: {
-    ...typography.bodyStrong,
-    color: colors.textPrimary,
-    flex: 1,
-    textAlign: 'center',
-  },
   content: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.md },
   serviceName: { ...typography.heading, color: colors.textPrimary },
   section: { gap: spacing.xs },
