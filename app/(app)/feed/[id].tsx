@@ -28,6 +28,7 @@ import {
 } from '../../../src/hooks/usePost';
 import { useToggleLike } from '../../../src/hooks/useFeed';
 import { useAuthStore } from '../../../src/stores/authStore';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 
 export default function PostDetailScreen(): React.JSX.Element {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -97,10 +98,7 @@ export default function PostDetailScreen(): React.JSX.Element {
 
   const ListHeader = (
     <View>
-      <View style={[styles.postHeader, { paddingTop: insets.top + spacing.md }]}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color={colors.textPrimary} />
-        </Pressable>
+      <View style={styles.authorInfoRow}>
         <View style={styles.authorInfo}>
           <View style={styles.avatar}>
             {post.authorAvatar ? (
@@ -142,35 +140,43 @@ export default function PostDetailScreen(): React.JSX.Element {
   );
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { paddingBottom: insets.bottom }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-    >
-      <FlatList
-        data={allComments}
-        keyExtractor={(c) => c.id}
-        renderItem={renderComment}
-        ListHeaderComponent={ListHeader}
-        onEndReached={() => {
-          if (commentsQuery.hasNextPage && !commentsQuery.isFetchingNextPage) {
-            void commentsQuery.fetchNextPage();
+    <View style={styles.screen}>
+      <ScreenHeader title="Post" onBack={() => router.back()} testID="feedDetail" />
+      <KeyboardAvoidingView
+        style={[styles.container, { paddingBottom: insets.bottom }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
+        <FlatList
+          style={styles.list}
+          data={allComments}
+          keyExtractor={(c) => c.id}
+          renderItem={renderComment}
+          ListHeaderComponent={ListHeader}
+          onEndReached={() => {
+            if (commentsQuery.hasNextPage && !commentsQuery.isFetchingNextPage) {
+              void commentsQuery.fetchNextPage();
+            }
+          }}
+          onEndReachedThreshold={0.3}
+          contentContainerStyle={styles.listContent}
+          ListEmptyComponent={
+            commentsQuery.isLoading ? null : (
+              <Text style={styles.emptyComments}>Sé el primero en comentar</Text>
+            )
           }
-        }}
-        onEndReachedThreshold={0.3}
-        contentContainerStyle={styles.listContent}
-        ListEmptyComponent={
-          commentsQuery.isLoading ? null : (
-            <Text style={styles.emptyComments}>Sé el primero en comentar</Text>
-          )
-        }
-      />
-      {currentUser ? <CommentInput onSubmit={handleComment} isSubmitting={isCommenting} /> : null}
-    </KeyboardAvoidingView>
+        />
+        {currentUser ? <CommentInput onSubmit={handleComment} isSubmitting={isCommenting} /> : null}
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -189,16 +195,15 @@ const styles = StyleSheet.create({
     ...typography.label,
     color: colors.primary,
   },
-  postHeader: {
+  list: {
+    flex: 1,
+  },
+  authorInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
     paddingHorizontal: spacing.md,
-    paddingBottom: spacing.md,
+    paddingVertical: spacing.md,
     backgroundColor: colors.surface,
-  },
-  backBtn: {
-    padding: spacing.xxs,
   },
   authorInfo: {
     flexDirection: 'row',
