@@ -12,6 +12,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { colors, radius, spacing, typography } from '../../../src/design/tokens';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 import { useStrayReportDetail, useMatchStrayReport } from '../../../src/hooks/useStrayReports';
 import { useLostReports } from '../../../src/hooks/useLostReports';
 import { useAuthStore } from '../../../src/stores/authStore';
@@ -73,69 +74,68 @@ export default function StrayDetailScreen(): React.JSX.Element {
   const speciesLabel = SPECIES_LABELS[stray.species] ?? 'Animal';
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <View style={styles.headerRow}>
-        <Pressable onPress={() => router.back()} testID="stray-detail.back">
-          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
-        </Pressable>
-        <Text style={styles.title}>{speciesLabel} suelto</Text>
-        <View style={{ width: 24 }} />
-      </View>
+    <View style={{ flex: 1 }}>
+      <ScreenHeader
+        title={`${speciesLabel} suelto`}
+        onBack={() => router.back()}
+        testID="stray-detail"
+      />
+      <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+        {stray.photoUrl != null ? (
+          <Image
+            source={{ uri: stray.photoUrl }}
+            style={styles.photo}
+            resizeMode="cover"
+            testID="stray-detail.photo"
+          />
+        ) : (
+          <View style={styles.photoPlaceholder}>
+            <Ionicons name="help-circle" size={60} color={colors.accent} />
+          </View>
+        )}
 
-      {stray.photoUrl != null ? (
-        <Image
-          source={{ uri: stray.photoUrl }}
-          style={styles.photo}
-          resizeMode="cover"
-          testID="stray-detail.photo"
-        />
-      ) : (
-        <View style={styles.photoPlaceholder}>
-          <Ionicons name="help-circle" size={60} color={colors.accent} />
+        <View style={styles.infoCard}>
+          <InfoRow label="Tipo" value={speciesLabel} />
+          {stray.color != null && stray.color.length > 0 ? (
+            <InfoRow label="Color" value={stray.color} />
+          ) : null}
+          {stray.description != null && stray.description.length > 0 ? (
+            <InfoRow label="Descripción" value={stray.description} />
+          ) : null}
+          <InfoRow
+            label="Visto el"
+            value={new Date(stray.seenAt).toLocaleDateString('es-MX', {
+              day: 'numeric',
+              month: 'long',
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          />
         </View>
-      )}
 
-      <View style={styles.infoCard}>
-        <InfoRow label="Tipo" value={speciesLabel} />
-        {stray.color != null && stray.color.length > 0 ? (
-          <InfoRow label="Color" value={stray.color} />
+        {stray.status === 'unmatched' && myActiveLostReport != null ? (
+          <Pressable
+            onPress={() =>
+              matchMutation.mutate(
+                { strayId: stray.id, lostReportId: myActiveLostReport.id },
+                { onSuccess: () => router.replace(`/(app)/reports/${myActiveLostReport.id}`) },
+              )
+            }
+            disabled={matchMutation.isPending}
+            style={[styles.matchBtn, matchMutation.isPending && styles.matchBtnDisabled]}
+            testID="stray-detail.match"
+          >
+            {matchMutation.isPending ? (
+              <ActivityIndicator color={colors.white} />
+            ) : (
+              <Text style={styles.matchBtnLabel}>
+                ¡Esta es mi mascota ({myActiveLostReport.petName})!
+              </Text>
+            )}
+          </Pressable>
         ) : null}
-        {stray.description != null && stray.description.length > 0 ? (
-          <InfoRow label="Descripción" value={stray.description} />
-        ) : null}
-        <InfoRow
-          label="Visto el"
-          value={new Date(stray.seenAt).toLocaleDateString('es-MX', {
-            day: 'numeric',
-            month: 'long',
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
-        />
-      </View>
-
-      {stray.status === 'unmatched' && myActiveLostReport != null ? (
-        <Pressable
-          onPress={() =>
-            matchMutation.mutate(
-              { strayId: stray.id, lostReportId: myActiveLostReport.id },
-              { onSuccess: () => router.replace(`/(app)/reports/${myActiveLostReport.id}`) },
-            )
-          }
-          disabled={matchMutation.isPending}
-          style={[styles.matchBtn, matchMutation.isPending && styles.matchBtnDisabled]}
-          testID="stray-detail.match"
-        >
-          {matchMutation.isPending ? (
-            <ActivityIndicator color={colors.white} />
-          ) : (
-            <Text style={styles.matchBtnLabel}>
-              ¡Esta es mi mascota ({myActiveLostReport.petName})!
-            </Text>
-          )}
-        </Pressable>
-      ) : null}
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -152,15 +152,6 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.backgroundApp },
   content: { paddingBottom: spacing.xxxl },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: spacing.xxxl,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  title: { ...typography.heading, color: colors.textPrimary },
   photo: {
     marginHorizontal: spacing.md,
     height: 220,
