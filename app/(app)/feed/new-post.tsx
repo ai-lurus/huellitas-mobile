@@ -1,9 +1,10 @@
 import React from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CreatePostForm } from '../../../src/components/feed/CreatePostForm';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 import { colors } from '../../../src/design/tokens';
 import { useCreatePost } from '../../../src/hooks/useCreatePost';
 import { useAuthStore } from '../../../src/stores/authStore';
@@ -33,17 +34,20 @@ export default function NewPostScreen(): React.JSX.Element {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <CreatePostForm
-        onSubmit={handleSubmit}
-        isSubmitting={isPending}
-        onCancel={() => router.back()}
-        authorName={user?.name}
-      />
-    </KeyboardAvoidingView>
+    <View style={{ flex: 1, backgroundColor: colors.surface }}>
+      <ScreenHeader title="Nuevo post" onBack={() => router.back()} testID="newPost" />
+      <KeyboardAvoidingView
+        style={[styles.container, { paddingBottom: insets.bottom }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <CreatePostForm
+          onSubmit={handleSubmit}
+          isSubmitting={isPending}
+          onCancel={() => router.back()}
+          authorName={user?.name}
+        />
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
