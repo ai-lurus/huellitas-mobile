@@ -1,12 +1,12 @@
 import React from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 import { colors, radius, shadows, spacing, typography } from '../../../src/design/tokens';
 import { useCancelBookingMutation, useMyBookings } from '../../../src/hooks/useServices';
 import { BOOKING_STATUS_LABELS, canSelfCancel, type Booking } from '../../../src/domain/bookings';
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 
 function formatWhen(booking: Booking): string {
   if (booking.deliveryWindowLabel) return booking.deliveryWindowLabel;
@@ -60,20 +60,8 @@ export default function MyBookingsScreen(): React.JSX.Element {
   };
 
   return (
-    <SafeAreaView edges={['top']} style={styles.safe}>
-      <View style={styles.headerRow}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Volver"
-          onPress={(): void => router.back()}
-          style={styles.backBtn}
-          testID="services.bookings.back"
-        >
-          <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Mis reservas</Text>
-        <View style={styles.backBtn} />
-      </View>
+    <View style={styles.safe}>
+      <ScreenHeader title="Mis reservas" onBack={() => router.back()} testID="services.bookings" />
 
       {isPending ? null : isError ? (
         <View style={styles.stateWrap} testID="services.bookings.error">
@@ -123,26 +111,12 @@ export default function MyBookingsScreen(): React.JSX.Element {
           }}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundApp },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  backBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: {
-    ...typography.bodyStrong,
-    color: colors.textPrimary,
-    flex: 1,
-    textAlign: 'center',
-  },
   listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
   card: {
     backgroundColor: colors.surface,
