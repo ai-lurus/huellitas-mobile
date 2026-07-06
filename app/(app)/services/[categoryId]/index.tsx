@@ -6,6 +6,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { colors, radius, spacing, typography } from '../../../../src/design/tokens';
 import { useServiceDetail, useServiceProviders } from '../../../../src/hooks/useServices';
+import { ScreenHeader } from '../../../../src/components/navigation/ScreenHeader';
 
 export default function ServiceDetailScreen(): React.JSX.Element {
   const router = useRouter();
@@ -38,20 +39,12 @@ export default function ServiceDetailScreen(): React.JSX.Element {
   }
 
   return (
-    <SafeAreaView edges={['top']} style={styles.safe}>
-      <View style={styles.headerRow}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Volver"
-          onPress={(): void => router.back()}
-          style={styles.backBtn}
-          testID="services.detail.back"
-        >
-          <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
-        </Pressable>
-        <Text style={styles.headerTitle}>{detail?.name ?? 'Detalle de servicio'}</Text>
-        <View style={styles.backBtn} />
-      </View>
+    <View style={styles.safe}>
+      <ScreenHeader
+        title={detail?.name ?? 'Detalle de servicio'}
+        onBack={() => router.back()}
+        testID="services.detail"
+      />
 
       {detailQuery.isPending ? (
         <View style={styles.stateWrap} testID="services.detail.loading">
@@ -106,26 +99,12 @@ export default function ServiceDetailScreen(): React.JSX.Element {
           </Pressable>
         </ScrollView>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundApp },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  backBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: {
-    ...typography.bodyStrong,
-    color: colors.textPrimary,
-    flex: 1,
-    textAlign: 'center',
-  },
   content: { padding: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.sm },
   heroImage: {
     width: '100%',
