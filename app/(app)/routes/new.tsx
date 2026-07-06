@@ -4,6 +4,7 @@ import { useRouter, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 import { RouteForm } from '../../../src/components/routes/RouteForm';
 import type { Waypoint } from '../../../src/domain/routes';
 import { DIFFICULTY_COLORS } from '../../../src/domain/routes';
@@ -41,13 +42,11 @@ export default function NewRouteScreen(): React.JSX.Element {
   if (step === 'details') {
     return (
       <View style={styles.screen}>
-        <View style={styles.header}>
-          <Pressable onPress={() => setStep('map')} testID="new-route.back-to-map">
-            <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
-          </Pressable>
-          <Text style={styles.title}>Detalles de la ruta</Text>
-          <View style={{ width: 24 }} />
-        </View>
+        <ScreenHeader
+          title="Detalles de la ruta"
+          onBack={() => setStep('map')}
+          testID="new-route"
+        />
         <RouteForm
           waypoints={waypoints}
           isSubmitting={createMutation.isPending}
@@ -65,13 +64,7 @@ export default function NewRouteScreen(): React.JSX.Element {
 
   return (
     <View style={styles.screen}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} testID="new-route.back">
-          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
-        </Pressable>
-        <Text style={styles.title}>Traza la ruta</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <ScreenHeader title="Traza la ruta" onBack={() => router.back()} testID="new-route" />
 
       <Text style={styles.hint}>Toca el mapa para agregar puntos de la ruta</Text>
 
@@ -138,15 +131,6 @@ export default function NewRouteScreen(): React.JSX.Element {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.backgroundApp },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: spacing.xxxl,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.xs,
-  },
-  title: { ...typography.heading, color: colors.textPrimary },
   hint: {
     ...typography.caption,
     color: colors.textSecondary,
