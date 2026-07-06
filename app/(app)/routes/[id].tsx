@@ -11,6 +11,7 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+import { ScreenHeader } from '../../../src/components/navigation/ScreenHeader';
 import { HuellitasMap } from '../../../src/components/map/HuellitasMap';
 import { RoutePolyline } from '../../../src/components/map/RoutePolyline';
 import type { RouteDifficulty } from '../../../src/domain/routes';
@@ -81,74 +82,67 @@ export default function RouteDetailScreen(): React.JSX.Element {
     route.difficulty != null ? DIFFICULTY_LABELS[route.difficulty as RouteDifficulty] : null;
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      <View style={styles.headerRow}>
-        <Pressable onPress={() => router.back()} testID="route-detail.back">
-          <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
+    <View style={{ flex: 1 }}>
+      <ScreenHeader title={route.name} onBack={() => router.back()} testID="route-detail" />
+      <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+        <View style={styles.mapBox}>
+          <HuellitasMap containerStyle={styles.mapInner} showCenterButton={false}>
+            <RoutePolyline route={route} onPressCallout={() => {}} />
+          </HuellitasMap>
+        </View>
+
+        <View style={styles.infoCard}>
+          <View style={styles.nameRow}>
+            <Text style={styles.name}>{route.name}</Text>
+            {diffLabel != null ? (
+              <View style={[styles.diffBadge, { borderColor: diffColor }]}>
+                <Text style={[styles.diffLabel, { color: diffColor }]}>{diffLabel}</Text>
+              </View>
+            ) : null}
+          </View>
+
+          <View style={styles.stats}>
+            {route.distanceKm != null ? (
+              <StatChip icon="navigate-outline" label={`${route.distanceKm.toFixed(1)} km`} />
+            ) : null}
+            {route.estimatedMinutes != null ? (
+              <StatChip icon="time-outline" label={`${route.estimatedMinutes} min`} />
+            ) : null}
+            {route.offLeashAllowed ? (
+              <StatChip icon="paw-outline" label="Sin correa" color={colors.success} />
+            ) : null}
+          </View>
+
+          {route.description != null ? (
+            <Text style={styles.description}>{route.description}</Text>
+          ) : null}
+        </View>
+
+        <View style={styles.ratingCard}>
+          <View style={styles.ratingRow}>
+            <Stars value={route.ratingAvg} />
+            <Text style={styles.ratingText}>
+              {route.ratingAvg > 0 ? route.ratingAvg.toFixed(1) : '—'} · {route.ratingCount}{' '}
+              valoraciones
+            </Text>
+          </View>
+          <Text style={styles.rateLabel}>Califica esta ruta:</Text>
+          {rateMutation.isPending ? (
+            <ActivityIndicator color={colors.accent} style={{ marginTop: 4 }} />
+          ) : (
+            <Stars
+              value={route.userRating ?? 0}
+              onSelect={(n) => rateMutation.mutate({ routeId: route.id, rating: n })}
+            />
+          )}
+        </View>
+
+        <Pressable onPress={openInMaps} style={styles.startBtn} testID="route-detail.start">
+          <Ionicons name="navigate" size={18} color={colors.white} />
+          <Text style={styles.startBtnLabel}>Iniciar paseo</Text>
         </Pressable>
-        <Text style={styles.headerTitle} numberOfLines={1}>
-          {route.name}
-        </Text>
-        <View style={{ width: 24 }} />
-      </View>
-
-      <View style={styles.mapBox}>
-        <HuellitasMap containerStyle={styles.mapInner} showCenterButton={false}>
-          <RoutePolyline route={route} onPressCallout={() => {}} />
-        </HuellitasMap>
-      </View>
-
-      <View style={styles.infoCard}>
-        <View style={styles.nameRow}>
-          <Text style={styles.name}>{route.name}</Text>
-          {diffLabel != null ? (
-            <View style={[styles.diffBadge, { borderColor: diffColor }]}>
-              <Text style={[styles.diffLabel, { color: diffColor }]}>{diffLabel}</Text>
-            </View>
-          ) : null}
-        </View>
-
-        <View style={styles.stats}>
-          {route.distanceKm != null ? (
-            <StatChip icon="navigate-outline" label={`${route.distanceKm.toFixed(1)} km`} />
-          ) : null}
-          {route.estimatedMinutes != null ? (
-            <StatChip icon="time-outline" label={`${route.estimatedMinutes} min`} />
-          ) : null}
-          {route.offLeashAllowed ? (
-            <StatChip icon="paw-outline" label="Sin correa" color={colors.success} />
-          ) : null}
-        </View>
-
-        {route.description != null ? (
-          <Text style={styles.description}>{route.description}</Text>
-        ) : null}
-      </View>
-
-      <View style={styles.ratingCard}>
-        <View style={styles.ratingRow}>
-          <Stars value={route.ratingAvg} />
-          <Text style={styles.ratingText}>
-            {route.ratingAvg > 0 ? route.ratingAvg.toFixed(1) : '—'} · {route.ratingCount}{' '}
-            valoraciones
-          </Text>
-        </View>
-        <Text style={styles.rateLabel}>Califica esta ruta:</Text>
-        {rateMutation.isPending ? (
-          <ActivityIndicator color={colors.accent} style={{ marginTop: 4 }} />
-        ) : (
-          <Stars
-            value={route.userRating ?? 0}
-            onSelect={(n) => rateMutation.mutate({ routeId: route.id, rating: n })}
-          />
-        )}
-      </View>
-
-      <Pressable onPress={openInMaps} style={styles.startBtn} testID="route-detail.start">
-        <Ionicons name="navigate" size={18} color={colors.white} />
-        <Text style={styles.startBtnLabel}>Iniciar paseo</Text>
-      </Pressable>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -202,20 +196,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   backBtnLabel: { ...typography.button, color: colors.white },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: spacing.xxxl,
-    paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  headerTitle: {
-    ...typography.bodyStrong,
-    color: colors.textPrimary,
-    flex: 1,
-    textAlign: 'center',
-  },
   mapBox: {
     marginHorizontal: spacing.md,
     height: 240,
