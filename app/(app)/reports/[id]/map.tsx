@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
+import { ScreenHeader } from '../../../../src/components/navigation/ScreenHeader';
 import { LostReportMap } from '../../../../src/components/map/LostReportMap';
 import { useLostReportDetail } from '../../../../src/hooks/useLostReports';
 import { useReverseGeocodeLabel } from '../../../../src/hooks/useReverseGeocodeLabel';
@@ -38,21 +39,8 @@ export default function ReportMapScreen(): React.JSX.Element {
   }
 
   return (
-    <SafeAreaView edges={['top']} style={styles.safe}>
-      <View style={styles.header}>
-        <Pressable
-          accessibilityRole="button"
-          onPress={() => router.back()}
-          style={styles.backBtn}
-          testID="report.map.back"
-        >
-          <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
-        </Pressable>
-        <Text style={styles.title} numberOfLines={1}>
-          Ver mapa
-        </Text>
-        <View style={styles.backBtn} />
-      </View>
+    <View style={styles.safe}>
+      <ScreenHeader title="Ver mapa" onBack={() => router.back()} testID="report.map" />
 
       <View style={styles.mapWrap} testID="report.map.screen">
         <LostReportMap
@@ -79,31 +67,12 @@ export default function ReportMapScreen(): React.JSX.Element {
           </View>
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundApp },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    gap: spacing.sm,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  title: { ...typography.heading, color: colors.textPrimary, flex: 1, textAlign: 'center' },
   mapWrap: { flex: 1 },
   footer: {
     position: 'absolute',
