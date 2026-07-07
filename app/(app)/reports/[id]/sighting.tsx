@@ -18,6 +18,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
 
 import { LocationPicker } from '../../../../src/components/map/LocationPicker';
+import { ScreenHeader } from '../../../../src/components/navigation/ScreenHeader';
 import { colors, radius, shadows, spacing, typography } from '../../../../src/design/tokens';
 import { MAX_LOST_REPORT_MESSAGE_LENGTH } from '../../../../src/config/constants';
 import {
@@ -222,19 +223,7 @@ export default function ReportSightingScreen(): React.JSX.Element {
     <SafeAreaView edges={['top']} style={styles.safe}>
       {step === 'intro' ? (
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <View style={styles.headerRow}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Volver"
-              onPress={onBack}
-              style={styles.backBtn}
-              testID="reportSighting.back"
-            >
-              <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
-            </Pressable>
-            <Text style={styles.title}>Reporte de avistamiento</Text>
-            <View style={styles.backBtn} />
-          </View>
+          <ScreenHeader title="Reporte de avistamiento" onBack={onBack} testID="reportSighting" />
 
           <Text style={styles.introTitle}>¿Viste a esta mascota?</Text>
           <Text style={styles.introSub}>
@@ -295,28 +284,23 @@ export default function ReportSightingScreen(): React.JSX.Element {
         </ScrollView>
       ) : (
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-          <View style={styles.headerRow}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Volver"
-              onPress={onBack}
-              style={styles.backBtn}
-              testID="reportSighting.back"
-            >
-              <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
-            </Pressable>
-            <Text style={styles.title}>Reporte de avistamiento</Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => void submit()}
-              disabled={!canSubmit}
-              style={[styles.topSubmit, !canSubmit ? styles.topSubmitDisabled : null]}
-              testID="reportSighting.topSubmit"
-            >
-              <Ionicons name="cloud-upload-outline" size={16} color={colors.white} />
-              <Text style={styles.topSubmitText}>Reportar avistamiento</Text>
-            </Pressable>
-          </View>
+          <ScreenHeader
+            title="Reporte de avistamiento"
+            onBack={onBack}
+            testID="reportSighting"
+            rightSlot={
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => void submit()}
+                disabled={!canSubmit}
+                style={[styles.topSubmit, !canSubmit ? styles.topSubmitDisabled : null]}
+                testID="reportSighting.topSubmit"
+              >
+                <Ionicons name="cloud-upload-outline" size={16} color={colors.white} />
+                <Text style={styles.topSubmitText}>Reportar avistamiento</Text>
+              </Pressable>
+            }
+          />
 
           <View style={styles.bannerCard}>
             <View style={styles.bannerThumb}>
@@ -502,30 +486,6 @@ export default function ReportSightingScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundApp },
   content: { padding: spacing.lg, paddingBottom: spacing.xxxl, gap: spacing.md },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    ...typography.heading,
-    color: colors.textPrimary,
-    flex: 1,
-    textAlign: 'left',
-    marginLeft: spacing.sm,
-  },
-
   topSubmit: {
     height: 34,
     paddingHorizontal: spacing.md,
