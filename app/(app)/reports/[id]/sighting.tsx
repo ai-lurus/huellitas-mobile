@@ -12,7 +12,6 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
@@ -220,7 +219,7 @@ export default function ReportSightingScreen(): React.JSX.Element {
   const canSubmit = Boolean(selectedLocation) && !createSightingMutation.isPending;
 
   return (
-    <SafeAreaView edges={['top']} style={styles.safe}>
+    <View style={styles.safe}>
       {step === 'intro' ? (
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <ScreenHeader title="Reporte de avistamiento" onBack={onBack} testID="reportSighting" />
@@ -479,7 +478,7 @@ export default function ReportSightingScreen(): React.JSX.Element {
           </Modal>
         </ScrollView>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
