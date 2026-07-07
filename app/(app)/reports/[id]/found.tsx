@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
+import { ScreenHeader } from '../../../../src/components/navigation/ScreenHeader';
 import {
   useLostReportDetail,
   useResolveLostReportMutation,
@@ -97,21 +98,9 @@ export default function ReportFoundConfirmScreen(): React.JSX.Element {
   }
 
   return (
-    <SafeAreaView edges={['top']} style={styles.safe}>
+    <View style={styles.safe}>
+      <ScreenHeader title="Reporte de mascota" onBack={onBack} testID="report.found" />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={styles.headerRow}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={onBack}
-            style={styles.backBtn}
-            testID="report.found.back"
-          >
-            <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
-          </Pressable>
-          <Text style={styles.headerTitle}>Reporte de mascota</Text>
-          <View style={styles.backBtn} />
-        </View>
-
         <View style={styles.card}>
           <View style={styles.cardTopRow}>
             <View style={styles.thumbWrap}>
@@ -164,36 +153,13 @@ export default function ReportFoundConfirmScreen(): React.JSX.Element {
           </Text>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundApp },
   content: { padding: spacing.lg, paddingBottom: spacing.xxxl, gap: spacing.md },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    ...typography.heading,
-    color: colors.textPrimary,
-    flex: 1,
-    textAlign: 'left',
-    marginLeft: spacing.sm,
-  },
 
   loading: {
     flex: 1,
