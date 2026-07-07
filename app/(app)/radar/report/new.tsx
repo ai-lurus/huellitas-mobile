@@ -1,10 +1,9 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useNetInfo } from '@react-native-community/netinfo';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 
+import { ScreenHeader } from '../../../../src/components/navigation/ScreenHeader';
 import {
   LostReportDataStep,
   type LostReportDataResult,
@@ -19,7 +18,7 @@ import {
   StrayReportDataStep,
   type StrayReportDataResult,
 } from '../../../../src/components/radar/wizard/StrayReportDataStep';
-import { colors, spacing, typography } from '../../../../src/design/tokens';
+import { colors } from '../../../../src/design/tokens';
 import { usePets } from '../../../../src/hooks/usePets';
 import { useCreateLostReportMutation } from '../../../../src/hooks/useLostReports';
 import { useCreateStrayReport } from '../../../../src/hooks/useStrayReports';
@@ -292,43 +291,14 @@ export default function RadarCreateReportScreen(): React.ReactElement {
   }
 
   return (
-    <SafeAreaView edges={['top']} style={styles.safe}>
-      <View style={styles.headerRow}>
-        <Pressable
-          accessibilityLabel="Volver"
-          onPress={handleBackPress}
-          style={styles.backCircle}
-          testID="radar.wizard.back"
-        >
-          <Ionicons color={colors.white} name="chevron-back" size={22} />
-        </Pressable>
-        <Text style={styles.headerTitle}>{title}</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+    <View style={styles.safe}>
+      <ScreenHeader title={title} onBack={handleBackPress} testID="radar.wizard" />
       {body}
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundApp },
   loadingWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
-  },
-  backCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  headerTitle: { ...typography.heading, color: colors.textPrimary, flex: 1, textAlign: 'center' },
-  headerSpacer: { width: 40 },
 });
