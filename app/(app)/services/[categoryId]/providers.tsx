@@ -1,11 +1,11 @@
 import React from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { colors, radius, shadows, spacing, typography } from '../../../../src/design/tokens';
 import { useServiceProviders } from '../../../../src/hooks/useServices';
+import { ScreenHeader } from '../../../../src/components/navigation/ScreenHeader';
 
 export default function ServiceProvidersScreen(): React.JSX.Element {
   const router = useRouter();
@@ -18,20 +18,12 @@ export default function ServiceProvidersScreen(): React.JSX.Element {
   };
 
   return (
-    <SafeAreaView edges={['top']} style={styles.safe}>
-      <View style={styles.headerRow}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Volver"
-          onPress={(): void => router.back()}
-          style={styles.backBtn}
-          testID="services.providers.back"
-        >
-          <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
-        </Pressable>
-        <Text style={styles.title}>Elige un proveedor</Text>
-        <View style={styles.backBtn} />
-      </View>
+    <View style={styles.safe}>
+      <ScreenHeader
+        title="Elige un proveedor"
+        onBack={() => router.back()}
+        testID="services.providers"
+      />
 
       {isPending ? null : (
         <FlatList
@@ -64,21 +56,12 @@ export default function ServiceProvidersScreen(): React.JSX.Element {
           )}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.backgroundApp },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  backBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-  title: { ...typography.bodyStrong, color: colors.textPrimary },
   listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
   card: {
     flexDirection: 'row',
